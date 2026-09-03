@@ -1,6 +1,12 @@
 <script setup lang="ts">
 import { Link } from '@inertiajs/vue3';
-import { AppWindow, BookOpen, FolderGit2, LayoutGrid, Users } from '@lucide/vue';
+import {
+    AppWindow,
+    BookOpen,
+    FolderGit2,
+    LayoutGrid,
+    Users,
+} from '@lucide/vue';
 import AppLogo from '@/components/AppLogo.vue';
 import NavFooter from '@/components/NavFooter.vue';
 import NavMain from '@/components/NavMain.vue';
@@ -15,6 +21,7 @@ import {
     SidebarMenuItem,
 } from '@/components/ui/sidebar';
 import { dashboard } from '@/routes';
+import { discovery } from '@/routes/oidc';
 import { index as applications } from '@/routes/applications';
 import { index as users } from '@/routes/users';
 import type { NavItem } from '@/types';
@@ -40,7 +47,7 @@ const mainNavItems: NavItem[] = [
 const footerNavItems: NavItem[] = [
     {
         title: 'Discovery document',
-        href: '/.well-known/openid-configuration',
+        href: discovery(),
         icon: FolderGit2,
     },
     {

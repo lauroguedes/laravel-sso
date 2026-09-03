@@ -18,10 +18,7 @@ import { Spinner } from '@/components/ui/spinner';
 import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
 import { index, show, update } from '@/routes/applications';
-import type {
-    ApplicationDetail,
-    ScopeOption,
-} from '@/types/administration';
+import type { ApplicationDetail, ScopeOption } from '@/types/administration';
 
 defineOptions({
     layout: {
@@ -79,7 +76,7 @@ const { application } = defineProps<{
                 </CardContent>
             </Card>
 
-            <Card v-if="application.type !== 'machine'">
+            <Card v-if="application.uses_redirect_uris">
                 <CardHeader>
                     <CardTitle>Redirect URIs</CardTitle>
                     <CardDescription>

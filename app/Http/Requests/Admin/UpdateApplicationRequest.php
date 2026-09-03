@@ -24,7 +24,7 @@ class UpdateApplicationRequest extends FormRequest
      */
     public function rules(): array
     {
-        $usesRedirectUris = $this->application()->grant_types !== ['client_credentials'];
+        $usesRedirectUris = $this->application()->type()->usesRedirectUris();
 
         return [
             'name' => ['required', 'string', 'max:255'],
@@ -34,7 +34,7 @@ class UpdateApplicationRequest extends FormRequest
                 'max:'.config('sso.redirect_uris.max_per_application'),
                 Rule::requiredIf($usesRedirectUris),
             ],
-            'redirect_uris.*' => ['required', 'string', 'max:2000', new RedirectUri],
+            'redirect_uris.*' => ['required', 'string', 'max:2000', 'distinct', new RedirectUri],
             'scopes' => ['array'],
             'scopes.*' => ['string', Rule::in(app(ScopeRegistry::class)->ids())],
             'skips_authorization' => ['boolean'],
@@ -51,25 +51,5 @@ class UpdateApplicationRequest extends FormRequest
         return $application instanceof Application
             ? $application
             : Application::findOrFail((string) $application);
-    }
-
-    /**
-     * Reject duplicate redirect URIs, which are matched exactly and so would
-     * be meaningless repeated.
-     *
-     * @return array<int, callable>
-     */
-    public function after(): array
-    {
-        return [
-            function ($validator): void {
-                /** @var array<int, string> $uris */
-                $uris = $this->input('redirect_uris', []);
-
-                if (count($uris) !== count(array_unique($uris))) {
-                    $validator->errors()->add('redirect_uris', 'Redirect URIs must be unique.');
-                }
-            },
-        ];
     }
 }

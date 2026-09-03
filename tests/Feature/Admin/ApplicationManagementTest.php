@@ -169,7 +169,11 @@ describe('redirect uri validation', function () {
             ],
         ]);
 
-        $response->assertSessionHasErrors('redirect_uris');
+        /*
+         * Laravel's distinct rule attaches the error to each offending index,
+         * which is what RedirectUriFields renders beside the field itself.
+         */
+        $response->assertSessionHasErrors(['redirect_uris.0', 'redirect_uris.1']);
     });
 
     test('an administrator adds and removes redirect uris', function () {

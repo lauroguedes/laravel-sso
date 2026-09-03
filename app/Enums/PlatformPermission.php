@@ -23,22 +23,6 @@ enum PlatformPermission: string
     case SettingsManage = 'sso.settings.manage';
 
     /**
-     * A human readable label for the administration interface.
-     */
-    public function label(): string
-    {
-        return match ($this) {
-            self::UsersView => 'View users',
-            self::UsersManage => 'Manage users',
-            self::ApplicationsView => 'View applications',
-            self::ApplicationsManage => 'Manage applications',
-            self::RolesManage => 'Manage roles',
-            self::AuditView => 'View audit log',
-            self::SettingsManage => 'Manage settings',
-        };
-    }
-
-    /**
      * Every permission value, for seeding and for granting to Super Admin.
      *
      * @return array<int, string>

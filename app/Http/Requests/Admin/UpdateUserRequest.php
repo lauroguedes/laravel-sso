@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Requests\Admin;
 
+use App\Concerns\ProfileValidationRules;
 use App\Models\User;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
@@ -12,6 +13,8 @@ use Illuminate\Validation\Rules\Password;
 
 class UpdateUserRequest extends FormRequest
 {
+    use ProfileValidationRules;
+
     /**
      * Get the validation rules that apply to the request.
      *
@@ -25,11 +28,8 @@ class UpdateUserRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'name' => ['required', 'string', 'max:255'],
-            'email' => [
-                'required', 'string', 'lowercase', 'email', 'max:255',
-                Rule::unique(User::class)->ignore($this->targetUser()->id),
-            ],
+            'name' => $this->nameRules(),
+            'email' => [...$this->emailRules($this->targetUser()->id), 'lowercase'],
             'password' => ['nullable', 'string', Password::default(), 'confirmed'],
             'email_verified' => ['boolean'],
             'roles' => ['array'],

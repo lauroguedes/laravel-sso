@@ -43,13 +43,7 @@ const currentType = computed(() =>
     applicationTypes.find((type) => type.value === selectedType.value),
 );
 
-/*
- * The OpenID Connect scopes every interactive application needs are selected
- * by default; a machine-to-machine client asks for none of them.
- */
-const defaultScopes = computed(() =>
-    currentType.value?.uses_redirect_uris ? ['openid', 'profile', 'email'] : [],
-);
+const defaultScopes = computed(() => currentType.value?.default_scopes ?? []);
 </script>
 
 <template>

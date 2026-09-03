@@ -12,6 +12,7 @@ import {
     CardTitle,
 } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
+import RoleFields from '@/components/users/RoleFields.vue';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Spinner } from '@/components/ui/spinner';
@@ -53,7 +54,12 @@ defineProps<{
                 <CardContent class="space-y-4">
                     <div class="grid gap-2">
                         <Label for="name">Name</Label>
-                        <Input id="name" name="name" required autocomplete="off" />
+                        <Input
+                            id="name"
+                            name="name"
+                            required
+                            autocomplete="off"
+                        />
                         <InputError :message="errors.name" />
                     </div>
 
@@ -70,7 +76,11 @@ defineProps<{
                     </div>
 
                     <div class="flex items-start gap-3">
-                        <Checkbox id="email_verified" name="email_verified" :value="1" />
+                        <Checkbox
+                            id="email_verified"
+                            name="email_verified"
+                            value="1"
+                        />
                         <div class="grid gap-1">
                             <Label for="email_verified" class="font-normal">
                                 Mark this address as already verified
@@ -88,8 +98,8 @@ defineProps<{
                 <CardHeader>
                     <CardTitle>Password</CardTitle>
                     <CardDescription>
-                        Share this with the user over a trusted channel. They can
-                        change it once signed in.
+                        Share this with the user over a trusted channel. They
+                        can change it once signed in.
                     </CardDescription>
                 </CardHeader>
 
@@ -106,7 +116,9 @@ defineProps<{
                     </div>
 
                     <div class="grid gap-2">
-                        <Label for="password_confirmation">Confirm password</Label>
+                        <Label for="password_confirmation"
+                            >Confirm password</Label
+                        >
                         <PasswordInput
                             id="password_confirmation"
                             name="password_confirmation"
@@ -127,22 +139,12 @@ defineProps<{
                     </CardDescription>
                 </CardHeader>
 
-                <CardContent class="space-y-3">
-                    <div
-                        v-for="role in availableRoles"
-                        :key="role"
-                        class="flex items-center gap-3"
-                    >
-                        <Checkbox
-                            :id="`role-${role}`"
-                            name="roles[]"
-                            :value="role"
-                        />
-                        <Label :for="`role-${role}`" class="font-normal">
-                            {{ role }}
-                        </Label>
-                    </div>
-                    <InputError :message="errors.roles" />
+                <CardContent>
+                    <RoleFields
+                        :roles="availableRoles"
+                        :selected="[]"
+                        :errors="errors"
+                    />
                 </CardContent>
             </Card>
 

@@ -17,12 +17,13 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Spinner } from '@/components/ui/spinner';
 import DangerousAction from '@/components/DangerousAction.vue';
+import RoleFields from '@/components/users/RoleFields.vue';
 import { edit, index, update } from '@/routes/users';
 import { update as updateStatus } from '@/routes/users/status';
-import type { UserDetail } from '@/types/administration';
+import type { UserSummary } from '@/types/administration';
 
 const { user } = defineProps<{
-    user: UserDetail;
+    user: UserSummary;
     availableRoles: string[];
     canManage: boolean;
     canChangeStatus: boolean;
@@ -111,7 +112,7 @@ function formatDate(value: string | null): string {
                             <Checkbox
                                 id="email_verified"
                                 name="email_verified"
-                                :value="1"
+                                value="1"
                                 :default-value="user.email_verified"
                                 :disabled="!canManage"
                             />
@@ -152,7 +153,9 @@ function formatDate(value: string | null): string {
                                 autocomplete="new-password"
                                 :disabled="!canManage"
                             />
-                            <InputError :message="errors.password_confirmation" />
+                            <InputError
+                                :message="errors.password_confirmation"
+                            />
                         </div>
                     </CardContent>
                 </Card>
@@ -167,24 +170,13 @@ function formatDate(value: string | null): string {
                         </CardDescription>
                     </CardHeader>
 
-                    <CardContent class="space-y-3">
-                        <div
-                            v-for="role in availableRoles"
-                            :key="role"
-                            class="flex items-center gap-3"
-                        >
-                            <Checkbox
-                                :id="`role-${role}`"
-                                name="roles[]"
-                                :value="role"
-                                :default-value="user.roles.includes(role)"
-                                :disabled="!canManage"
-                            />
-                            <Label :for="`role-${role}`" class="font-normal">
-                                {{ role }}
-                            </Label>
-                        </div>
-                        <InputError :message="errors.roles" />
+                    <CardContent>
+                        <RoleFields
+                            :roles="availableRoles"
+                            :selected="user.roles"
+                            :errors="errors"
+                            :disabled="!canManage"
+                        />
                     </CardContent>
                 </Card>
 
@@ -196,7 +188,9 @@ function formatDate(value: string | null): string {
 
             <Card v-if="canChangeStatus" class="border-destructive/40">
                 <CardHeader>
-                    <CardTitle>{{ user.disabled ? 'Restore access' : 'Disable access' }}</CardTitle>
+                    <CardTitle>{{
+                        user.disabled ? 'Restore access' : 'Disable access'
+                    }}</CardTitle>
                     <CardDescription>
                         <template v-if="user.disabled">
                             The user will be able to sign in again immediately.
@@ -209,7 +203,11 @@ function formatDate(value: string | null): string {
                 </CardHeader>
 
                 <CardContent>
-                    <Button v-if="user.disabled" variant="outline" @click="setEnabled(true)">
+                    <Button
+                        v-if="user.disabled"
+                        variant="outline"
+                        @click="setEnabled(true)"
+                    >
                         Enable user
                     </Button>
 

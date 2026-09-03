@@ -1,13 +1,12 @@
 <script setup lang="ts">
 import { Head, Link, router } from '@inertiajs/vue3';
-import { Plus, Search } from '@lucide/vue';
-import { ref, watch } from 'vue';
+import { Plus } from '@lucide/vue';
 import Heading from '@/components/Heading.vue';
 import Pagination from '@/components/Pagination.vue';
 import type { PaginationLink } from '@/components/Pagination.vue';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
+import SearchInput from '@/components/SearchInput.vue';
 import {
     Table,
     TableBody,
@@ -17,6 +16,7 @@ import {
     TableHeader,
     TableRow,
 } from '@/components/ui/table';
+import { useSearchFilter } from '@/composables/useSearchFilter';
 import { create, index, show } from '@/routes/applications';
 import type { ApplicationSummary } from '@/types/administration';
 
@@ -37,21 +37,7 @@ const { applications, filters } = defineProps<{
     filters: { search: string | null };
 }>();
 
-const search = ref(filters.search ?? '');
-
-let debounce: ReturnType<typeof setTimeout> | undefined;
-
-watch(search, (value) => {
-    clearTimeout(debounce);
-
-    debounce = setTimeout(() => {
-        router.get(
-            index().url,
-            { search: value || undefined },
-            { preserveState: true, replace: true },
-        );
-    }, 300);
-});
+const { search } = useSearchFilter(index().url, filters.search);
 </script>
 
 <template>
@@ -72,18 +58,12 @@ watch(search, (value) => {
             </Button>
         </div>
 
-        <div class="relative mb-4 max-w-sm">
-            <Search
-                class="text-muted-foreground pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2"
-            />
-            <Input
-                v-model="search"
-                type="search"
-                class="pl-9"
-                placeholder="Search by name or client ID"
-                aria-label="Search applications"
-            />
-        </div>
+        <SearchInput
+            v-model="search"
+            class="mb-4"
+            placeholder="Search by name or client ID"
+            label="Search applications"
+        />
 
         <div class="overflow-x-auto rounded-lg border">
             <Table>
@@ -144,7 +124,9 @@ watch(search, (value) => {
                                         : 'destructive'
                                 "
                             >
-                                {{ application.enabled ? 'Enabled' : 'Disabled' }}
+                                {{
+                                    application.enabled ? 'Enabled' : 'Disabled'
+                                }}
                             </Badge>
                         </TableCell>
                     </TableRow>

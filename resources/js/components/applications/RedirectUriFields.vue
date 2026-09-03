@@ -13,10 +13,9 @@ import { Label } from '@/components/ui/label';
  * validates and stores them individually. They are matched exactly when an
  * authorization request arrives, which is why there is no pattern field.
  */
-const { modelValue, errors, disabled = false } = defineProps<{
+const { modelValue, errors } = defineProps<{
     modelValue: string[];
     errors: Record<string, string>;
-    disabled?: boolean;
 }>();
 
 const uris = ref<string[]>(modelValue.length > 0 ? [...modelValue] : ['']);
@@ -36,11 +35,7 @@ function remove(index: number) {
 
 <template>
     <div class="space-y-3">
-        <div
-            v-for="(uri, position) in uris"
-            :key="position"
-            class="space-y-2"
-        >
+        <div v-for="(uri, position) in uris" :key="position" class="space-y-2">
             <div class="flex items-center gap-2">
                 <Label :for="`redirect-uri-${position}`" class="sr-only">
                     Redirect URI {{ position + 1 }}
@@ -53,13 +48,11 @@ function remove(index: number) {
                     inputmode="url"
                     spellcheck="false"
                     placeholder="https://app.example.com/auth/callback"
-                    :disabled="disabled"
                 />
                 <Button
                     type="button"
                     variant="ghost"
                     size="icon"
-                    :disabled="disabled"
                     :aria-label="`Remove redirect URI ${position + 1}`"
                     @click="remove(position)"
                 >
@@ -72,13 +65,7 @@ function remove(index: number) {
 
         <InputError :message="errors.redirect_uris" />
 
-        <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            :disabled="disabled"
-            @click="add"
-        >
+        <Button type="button" variant="outline" size="sm" @click="add">
             <Plus class="size-4" />
             Add redirect URI
         </Button>

@@ -10,6 +10,7 @@ import {
     AlertDialogTitle,
     AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
+import { buttonVariants } from '@/components/ui/button';
 
 /**
  * Wraps a destructive control in an explicit confirmation.
@@ -49,7 +50,7 @@ const emit = defineEmits<{ confirm: [] }>();
             <AlertDialogFooter>
                 <AlertDialogCancel>{{ cancelLabel }}</AlertDialogCancel>
                 <AlertDialogAction
-                    class="bg-destructive text-white hover:bg-destructive/90"
+                    :class="buttonVariants({ variant: 'destructive' })"
                     @click="emit('confirm')"
                 >
                     {{ confirmLabel }}

@@ -1,13 +1,12 @@
 <script setup lang="ts">
 import { Head, Link, router } from '@inertiajs/vue3';
-import { Plus, Search } from '@lucide/vue';
-import { ref, watch } from 'vue';
+import { Plus } from '@lucide/vue';
 import Heading from '@/components/Heading.vue';
 import Pagination from '@/components/Pagination.vue';
 import type { PaginationLink } from '@/components/Pagination.vue';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
+import SearchInput from '@/components/SearchInput.vue';
 import {
     Table,
     TableBody,
@@ -17,6 +16,7 @@ import {
     TableHeader,
     TableRow,
 } from '@/components/ui/table';
+import { useSearchFilter } from '@/composables/useSearchFilter';
 import { create, edit, index } from '@/routes/users';
 import type { UserSummary } from '@/types/administration';
 
@@ -37,21 +37,7 @@ const { users, filters } = defineProps<{
     filters: { search: string | null };
 }>();
 
-const search = ref(filters.search ?? '');
-
-let debounce: ReturnType<typeof setTimeout> | undefined;
-
-watch(search, (value) => {
-    clearTimeout(debounce);
-
-    debounce = setTimeout(() => {
-        router.get(
-            index().url,
-            { search: value || undefined },
-            { preserveState: true, replace: true },
-        );
-    }, 300);
-});
+const { search } = useSearchFilter(index().url, filters.search);
 
 function formatDate(value: string | null): string {
     return value ? new Date(value).toLocaleDateString() : '—';
@@ -62,9 +48,7 @@ function formatDate(value: string | null): string {
     <Head title="Users" />
 
     <div class="px-4 py-6">
-        <div
-            class="mb-6 flex flex-wrap items-start justify-between gap-4"
-        >
+        <div class="mb-6 flex flex-wrap items-start justify-between gap-4">
             <Heading
                 title="Users"
                 description="People who can authenticate through this Identity Provider"
@@ -78,18 +62,12 @@ function formatDate(value: string | null): string {
             </Button>
         </div>
 
-        <div class="relative mb-4 max-w-sm">
-            <Search
-                class="text-muted-foreground pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2"
-            />
-            <Input
-                v-model="search"
-                type="search"
-                class="pl-9"
-                placeholder="Search by name or email"
-                aria-label="Search users"
-            />
-        </div>
+        <SearchInput
+            v-model="search"
+            class="mb-4"
+            placeholder="Search by name or email"
+            label="Search users"
+        />
 
         <div class="overflow-x-auto rounded-lg border">
             <Table>
@@ -149,7 +127,10 @@ function formatDate(value: string | null): string {
                             <Badge v-if="user.disabled" variant="destructive">
                                 Disabled
                             </Badge>
-                            <Badge v-else-if="!user.email_verified" variant="outline">
+                            <Badge
+                                v-else-if="!user.email_verified"
+                                variant="outline"
+                            >
                                 Unverified
                             </Badge>
                             <Badge v-else variant="secondary">Active</Badge>

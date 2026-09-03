@@ -13,6 +13,7 @@ use App\Events\ClientSecretRegenerated;
 use App\Models\Application;
 use Illuminate\Support\Facades\DB;
 use Laravel\Passport\ClientRepository;
+use Laravel\Passport\Passport;
 
 /**
  * Creates and maintains the OAuth2 clients behind administrator-managed
@@ -77,7 +78,7 @@ class ApplicationManager
      */
     public function update(Application $application, array $attributes): Application
     {
-        $type = $this->typeOf($application);
+        $type = $application->type();
 
         DB::transaction(function () use ($application, $attributes, $type): void {
             $application->forceFill([
@@ -114,10 +115,25 @@ class ApplicationManager
      *
      * Leaving live tokens behind would let a disabled application keep calling
      * resource servers until its access tokens expired.
+     *
+     * Passport's ClientRepository::delete() walks the tokens one at a time and
+     * issues two updates each, which holds row locks for the whole loop. A
+     * heavily used client can have very many live tokens, so this revokes them
+     * in two set-based statements instead.
      */
     public function disable(Application $application): void
     {
-        DB::transaction(fn () => $this->clients->delete($application));
+        DB::transaction(function () use ($application): void {
+            $liveTokens = $application->tokens()->where('revoked', false);
+
+            Passport::refreshTokenModel()::query()
+                ->whereIn('access_token_id', (clone $liveTokens)->select('id'))
+                ->update(['revoked' => true]);
+
+            $liveTokens->update(['revoked' => true]);
+
+            $application->forceFill(['revoked' => true])->save();
+        });
 
         ApplicationDisabled::dispatch($application);
     }
@@ -133,16 +149,5 @@ class ApplicationManager
         $application->forceFill(['revoked' => false])->save();
 
         ApplicationEnabled::dispatch($application);
-    }
-
-    /**
-     * Determine the kind of client an application represents.
-     */
-    public function typeOf(Application $application): ApplicationType
-    {
-        return ApplicationType::fromClient(
-            $application->grant_types ?? [],
-            $application->isConfidential(),
-        );
     }
 }

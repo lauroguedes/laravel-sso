@@ -4,6 +4,8 @@ namespace App\Models;
 
 use Admin9\OidcServer\Concerns\HasOidcClaims;
 use Admin9\OidcServer\Contracts\OidcUserInterface;
+use App\Events\UserDisabled;
+use App\Events\UserEnabled;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
@@ -85,10 +87,21 @@ class User extends Authenticatable implements OAuthenticatable, OidcUserInterfac
      *
      * Users are disabled rather than deleted so that audit history keeps
      * pointing at a real actor.
+     *
+     * The event is raised here rather than at the call site so that every
+     * route to disabling a user — an administrator, a console command, a
+     * listener — is audited, matching how ApplicationManager owns the events
+     * on the application side.
      */
     public function disable(): void
     {
+        if ($this->isDisabled()) {
+            return;
+        }
+
         $this->forceFill(['disabled_at' => $this->freshTimestamp()])->save();
+
+        UserDisabled::dispatch($this);
     }
 
     /**
@@ -96,7 +109,13 @@ class User extends Authenticatable implements OAuthenticatable, OidcUserInterfac
      */
     public function enable(): void
     {
+        if (! $this->isDisabled()) {
+            return;
+        }
+
         $this->forceFill(['disabled_at' => null])->save();
+
+        UserEnabled::dispatch($this);
     }
 
     /**

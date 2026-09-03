@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Models;
 
 use Admin9\OidcServer\Models\OidcClient;
+use App\Enums\ApplicationType;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Database\Eloquent\Builder;
 use Laravel\Passport\Scope;
@@ -79,6 +80,21 @@ class Application extends OidcClient
     public function isEnabled(): bool
     {
         return ! $this->revoked;
+    }
+
+    /**
+     * Determine the kind of client this application represents.
+     *
+     * The type is derived rather than stored, and this is the one place that
+     * derivation happens: form requests, policies and the Inertia payload all
+     * read it from here rather than inspecting grant types themselves.
+     */
+    public function type(): ApplicationType
+    {
+        return ApplicationType::fromClient(
+            $this->grant_types ?? [],
+            $this->isConfidential(),
+        );
     }
 
     /**

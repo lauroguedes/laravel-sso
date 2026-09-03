@@ -22,6 +22,19 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Discovery Document
+    |--------------------------------------------------------------------------
+    |
+    | Where relying parties fetch this server's configuration. It is derived
+    | from the issuer rather than from route(), because the issuer is the
+    | canonical public URL and may differ from APP_URL behind a proxy.
+    |
+    */
+
+    'discovery_url' => rtrim((string) env('SSO_ISSUER', env('APP_URL')), '/').'/.well-known/openid-configuration',
+
+    /*
+    |--------------------------------------------------------------------------
     | Registration & Verification
     |--------------------------------------------------------------------------
     |

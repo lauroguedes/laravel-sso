@@ -6,8 +6,9 @@ use App\Actions\Fortify\CreateNewUser;
 use App\Actions\Fortify\ResetUserPassword;
 use App\Models\User;
 use Illuminate\Cache\RateLimiting\Limit;
+use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Str;
@@ -59,14 +60,18 @@ class FortifyServiceProvider extends ServiceProvider
      */
     private function configureAuthentication(): void
     {
-        Fortify::authenticateUsing(function (Request $request): ?User {
-            $user = User::where(Fortify::username(), $request->input(Fortify::username()))->first();
+        Fortify::authenticateUsing(function (Request $request): ?Authenticatable {
+            $provider = Auth::guard(config('fortify.guard'))->getProvider();
 
-            if (! $user || ! Hash::check((string) $request->input('password'), $user->password)) {
+            $credentials = $request->only(Fortify::username(), 'password');
+
+            $user = $provider->retrieveByCredentials($credentials);
+
+            if (! $user || ! $provider->validateCredentials($user, $credentials)) {
                 return null;
             }
 
-            return $user->isDisabled() ? null : $user;
+            return $user instanceof User && $user->isDisabled() ? null : $user;
         });
     }
 

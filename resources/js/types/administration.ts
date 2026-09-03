@@ -17,10 +17,6 @@ export type UserSummary = {
     roles: string[];
 };
 
-export type UserDetail = UserSummary & {
-    updated_at: string | null;
-};
-
 export type ApplicationSummary = {
     id: string;
     name: string;
@@ -33,19 +29,18 @@ export type ApplicationSummary = {
 
 export type ApplicationDetail = ApplicationSummary & {
     confidential: boolean;
+    uses_redirect_uris: boolean;
     redirect_uris: string[];
     scopes: string[];
-    grant_types: string[];
     skips_authorization: boolean;
-    updated_at: string | null;
 };
 
 export type ApplicationTypeOption = {
     value: 'confidential' | 'public' | 'machine';
     label: string;
     description: string;
-    confidential: boolean;
     uses_redirect_uris: boolean;
+    default_scopes: string[];
 };
 
 export type ScopeOption = {

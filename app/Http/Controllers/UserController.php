@@ -28,6 +28,12 @@ class UserController extends Controller
         return Inertia::render('users/Index', [
             'filters' => ['search' => $request->string('search')->toString() ?: null],
             'users' => User::query()
+                /*
+                 * summarize() reads the role names, which spatie resolves per
+                 * model. Without this the listing issues one extra query per
+                 * row.
+                 */
+                ->with('roles:id,name')
                 ->search($request->string('search')->toString() ?: null)
                 ->orderBy('name')
                 ->paginate(15)
@@ -86,10 +92,7 @@ class UserController extends Controller
         $this->authorize('view', $user);
 
         return Inertia::render('users/Edit', [
-            'user' => [
-                ...$this->summarize($user),
-                'updated_at' => $user->updated_at?->toIso8601String(),
-            ],
+            'user' => $this->summarize($user->load('roles:id,name')),
             'availableRoles' => $this->availableRoles(),
             'canManage' => $request->user()->can('update', $user),
             'canChangeStatus' => $request->user()->can('updateStatus', $user),

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Check, Copy } from '@lucide/vue';
-import { onUnmounted, ref } from 'vue';
+import { useClipboard } from '@vueuse/core';
 import { Button } from '@/components/ui/button';
 
 const { value, label = 'Copy' } = defineProps<{
@@ -8,27 +8,17 @@ const { value, label = 'Copy' } = defineProps<{
     label?: string;
 }>();
 
-const copied = ref(false);
-let resetTimer: ReturnType<typeof setTimeout> | undefined;
-
-async function copy() {
-    try {
-        await navigator.clipboard.writeText(value);
-    } catch {
-        // Clipboard access can be refused; leave the value on screen to copy by hand.
-        return;
-    }
-
-    copied.value = true;
-    clearTimeout(resetTimer);
-    resetTimer = setTimeout(() => (copied.value = false), 2000);
-}
-
-onUnmounted(() => clearTimeout(resetTimer));
+const { copy, copied, isSupported } = useClipboard({ copiedDuring: 2000 });
 </script>
 
 <template>
-    <Button type="button" variant="outline" size="sm" @click="copy">
+    <Button
+        v-if="isSupported"
+        type="button"
+        variant="outline"
+        size="sm"
+        @click="copy(value)"
+    >
         <Check v-if="copied" class="size-4" />
         <Copy v-else class="size-4" />
         {{ copied ? 'Copied' : label }}

@@ -77,6 +77,28 @@ enum ApplicationType: string
     }
 
     /**
+     * The scopes selected by default when registering this kind of client.
+     *
+     * Interactive applications almost always want the standard OpenID Connect
+     * set; a machine to machine client has no user to describe. The list is
+     * intersected with what the server actually offers, so removing a scope
+     * from "config/oidc-server.php" cannot pre-select something that
+     * validation would then reject.
+     *
+     * @param  array<int, string>  $offered
+     * @return array<int, string>
+     */
+    public function defaultScopes(array $offered): array
+    {
+        $wanted = match ($this) {
+            self::Confidential, self::Public => ['openid', 'profile', 'email'],
+            self::Machine => [],
+        };
+
+        return array_values(array_intersect($wanted, $offered));
+    }
+
+    /**
      * Derive the type of an existing client from its stored attributes.
      *
      * @param  array<int, string>  $grantTypes

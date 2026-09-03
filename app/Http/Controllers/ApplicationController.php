@@ -49,7 +49,7 @@ class ApplicationController extends Controller
 
         return Inertia::render('applications/Create', [
             'applicationTypes' => $this->applicationTypes(),
-            'availableScopes' => $this->availableScopes(),
+            'availableScopes' => $this->scopes->all(),
         ]);
     }
 
@@ -87,13 +87,14 @@ class ApplicationController extends Controller
         return Inertia::render('applications/Show', [
             'application' => $this->detail($application),
             'issuer' => config('sso.issuer'),
-            'discoveryUrl' => rtrim((string) config('sso.issuer'), '/').'/.well-known/openid-configuration',
+            'discoveryUrl' => config('sso.discovery_url'),
             /*
              * Present only on the request immediately after the secret was
              * generated or rotated.
              */
             'clientSecret' => $request->session()->get('clientSecret'),
             'canManage' => $request->user()->can('update', $application),
+            'canRegenerateSecret' => $request->user()->can('regenerateSecret', $application),
         ]);
     }
 
@@ -106,7 +107,7 @@ class ApplicationController extends Controller
 
         return Inertia::render('applications/Edit', [
             'application' => $this->detail($application),
-            'availableScopes' => $this->availableScopes(),
+            'availableScopes' => $this->scopes->all(),
         ]);
     }
 
@@ -139,12 +140,14 @@ class ApplicationController extends Controller
      */
     private function summarize(Application $application): array
     {
+        $type = $application->type();
+
         return [
             'id' => $application->id,
             'name' => $application->name,
             'description' => $application->description,
-            'type' => $this->applications->typeOf($application)->value,
-            'type_label' => $this->applications->typeOf($application)->label(),
+            'type' => $type->value,
+            'type_label' => $type->label(),
             'enabled' => $application->isEnabled(),
             'created_at' => $application->created_at?->toIso8601String(),
         ];
@@ -160,11 +163,10 @@ class ApplicationController extends Controller
         return [
             ...$this->summarize($application),
             'confidential' => $application->isConfidential(),
+            'uses_redirect_uris' => $application->type()->usesRedirectUris(),
             'redirect_uris' => $application->redirect_uris ?? [],
             'scopes' => $application->scopes ?? [],
-            'grant_types' => $application->grant_types ?? [],
-            'skips_authorization' => (bool) $application->skips_authorization,
-            'updated_at' => $application->updated_at?->toIso8601String(),
+            'skips_authorization' => $application->skips_authorization,
         ];
     }
 
@@ -175,22 +177,14 @@ class ApplicationController extends Controller
      */
     private function applicationTypes(): array
     {
+        $offered = $this->scopes->ids();
+
         return array_map(fn (ApplicationType $type): array => [
             'value' => $type->value,
             'label' => $type->label(),
             'description' => $type->description(),
-            'confidential' => $type->isConfidential(),
             'uses_redirect_uris' => $type->usesRedirectUris(),
+            'default_scopes' => $type->defaultScopes($offered),
         ], ApplicationType::cases());
-    }
-
-    /**
-     * The scopes an application may be granted.
-     *
-     * @return array<int, array{id: string, description: string}>
-     */
-    private function availableScopes(): array
-    {
-        return $this->scopes->all();
     }
 }

@@ -2,6 +2,7 @@
 import { Head, Link, router } from '@inertiajs/vue3';
 import { Pencil, TriangleAlert } from '@lucide/vue';
 import CopyButton from '@/components/CopyButton.vue';
+import CredentialValue from '@/components/applications/CredentialValue.vue';
 import DangerousAction from '@/components/DangerousAction.vue';
 import Heading from '@/components/Heading.vue';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
@@ -31,6 +32,7 @@ const { application } = defineProps<{
     discoveryUrl: string;
     clientSecret: string | null;
     canManage: boolean;
+    canRegenerateSecret: boolean;
 }>();
 
 function setEnabled(enabled: boolean) {
@@ -53,7 +55,9 @@ function regenerateSecret() {
             />
 
             <div class="flex items-center gap-2">
-                <Badge :variant="application.enabled ? 'secondary' : 'destructive'">
+                <Badge
+                    :variant="application.enabled ? 'secondary' : 'destructive'"
+                >
                     {{ application.enabled ? 'Enabled' : 'Disabled' }}
                 </Badge>
 
@@ -97,73 +101,38 @@ function regenerateSecret() {
                 </CardHeader>
 
                 <CardContent class="space-y-4">
-                    <div class="grid gap-1.5">
-                        <span class="text-muted-foreground text-sm">Issuer</span>
-                        <div class="flex flex-wrap items-center gap-2">
-                            <code
-                                class="bg-muted min-w-0 flex-1 overflow-x-auto rounded px-3 py-2 font-mono text-sm"
-                            >
-                                {{ issuer }}
-                            </code>
-                            <CopyButton :value="issuer" />
-                        </div>
-                    </div>
+                    <CredentialValue label="Issuer" :value="issuer" />
 
-                    <div class="grid gap-1.5">
-                        <span class="text-muted-foreground text-sm">
-                            Discovery document
-                        </span>
-                        <div class="flex flex-wrap items-center gap-2">
-                            <code
-                                class="bg-muted min-w-0 flex-1 overflow-x-auto rounded px-3 py-2 font-mono text-sm"
-                            >
-                                {{ discoveryUrl }}
-                            </code>
-                            <CopyButton :value="discoveryUrl" />
-                        </div>
-                    </div>
+                    <CredentialValue
+                        label="Discovery document"
+                        :value="discoveryUrl"
+                    />
 
-                    <div class="grid gap-1.5">
-                        <span class="text-muted-foreground text-sm">Client ID</span>
-                        <div class="flex flex-wrap items-center gap-2">
-                            <code
-                                class="bg-muted min-w-0 flex-1 overflow-x-auto rounded px-3 py-2 font-mono text-sm"
-                            >
-                                {{ application.id }}
-                            </code>
-                            <CopyButton :value="application.id" />
-                        </div>
-                    </div>
+                    <CredentialValue
+                        label="Client ID"
+                        :value="application.id"
+                    />
 
-                    <div v-if="application.confidential" class="grid gap-1.5">
-                        <span class="text-muted-foreground text-sm">
-                            Client secret
-                        </span>
-                        <div class="flex flex-wrap items-center gap-2">
-                            <code
-                                class="bg-muted text-muted-foreground min-w-0 flex-1 overflow-x-auto rounded px-3 py-2 font-mono text-sm"
-                            >
-                                ••••••••••••••••••••••••••••••••
-                            </code>
-
-                            <DangerousAction
-                                v-if="canManage"
-                                title="Generate a new client secret?"
-                                description="The current secret stops working immediately. Every integration using it will fail until it is updated."
-                                confirm-label="Generate new secret"
-                                @confirm="regenerateSecret"
-                            >
-                                <Button variant="outline" size="sm">
-                                    Regenerate
-                                </Button>
-                            </DangerousAction>
-                        </div>
-                    </div>
-
-                    <p
-                        v-else
-                        class="text-muted-foreground text-sm"
+                    <CredentialValue
+                        v-if="application.confidential"
+                        label="Client secret"
+                        value="••••••••••••••••••••••••••••••••"
+                        :copyable="false"
                     >
+                        <DangerousAction
+                            v-if="canRegenerateSecret"
+                            title="Generate a new client secret?"
+                            description="The current secret stops working immediately. Every integration using it will fail until it is updated."
+                            confirm-label="Generate new secret"
+                            @confirm="regenerateSecret"
+                        >
+                            <Button variant="outline" size="sm">
+                                Regenerate
+                            </Button>
+                        </DangerousAction>
+                    </CredentialValue>
+
+                    <p v-else class="text-muted-foreground text-sm">
                         This is a public client. It has no secret and
                         authenticates with PKCE instead.
                     </p>
@@ -201,7 +170,10 @@ function regenerateSecret() {
                 </CardHeader>
 
                 <CardContent>
-                    <div v-if="application.scopes.length > 0" class="flex flex-wrap gap-2">
+                    <div
+                        v-if="application.scopes.length > 0"
+                        class="flex flex-wrap gap-2"
+                    >
                         <Badge
                             v-for="scope in application.scopes"
                             :key="scope"
@@ -238,7 +210,11 @@ function regenerateSecret() {
             <Card v-if="canManage" class="border-destructive/40">
                 <CardHeader>
                     <CardTitle>
-                        {{ application.enabled ? 'Disable application' : 'Enable application' }}
+                        {{
+                            application.enabled
+                                ? 'Disable application'
+                                : 'Enable application'
+                        }}
                     </CardTitle>
                     <CardDescription>
                         <template v-if="application.enabled">

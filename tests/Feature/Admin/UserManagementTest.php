@@ -3,8 +3,10 @@
 use App\Enums\PlatformPermission;
 use App\Events\UserCreated;
 use App\Events\UserDisabled;
+use App\Events\UserEnabled;
 use App\Events\UserUpdated;
 use App\Models\User;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
@@ -22,6 +24,39 @@ test('the user list is rendered for an administrator', function () {
         ->assertInertia(fn ($page) => $page
             ->component('users/Index')
             ->has('users.data', 2));
+});
+
+test('the user list issues the same number of queries however many users it shows', function () {
+    $measure = function (): int {
+        DB::flushQueryLog();
+        DB::enableQueryLog();
+
+        $this->actingAs($this->admin)->get(route('users.index'))->assertOk();
+
+        $count = count(DB::getQueryLog());
+
+        DB::disableQueryLog();
+
+        return $count;
+    };
+
+    /*
+     * Warm the permission cache first, otherwise the first request measures
+     * that rather than the listing.
+     */
+    $measure();
+
+    $withOneUser = $measure();
+
+    User::factory()->count(8)->create()->each(
+        fn (User $user) => $user->assignRole('Super Admin')
+    );
+
+    /*
+     * Roles are eager loaded, so growing the page does not grow the query
+     * count. Without that, each extra row added one more query.
+     */
+    expect($measure())->toBe($withOneUser);
 });
 
 test('the user list can be filtered by name or email', function () {
@@ -174,6 +209,28 @@ test('an administrator disables a user', function () {
     expect($user->refresh()->isDisabled())->toBeTrue();
 
     Event::assertDispatched(UserDisabled::class);
+});
+
+test('disabling through the model raises the event for every caller', function () {
+    Event::fake([UserDisabled::class, UserEnabled::class]);
+
+    $user = User::factory()->create();
+
+    $user->disable();
+    Event::assertDispatched(UserDisabled::class);
+
+    $user->enable();
+    Event::assertDispatched(UserEnabled::class);
+});
+
+test('disabling an already disabled user raises nothing', function () {
+    Event::fake([UserDisabled::class]);
+
+    $user = User::factory()->disabled()->create();
+
+    $user->disable();
+
+    Event::assertNotDispatched(UserDisabled::class);
 });
 
 test('an administrator re-enables a disabled user', function () {

@@ -11,11 +11,10 @@ import type { ScopeOption } from '@/types/administration';
  * carry no permissions of their own. A request for a scope that is not
  * selected here is dropped when the token is issued.
  */
-const { scopes, selected, errors, disabled = false } = defineProps<{
+defineProps<{
     scopes: ScopeOption[];
     selected: string[];
     errors: Record<string, string>;
-    disabled?: boolean;
 }>();
 </script>
 
@@ -31,7 +30,6 @@ const { scopes, selected, errors, disabled = false } = defineProps<{
                 name="scopes[]"
                 :value="scope.id"
                 :default-value="selected.includes(scope.id)"
-                :disabled="disabled"
             />
             <div class="grid gap-0.5">
                 <Label :for="`scope-${scope.id}`" class="font-mono font-normal">
