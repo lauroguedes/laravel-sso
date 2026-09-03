@@ -1,7 +1,10 @@
 <script setup lang="ts">
 import { Head, Link } from '@inertiajs/vue3';
 import { dashboard, login } from '@/routes';
-import { register } from '@/routes';
+
+defineProps<{
+    registerUrl?: string | null;
+}>();
 </script>
 
 <template>
@@ -31,7 +34,8 @@ import { register } from '@/routes';
                         Log in
                     </Link>
                     <Link
-                        :href="register()"
+                        v-if="registerUrl"
+                        :href="registerUrl"
                         class="inline-block rounded-sm border border-[#19140035] px-5 py-1.5 text-sm leading-normal text-[#1b1b18] hover:border-[#1915014a] dark:border-[#3E3E3A] dark:text-[#EDEDEC] dark:hover:border-[#62605b]"
                     >
                         Register

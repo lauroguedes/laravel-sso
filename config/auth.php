@@ -42,6 +42,15 @@ return [
             'driver' => 'session',
             'provider' => 'users',
         ],
+
+        /*
+         * Guards OAuth2 bearer tokens issued by Passport. The UserInfo
+         * endpoint and any future resource endpoints authenticate through it.
+         */
+        'api' => [
+            'driver' => 'passport',
+            'provider' => 'users',
+        ],
     ],
 
     /*

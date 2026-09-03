@@ -48,8 +48,15 @@ class FortifyServiceProvider extends ServiceProvider
      */
     private function configureViews(): void
     {
+        /*
+         * Registration is a deployment switch on this server, so its routes
+         * are absent when it is disabled and Wayfinder cannot generate a
+         * helper for them. Pages that merely link to registration receive the
+         * URL from here instead, and render nothing when it is null.
+         */
         Fortify::loginView(fn (Request $request) => Inertia::render('auth/Login', [
             'canResetPassword' => Features::enabled(Features::resetPasswords()),
+            'registerUrl' => Features::enabled(Features::registration()) ? route('register') : null,
             'status' => $request->session()->get('status'),
         ]));
 
@@ -69,6 +76,7 @@ class FortifyServiceProvider extends ServiceProvider
 
         Fortify::registerView(fn () => Inertia::render('auth/Register', [
             'passwordRules' => Password::defaults()->toPasswordRulesString(),
+            'submitUrl' => route('register.store'),
         ]));
 
         Fortify::twoFactorChallengeView(fn () => Inertia::render('auth/TwoFactorChallenge'));

@@ -160,10 +160,15 @@ return [
     |
     */
 
-    'features' => [
-        Features::registration(),
+    'features' => array_values(array_filter([
+        /*
+         * An Identity Provider is not usually open to the public, so
+         * self-registration and email verification follow the SSO_* switches
+         * documented in "config/sso.php".
+         */
+        env('SSO_ALLOW_REGISTRATION', false) ? Features::registration() : null,
         Features::resetPasswords(),
-        Features::emailVerification(),
+        env('SSO_REQUIRE_EMAIL_VERIFICATION', true) ? Features::emailVerification() : null,
         Features::twoFactorAuthentication([
             'confirm' => true,
             'confirmPassword' => true,
@@ -172,6 +177,6 @@ return [
         Features::passkeys([
             'confirmPassword' => true,
         ]),
-    ],
+    ])),
 
 ];

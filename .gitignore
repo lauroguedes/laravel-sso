@@ -30,6 +30,7 @@ yarn-error.log
 
 # AI agent tooling (not versioned for now)
 /.agents
+/.ai
 /.amp
 /.claude
 /.codex

@@ -8,10 +8,15 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Spinner } from '@/components/ui/spinner';
 import { login } from '@/routes';
-import { store } from '@/routes/register';
 
+/*
+ * The registration routes only exist when registration is enabled, so
+ * Wayfinder cannot generate a helper for them. The submit target is supplied
+ * by the server instead.
+ */
 defineProps<{
     passwordRules: string;
+    submitUrl: string;
 }>();
 
 defineOptions({
@@ -26,7 +31,8 @@ defineOptions({
     <Head title="Register" />
 
     <Form
-        v-bind="store.form()"
+        :action="submitUrl"
+        method="post"
         :reset-on-success="['password', 'password_confirmation']"
         v-slot="{ errors, processing }"
         class="flex flex-col gap-6"
