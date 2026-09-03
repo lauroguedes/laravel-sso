@@ -7,6 +7,7 @@ use Admin9\OidcServer\Contracts\OidcUserInterface;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
@@ -30,6 +31,8 @@ use Spatie\Permission\Traits\HasRoles;
  * @property string $email
  * @property Carbon|null $email_verified_at
  * @property string $password
+ * @property Carbon|null $disabled_at
+ * @property Carbon|null $last_login_at
  * @property string|null $two_factor_secret
  * @property string|null $two_factor_recovery_codes
  * @property Carbon|null $two_factor_confirmed_at
@@ -64,7 +67,51 @@ class User extends Authenticatable implements OAuthenticatable, OidcUserInterfac
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
             'two_factor_confirmed_at' => 'datetime',
+            'disabled_at' => 'datetime',
+            'last_login_at' => 'datetime',
         ];
+    }
+
+    /**
+     * Determine whether the user is allowed to authenticate.
+     */
+    public function isDisabled(): bool
+    {
+        return $this->disabled_at !== null;
+    }
+
+    /**
+     * Withdraw the user's ability to authenticate.
+     *
+     * Users are disabled rather than deleted so that audit history keeps
+     * pointing at a real actor.
+     */
+    public function disable(): void
+    {
+        $this->forceFill(['disabled_at' => $this->freshTimestamp()])->save();
+    }
+
+    /**
+     * Restore the user's ability to authenticate.
+     */
+    public function enable(): void
+    {
+        $this->forceFill(['disabled_at' => null])->save();
+    }
+
+    /**
+     * Scope the query to users matching a search term.
+     *
+     * @param  Builder<User>  $query
+     * @return Builder<User>
+     */
+    public function scopeSearch(Builder $query, ?string $term): Builder
+    {
+        return $query->when($term, fn (Builder $query, string $term) => $query->where(
+            fn (Builder $query) => $query
+                ->where('name', 'like', "%{$term}%")
+                ->orWhere('email', 'like', "%{$term}%")
+        ));
     }
 
     /**

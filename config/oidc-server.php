@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use Admin9\OidcServer\Models\OidcClient;
+use App\Models\Application;
 use App\Models\User;
 
 /*
@@ -92,13 +92,13 @@ return [
     | Client Model
     |--------------------------------------------------------------------------
     |
-    | OidcClient extends Passport's Client and skips the consent prompt for
-    | first-party clients. Administrator-managed applications map onto this
-    | model one-to-one; there is no second notion of an OAuth client.
+    | App\Models\Application extends the package's OidcClient, which in turn
+    | extends Passport's Client. Administrator-managed applications ARE these
+    | records; there is no second notion of an OAuth client.
     |
     */
 
-    'client_model' => OidcClient::class,
+    'client_model' => Application::class,
 
     /*
     |--------------------------------------------------------------------------

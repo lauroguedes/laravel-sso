@@ -2,7 +2,9 @@
 
 namespace Database\Factories;
 
+use App\Enums\PlatformRole;
 use App\Models\User;
+use Database\Seeders\PlatformPermissionsSeeder;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
@@ -44,6 +46,28 @@ class UserFactory extends Factory
         return $this->state(fn (array $attributes) => [
             'email_verified_at' => null,
         ]);
+    }
+
+    /**
+     * Indicate that the user has been disabled and cannot authenticate.
+     */
+    public function disabled(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'disabled_at' => now(),
+        ]);
+    }
+
+    /**
+     * Indicate that the user holds every platform permission.
+     */
+    public function superAdmin(): static
+    {
+        return $this->afterCreating(function (User $user): void {
+            app(PlatformPermissionsSeeder::class)->run();
+
+            $user->assignRole(PlatformRole::SuperAdmin->value);
+        });
     }
 
     /**

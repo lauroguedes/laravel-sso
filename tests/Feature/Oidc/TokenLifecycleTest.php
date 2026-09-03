@@ -1,5 +1,6 @@
 <?php
 
+use App\Models\Application;
 use App\Models\User;
 use Illuminate\Support\Str;
 use Laravel\Passport\ClientRepository;
@@ -13,6 +14,19 @@ const CALLBACK_URI = 'https://spa.example.com/auth/callback';
 function challengeFor(string $verifier): string
 {
     return strtr(rtrim(base64_encode(hash('sha256', $verifier, true)), '='), '+/', '-_');
+}
+
+/**
+ * Mark a client as trusted so the consent screen is skipped.
+ *
+ * Consent is required by default on this server; these tests exercise the
+ * token endpoints rather than the consent screen, which ConsentTest covers.
+ */
+function trusted(Application $client): Application
+{
+    $client->forceFill(['skips_authorization' => true])->save();
+
+    return $client;
 }
 
 test('a client credentials client receives an access token without a user', function () {
@@ -44,8 +58,8 @@ test('a client credentials client is rejected with the wrong secret', function (
 test('a public client completes the flow with PKCE and no client secret', function () {
     $user = User::factory()->create();
 
-    $client = app(ClientRepository::class)
-        ->createAuthorizationCodeGrantClient('Mobile App', [CALLBACK_URI], confidential: false);
+    $client = trusted(app(ClientRepository::class)
+        ->createAuthorizationCodeGrantClient('Mobile App', [CALLBACK_URI], confidential: false));
 
     $verifier = Str::random(64);
 
@@ -74,8 +88,8 @@ test('a public client completes the flow with PKCE and no client secret', functi
 test('a public client cannot exchange a code without a code verifier', function () {
     $user = User::factory()->create();
 
-    $client = app(ClientRepository::class)
-        ->createAuthorizationCodeGrantClient('Mobile App', [CALLBACK_URI], confidential: false);
+    $client = trusted(app(ClientRepository::class)
+        ->createAuthorizationCodeGrantClient('Mobile App', [CALLBACK_URI], confidential: false));
 
     $verifier = Str::random(64);
 
@@ -103,8 +117,8 @@ test('a public client cannot exchange a code without a code verifier', function 
 test('a public client must use PKCE to start an authorization request', function () {
     $user = User::factory()->create();
 
-    $client = app(ClientRepository::class)
-        ->createAuthorizationCodeGrantClient('Mobile App', [CALLBACK_URI], confidential: false);
+    $client = trusted(app(ClientRepository::class)
+        ->createAuthorizationCodeGrantClient('Mobile App', [CALLBACK_URI], confidential: false));
 
     $response = $this->actingAs($user)->get('/oauth/authorize?'.http_build_query([
         'client_id' => $client->id,
@@ -122,8 +136,8 @@ describe('introspection and revocation', function () {
     beforeEach(function () {
         $this->user = User::factory()->create();
 
-        $this->client = app(ClientRepository::class)
-            ->createAuthorizationCodeGrantClient('Reporting', [CALLBACK_URI]);
+        $this->client = trusted(app(ClientRepository::class)
+            ->createAuthorizationCodeGrantClient('Reporting', [CALLBACK_URI]));
 
         $this->secret = $this->client->plainSecret;
 

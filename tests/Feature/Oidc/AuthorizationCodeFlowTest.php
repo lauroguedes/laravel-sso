@@ -66,6 +66,13 @@ beforeEach(function () {
         ->createAuthorizationCodeGrantClient('Customer Portal', [REDIRECT_URI]);
 
     $this->plainSecret = $this->client->plainSecret;
+
+    /*
+     * Consent is required by default on this server. These tests exercise the
+     * token flow rather than the consent screen, so the fixture is a trusted
+     * first-party application. ConsentTest covers the untrusted case.
+     */
+    $this->client->forceFill(['skips_authorization' => true])->save();
 });
 
 test('a confidential client exchanges an authorization code for tokens', function () {
