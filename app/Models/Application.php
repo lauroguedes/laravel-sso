@@ -6,8 +6,12 @@ namespace App\Models;
 
 use Admin9\OidcServer\Models\OidcClient;
 use App\Enums\ApplicationType;
+use App\Events\UserApplicationAccessGranted;
+use Database\Factories\ApplicationFactory;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Factories\Factory;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Laravel\Passport\Scope;
 use Stringable;
 
@@ -43,6 +47,18 @@ class Application extends OidcClient
     protected $attributes = [
         'skips_authorization' => false,
     ];
+
+    /**
+     * Create a new factory instance for the model.
+     *
+     * Passport's Client hard-codes its own factory, so the override has to be
+     * repeated here for Application::factory() to pick up this project's
+     * states.
+     */
+    protected static function newFactory(): Factory
+    {
+        return ApplicationFactory::new();
+    }
 
     /**
      * Get the attributes that should be cast.
@@ -106,6 +122,54 @@ class Application extends OidcClient
     public function isConfidential(): bool
     {
         return $this->confidential();
+    }
+
+    /**
+     * The roles this application defines.
+     *
+     * @return HasMany<ApplicationRole, $this>
+     */
+    public function roles(): HasMany
+    {
+        return $this->hasMany(ApplicationRole::class);
+    }
+
+    /**
+     * The permissions this application recognises.
+     *
+     * @return HasMany<ApplicationPermission, $this>
+     */
+    public function permissions(): HasMany
+    {
+        return $this->hasMany(ApplicationPermission::class);
+    }
+
+    /**
+     * The access grants issued for this application.
+     *
+     * @return HasMany<ApplicationUser, $this>
+     */
+    public function grants(): HasMany
+    {
+        return $this->hasMany(ApplicationUser::class);
+    }
+
+    /**
+     * Grant a user access to this application, optionally with a role.
+     *
+     * The event is raised here so that every caller emits it, not only the
+     * administration controller.
+     */
+    public function grantAccessTo(User $user, ?ApplicationRole $role = null): ApplicationUser
+    {
+        $grant = $this->grants()->create([
+            'user_id' => $user->getKey(),
+            'application_role_id' => $role?->getKey(),
+        ]);
+
+        UserApplicationAccessGranted::dispatch($grant);
+
+        return $grant;
     }
 
     /**

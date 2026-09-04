@@ -17,11 +17,23 @@ test('discovery advertises the endpoints of this issuer', function () {
     ]);
 });
 
-test('discovery advertises the built-in OpenID Connect scopes', function () {
+test('discovery advertises the scopes this server offers', function () {
     $response = $this->getJson('/.well-known/openid-configuration');
 
+    /*
+     * The three OpenID Connect scopes, plus "roles", which carries the
+     * authorization a user holds in the requesting application.
+     */
     expect($response->json('scopes_supported'))
-        ->toEqualCanonicalizing(['openid', 'profile', 'email']);
+        ->toEqualCanonicalizing(['openid', 'profile', 'email', 'roles']);
+});
+
+test('discovery advertises the authorization claims', function () {
+    $response = $this->getJson('/.well-known/openid-configuration');
+
+    expect($response->json('claims_supported'))
+        ->toContain('roles')
+        ->toContain('permissions');
 });
 
 test('discovery does not advertise the implicit grant', function () {

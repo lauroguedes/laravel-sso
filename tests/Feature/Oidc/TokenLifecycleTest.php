@@ -11,11 +11,6 @@ use Laravel\Passport\ClientRepository;
  */
 const CALLBACK_URI = 'https://spa.example.com/auth/callback';
 
-function challengeFor(string $verifier): string
-{
-    return strtr(rtrim(base64_encode(hash('sha256', $verifier, true)), '='), '+/', '-_');
-}
-
 /**
  * Mark a client as trusted so the consent screen is skipped.
  *
@@ -68,7 +63,7 @@ test('a public client completes the flow with PKCE and no client secret', functi
         'redirect_uri' => CALLBACK_URI,
         'response_type' => 'code',
         'scope' => 'openid email',
-        'code_challenge' => challengeFor($verifier),
+        'code_challenge' => pkceChallenge($verifier),
         'code_challenge_method' => 'S256',
     ]));
 
@@ -98,7 +93,7 @@ test('a public client cannot exchange a code without a code verifier', function 
         'redirect_uri' => CALLBACK_URI,
         'response_type' => 'code',
         'scope' => 'openid',
-        'code_challenge' => challengeFor($verifier),
+        'code_challenge' => pkceChallenge($verifier),
         'code_challenge_method' => 'S256',
     ]));
 
@@ -148,7 +143,7 @@ describe('introspection and revocation', function () {
             'redirect_uri' => CALLBACK_URI,
             'response_type' => 'code',
             'scope' => 'openid email',
-            'code_challenge' => challengeFor($verifier),
+            'code_challenge' => pkceChallenge($verifier),
             'code_challenge_method' => 'S256',
         ]));
 

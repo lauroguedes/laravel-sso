@@ -2,7 +2,7 @@
 import { Form, Head, Link } from '@inertiajs/vue3';
 import { computed, ref } from 'vue';
 import RedirectUriFields from '@/components/applications/RedirectUriFields.vue';
-import ScopeFields from '@/components/applications/ScopeFields.vue';
+import CheckboxFields from '@/components/CheckboxFields.vue';
 import Heading from '@/components/Heading.vue';
 import InputError from '@/components/InputError.vue';
 import { Button } from '@/components/ui/button';
@@ -44,6 +44,14 @@ const currentType = computed(() =>
 );
 
 const defaultScopes = computed(() => currentType.value?.default_scopes ?? []);
+
+const scopeOptions = computed(() =>
+    availableScopes.map((scope) => ({
+        value: scope.id,
+        label: scope.id,
+        description: scope.description,
+    })),
+);
 </script>
 
 <template>
@@ -154,11 +162,14 @@ const defaultScopes = computed(() => currentType.value?.default_scopes ?? []);
                 </CardHeader>
 
                 <CardContent>
-                    <ScopeFields
+                    <CheckboxFields
                         :key="selectedType"
-                        :scopes="availableScopes"
+                        name="scopes"
+                        :options="scopeOptions"
                         :selected="defaultScopes"
                         :errors="errors"
+                        error-key="scopes"
+                        mono
                     />
                 </CardContent>
             </Card>

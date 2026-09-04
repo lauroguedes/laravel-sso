@@ -1,6 +1,10 @@
 <?php
 
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Str;
+use Lcobucci\JWT\Encoding\JoseEncoder;
+use Lcobucci\JWT\Token\DataSet;
+use Lcobucci\JWT\Token\Parser;
 use Tests\TestCase;
 
 /*
@@ -44,7 +48,33 @@ expect()->extend('toBeOne', function () {
 |
 */
 
-function something()
+/**
+ * Derive the S256 code challenge for a PKCE verifier.
+ */
+function pkceChallenge(string $verifier): string
 {
-    // ..
+    return strtr(rtrim(base64_encode(hash('sha256', $verifier, true)), '='), '+/', '-_');
+}
+
+/**
+ * A fresh PKCE verifier and its matching S256 challenge.
+ *
+ * @return array{0: string, 1: string}
+ */
+function pkcePair(): array
+{
+    $verifier = Str::random(64);
+
+    return [$verifier, pkceChallenge($verifier)];
+}
+
+/**
+ * Decode the claims of an ID Token without verifying its signature.
+ *
+ * Signature and key handling are asserted separately; callers of this only
+ * care what the token says.
+ */
+function idTokenClaims(string $idToken): DataSet
+{
+    return (new Parser(new JoseEncoder))->parse($idToken)->claims();
 }

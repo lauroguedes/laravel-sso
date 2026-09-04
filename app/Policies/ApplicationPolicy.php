@@ -47,6 +47,19 @@ class ApplicationPolicy
     }
 
     /**
+     * Determine whether the administrator can grant or withdraw a user's
+     * access to this application.
+     *
+     * Separate from update() because it changes who can sign in rather than
+     * how the application is configured, even though both currently require
+     * the same permission.
+     */
+    public function manageAccess(User $user, Application $application): bool
+    {
+        return $user->can(PlatformPermission::ApplicationsManage->value);
+    }
+
+    /**
      * Determine whether the administrator can regenerate the client secret.
      *
      * A public client has no secret to rotate; PKCE takes its place.

@@ -1,0 +1,295 @@
+<script setup lang="ts">
+import { Head, router } from '@inertiajs/vue3';
+import { UserPlus, X } from '@lucide/vue';
+import ApplicationNav from '@/components/applications/ApplicationNav.vue';
+import DangerousAction from '@/components/DangerousAction.vue';
+import Heading from '@/components/Heading.vue';
+import Pagination from '@/components/Pagination.vue';
+import type { PaginationLink } from '@/components/Pagination.vue';
+import SearchInput from '@/components/SearchInput.vue';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import {
+    Card,
+    CardContent,
+    CardDescription,
+    CardHeader,
+    CardTitle,
+} from '@/components/ui/card';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/components/ui/select';
+import {
+    Table,
+    TableBody,
+    TableCell,
+    TableEmpty,
+    TableHead,
+    TableHeader,
+    TableRow,
+} from '@/components/ui/table';
+import { useSearchFilter } from '@/composables/useSearchFilter';
+import { index } from '@/routes/applications';
+import {
+    destroy as revokeGrant,
+    index as grantsIndex,
+    store as storeGrant,
+    update as updateGrant,
+} from '@/routes/applications/grants';
+import type {
+    ApplicationGrantSummary,
+    ApplicationRoleOption,
+    UserCandidate,
+} from '@/types/administration';
+
+defineOptions({
+    layout: {
+        breadcrumbs: [{ title: 'Applications', href: index() }],
+    },
+});
+
+const { application, filters, roles } = defineProps<{
+    application: { id: string; name: string };
+    filters: { search: string | null };
+    grants: {
+        data: ApplicationGrantSummary[];
+        links: PaginationLink[];
+        from: number | null;
+        to: number | null;
+        total: number;
+    };
+    candidates: UserCandidate[];
+    roles: ApplicationRoleOption[];
+    canManage: boolean;
+}>();
+
+const { search } = useSearchFilter(
+    grantsIndex(application.id).url,
+    filters.search,
+    ['candidates', 'filters'],
+);
+
+/** Sentinel for "no role", since a select cannot carry a null value. */
+const NO_ROLE = 'none';
+
+function grantAccess(userId: number) {
+    router.post(storeGrant(application.id).url, {
+        user_id: userId,
+        application_role_id: null,
+    });
+}
+
+function changeRole(grant: ApplicationGrantSummary, value: string) {
+    router.put(updateGrant([application.id, grant.id]).url, {
+        application_role_id: value === NO_ROLE ? null : Number(value),
+    });
+}
+
+/**
+ * The role a grant holds, resolved against the roles already on the page
+ * rather than repeated on every row of the payload.
+ */
+function roleName(grant: ApplicationGrantSummary): string {
+    return roles.find((role) => role.id === grant.role_id)?.name ?? 'No role';
+}
+
+function revoke(grant: ApplicationGrantSummary) {
+    router.delete(revokeGrant([application.id, grant.id]).url);
+}
+</script>
+
+<template>
+    <Head :title="`${application.name} access`" />
+
+    <div class="max-w-3xl px-4 py-6">
+        <Heading
+            :title="application.name"
+            description="Who may sign in to this application, and the role they hold there"
+        />
+
+        <ApplicationNav :application-id="application.id" />
+
+        <div class="space-y-6">
+            <Card>
+                <CardHeader>
+                    <CardTitle>Users with access</CardTitle>
+                    <CardDescription>
+                        A user with access but no role can sign in without being
+                        granted any capability.
+                    </CardDescription>
+                </CardHeader>
+
+                <CardContent>
+                    <div class="overflow-x-auto rounded-lg border">
+                        <Table>
+                            <TableHeader>
+                                <TableRow>
+                                    <TableHead>User</TableHead>
+                                    <TableHead>Role</TableHead>
+                                    <TableHead class="w-12" />
+                                </TableRow>
+                            </TableHeader>
+
+                            <TableBody>
+                                <TableEmpty
+                                    v-if="grants.data.length === 0"
+                                    :colspan="3"
+                                >
+                                    Nobody has been granted access yet.
+                                </TableEmpty>
+
+                                <TableRow
+                                    v-for="grant in grants.data"
+                                    :key="grant.id"
+                                >
+                                    <TableCell>
+                                        <div class="flex items-center gap-2">
+                                            <span class="font-medium">
+                                                {{ grant.user.name }}
+                                            </span>
+                                            <Badge
+                                                v-if="grant.user.disabled"
+                                                variant="destructive"
+                                            >
+                                                Disabled
+                                            </Badge>
+                                        </div>
+                                        <div
+                                            class="text-muted-foreground text-sm"
+                                        >
+                                            {{ grant.user.email }}
+                                        </div>
+                                    </TableCell>
+
+                                    <TableCell>
+                                        <Select
+                                            v-if="canManage"
+                                            :model-value="
+                                                grant.role_id === null
+                                                    ? NO_ROLE
+                                                    : String(grant.role_id)
+                                            "
+                                            @update:model-value="
+                                                (value) =>
+                                                    changeRole(
+                                                        grant,
+                                                        String(value),
+                                                    )
+                                            "
+                                        >
+                                            <SelectTrigger
+                                                class="w-44"
+                                                :aria-label="`Role for ${grant.user.name}`"
+                                            >
+                                                <SelectValue />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem :value="NO_ROLE">
+                                                    No role
+                                                </SelectItem>
+                                                <SelectItem
+                                                    v-for="role in roles"
+                                                    :key="role.id"
+                                                    :value="String(role.id)"
+                                                >
+                                                    {{ role.name }}
+                                                </SelectItem>
+                                            </SelectContent>
+                                        </Select>
+
+                                        <span v-else class="text-sm">
+                                            {{ roleName(grant) }}
+                                        </span>
+                                    </TableCell>
+
+                                    <TableCell class="text-right">
+                                        <DangerousAction
+                                            v-if="canManage"
+                                            title="Revoke access?"
+                                            :description="`${grant.user.name} will no longer be able to sign in to ${application.name}.`"
+                                            confirm-label="Revoke access"
+                                            @confirm="revoke(grant)"
+                                        >
+                                            <Button
+                                                variant="ghost"
+                                                size="icon"
+                                                :aria-label="`Revoke access for ${grant.user.name}`"
+                                            >
+                                                <X class="size-4" />
+                                            </Button>
+                                        </DangerousAction>
+                                    </TableCell>
+                                </TableRow>
+                            </TableBody>
+                        </Table>
+                    </div>
+
+                    <Pagination
+                        :links="grants.links"
+                        :from="grants.from"
+                        :to="grants.to"
+                        :total="grants.total"
+                    />
+                </CardContent>
+            </Card>
+
+            <Card v-if="canManage">
+                <CardHeader>
+                    <CardTitle>Grant access</CardTitle>
+                    <CardDescription>
+                        Search for a user who does not yet have access. Assign a
+                        role once they have been added.
+                    </CardDescription>
+                </CardHeader>
+
+                <CardContent class="space-y-4">
+                    <SearchInput
+                        v-model="search"
+                        placeholder="Search by name or email"
+                        label="Search users to grant access"
+                    />
+
+                    <ul
+                        v-if="candidates.length > 0"
+                        class="divide-y rounded-lg border"
+                    >
+                        <li
+                            v-for="candidate in candidates"
+                            :key="candidate.id"
+                            class="flex items-center justify-between gap-3 px-3 py-2"
+                        >
+                            <div class="min-w-0">
+                                <div class="font-medium">
+                                    {{ candidate.name }}
+                                </div>
+                                <div
+                                    class="text-muted-foreground truncate text-sm"
+                                >
+                                    {{ candidate.email }}
+                                </div>
+                            </div>
+
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                @click="grantAccess(candidate.id)"
+                            >
+                                <UserPlus class="size-4" />
+                                Grant
+                            </Button>
+                        </li>
+                    </ul>
+
+                    <p v-else class="text-muted-foreground text-sm">
+                        No users match this search, or everyone matching already
+                        has access.
+                    </p>
+                </CardContent>
+            </Card>
+        </div>
+    </div>
+</template>

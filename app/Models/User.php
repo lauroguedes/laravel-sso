@@ -11,6 +11,7 @@ use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Carbon;
@@ -116,6 +117,16 @@ class User extends Authenticatable implements OAuthenticatable, OidcUserInterfac
         $this->forceFill(['disabled_at' => null])->save();
 
         UserEnabled::dispatch($this);
+    }
+
+    /**
+     * The applications this user has been granted access to.
+     *
+     * @return HasMany<ApplicationUser, $this>
+     */
+    public function applicationGrants(): HasMany
+    {
+        return $this->hasMany(ApplicationUser::class);
     }
 
     /**

@@ -47,3 +47,46 @@ export type ScopeOption = {
     id: string;
     description: string;
 };
+
+export type ApplicationRoleSummary = {
+    id: number;
+    name: string;
+    description: string | null;
+    permissions: { id: number; name: string }[];
+    users_count: number;
+};
+
+export type ApplicationPermissionSummary = {
+    id: number;
+    name: string;
+    description: string | null;
+};
+
+export type ApplicationGrantSummary = {
+    id: number;
+    user: {
+        id: number;
+        name: string;
+        email: string;
+        disabled: boolean;
+    };
+    role_id: number | null;
+};
+
+export type ApplicationRoleOption = {
+    id: number;
+    name: string;
+};
+
+export type UserCandidate = {
+    id: number;
+    name: string;
+    email: string;
+};
+
+export type ApplicationAccessSummary = {
+    application_id: string;
+    application_name: string;
+    application_enabled: boolean;
+    role_name: string | null;
+};

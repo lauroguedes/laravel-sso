@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Requests\Admin;
 
-use App\Models\Application;
+use App\Concerns\ResolvesApplicationFromRoute;
 use App\Rules\RedirectUri;
 use App\Services\ScopeRegistry;
 use Illuminate\Contracts\Validation\ValidationRule;
@@ -13,6 +13,8 @@ use Illuminate\Validation\Rule;
 
 class UpdateApplicationRequest extends FormRequest
 {
+    use ResolvesApplicationFromRoute;
+
     /**
      * Get the validation rules that apply to the request.
      *
@@ -39,17 +41,5 @@ class UpdateApplicationRequest extends FormRequest
             'scopes.*' => ['string', Rule::in(app(ScopeRegistry::class)->ids())],
             'skips_authorization' => ['boolean'],
         ];
-    }
-
-    /**
-     * The application being updated, resolved from the route binding.
-     */
-    public function application(): Application
-    {
-        $application = $this->route('application');
-
-        return $application instanceof Application
-            ? $application
-            : Application::findOrFail((string) $application);
     }
 }

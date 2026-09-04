@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { Form, Head, Link } from '@inertiajs/vue3';
+import { computed } from 'vue';
 import RedirectUriFields from '@/components/applications/RedirectUriFields.vue';
-import ScopeFields from '@/components/applications/ScopeFields.vue';
+import CheckboxFields from '@/components/CheckboxFields.vue';
 import Heading from '@/components/Heading.vue';
 import InputError from '@/components/InputError.vue';
 import { Button } from '@/components/ui/button';
@@ -26,10 +27,18 @@ defineOptions({
     },
 });
 
-const { application } = defineProps<{
+const { application, availableScopes } = defineProps<{
     application: ApplicationDetail;
     availableScopes: ScopeOption[];
 }>();
+
+const scopeOptions = computed(() =>
+    availableScopes.map((scope) => ({
+        value: scope.id,
+        label: scope.id,
+        description: scope.description,
+    })),
+);
 </script>
 
 <template>
@@ -102,10 +111,13 @@ const { application } = defineProps<{
                 </CardHeader>
 
                 <CardContent>
-                    <ScopeFields
-                        :scopes="availableScopes"
+                    <CheckboxFields
+                        name="scopes"
+                        :options="scopeOptions"
                         :selected="application.scopes"
                         :errors="errors"
+                        error-key="scopes"
+                        mono
                     />
                 </CardContent>
             </Card>

@@ -24,7 +24,7 @@ function authorizationRequest($test, User $user, Application $client)
         'redirect_uri' => CONSENT_REDIRECT_URI,
         'response_type' => 'code',
         'scope' => 'openid email',
-        'code_challenge' => strtr(rtrim(base64_encode(hash('sha256', $verifier, true)), '='), '+/', '-_'),
+        'code_challenge' => pkceChallenge($verifier),
         'code_challenge_method' => 'S256',
     ]));
 }

@@ -13,15 +13,6 @@ use Lcobucci\JWT\Token\Parser;
  */
 const REDIRECT_URI = 'https://client.example.com/auth/callback';
 
-function pkcePair(): array
-{
-    $verifier = Str::random(64);
-
-    $challenge = strtr(rtrim(base64_encode(hash('sha256', $verifier, true)), '='), '+/', '-_');
-
-    return [$verifier, $challenge];
-}
-
 /**
  * Drive the authorization endpoint and return the issued authorization code.
  *
@@ -111,9 +102,7 @@ test('the id token carries the standard claims for the granted scopes', function
         'code' => $code,
     ]);
 
-    $claims = (new Parser(new JoseEncoder))
-        ->parse($response->json('id_token'))
-        ->claims();
+    $claims = idTokenClaims($response->json('id_token'));
 
     expect($claims->get('iss'))->toBe(config('sso.issuer'))
         ->and($claims->get('sub'))->toBe((string) $this->user->id)

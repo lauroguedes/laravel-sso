@@ -1,6 +1,9 @@
 <?php
 
 use App\Http\Controllers\ApplicationController;
+use App\Http\Controllers\ApplicationGrantController;
+use App\Http\Controllers\ApplicationPermissionController;
+use App\Http\Controllers\ApplicationRoleController;
 use App\Http\Controllers\ApplicationSecretController;
 use App\Http\Controllers\ApplicationStatusController;
 use App\Http\Controllers\UserController;
@@ -37,4 +40,22 @@ Route::middleware(['auth', 'verified'])->group(function () {
         ->name('applications.status.update');
     Route::put('applications/{application}/secret', [ApplicationSecretController::class, 'update'])
         ->name('applications.secret.update');
+
+    /*
+     * Roles, permissions and access grants belong to one application. Scoped
+     * bindings make Laravel resolve each child through its parent, so a URL
+     * naming another application's role resolves to nothing rather than
+     * editing it.
+     */
+    Route::resource('applications.roles', ApplicationRoleController::class)
+        ->only(['index', 'store', 'update', 'destroy'])
+        ->scoped();
+
+    Route::resource('applications.permissions', ApplicationPermissionController::class)
+        ->only(['store', 'destroy'])
+        ->scoped();
+
+    Route::resource('applications.grants', ApplicationGrantController::class)
+        ->only(['index', 'store', 'update', 'destroy'])
+        ->scoped();
 });

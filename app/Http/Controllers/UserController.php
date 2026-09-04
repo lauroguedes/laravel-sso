@@ -8,6 +8,7 @@ use App\Events\UserCreated;
 use App\Events\UserUpdated;
 use App\Http\Requests\Admin\StoreUserRequest;
 use App\Http\Requests\Admin\UpdateUserRequest;
+use App\Models\ApplicationUser;
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -93,6 +94,7 @@ class UserController extends Controller
 
         return Inertia::render('users/Edit', [
             'user' => $this->summarize($user->load('roles:id,name')),
+            'applicationAccess' => $this->applicationAccess($user),
             'availableRoles' => $this->availableRoles(),
             'canManage' => $request->user()->can('update', $user),
             'canChangeStatus' => $request->user()->can('updateStatus', $user),
@@ -159,6 +161,30 @@ class UserController extends Controller
             'created_at' => $user->created_at?->toIso8601String(),
             'roles' => $user->getRoleNames()->all(),
         ];
+    }
+
+    /**
+     * The applications this user may sign in to, and the role held in each.
+     *
+     * Read only here: access is granted from the application's own page,
+     * which is where the roles it defines are listed.
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    private function applicationAccess(User $user): array
+    {
+        return $user->applicationGrants()
+            ->with(['application:id,name,revoked', 'role:id,name'])
+            ->get()
+            ->sortBy(fn (ApplicationUser $grant): string => $grant->application->name)
+            ->values()
+            ->map(fn (ApplicationUser $grant): array => [
+                'application_id' => $grant->application_id,
+                'application_name' => $grant->application->name,
+                'application_enabled' => $grant->application->isEnabled(),
+                'role_name' => $grant->role?->name,
+            ])
+            ->all();
     }
 
     /**

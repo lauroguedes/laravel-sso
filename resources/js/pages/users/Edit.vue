@@ -1,6 +1,8 @@
 <script setup lang="ts">
-import { Form, Head, router } from '@inertiajs/vue3';
+import { Form, Head, Link, router } from '@inertiajs/vue3';
+import { computed } from 'vue';
 import Heading from '@/components/Heading.vue';
+import CheckboxFields from '@/components/CheckboxFields.vue';
 import InputError from '@/components/InputError.vue';
 import PasswordInput from '@/components/PasswordInput.vue';
 import { Badge } from '@/components/ui/badge';
@@ -17,13 +19,17 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Spinner } from '@/components/ui/spinner';
 import DangerousAction from '@/components/DangerousAction.vue';
-import RoleFields from '@/components/users/RoleFields.vue';
 import { edit, index, update } from '@/routes/users';
+import { index as grants } from '@/routes/applications/grants';
 import { update as updateStatus } from '@/routes/users/status';
-import type { UserSummary } from '@/types/administration';
+import type {
+    ApplicationAccessSummary,
+    UserSummary,
+} from '@/types/administration';
 
-const { user } = defineProps<{
+const { user, availableRoles } = defineProps<{
     user: UserSummary;
+    applicationAccess: ApplicationAccessSummary[];
     availableRoles: string[];
     canManage: boolean;
     canChangeStatus: boolean;
@@ -34,6 +40,10 @@ defineOptions({
         breadcrumbs: [{ title: 'Users', href: index() }],
     },
 });
+
+const roleOptions = computed(() =>
+    availableRoles.map((role) => ({ value: role, label: role })),
+);
 
 function setEnabled(enabled: boolean) {
     router.put(updateStatus(user.id).url, { enabled });
@@ -69,6 +79,53 @@ function formatDate(value: string | null): string {
                         <div class="text-muted-foreground">Created</div>
                         <div>{{ formatDate(user.created_at) }}</div>
                     </div>
+                </CardContent>
+            </Card>
+
+            <Card>
+                <CardHeader>
+                    <CardTitle>Application access</CardTitle>
+                    <CardDescription>
+                        Granted from each application's own page, where the
+                        roles it defines are listed.
+                    </CardDescription>
+                </CardHeader>
+
+                <CardContent>
+                    <ul
+                        v-if="applicationAccess.length > 0"
+                        class="divide-y rounded-lg border"
+                    >
+                        <li
+                            v-for="access in applicationAccess"
+                            :key="access.application_id"
+                            class="flex items-center justify-between gap-3 px-3 py-2"
+                        >
+                            <div class="flex items-center gap-2">
+                                <Link
+                                    :href="grants(access.application_id)"
+                                    class="font-medium hover:underline"
+                                >
+                                    {{ access.application_name }}
+                                </Link>
+                                <Badge
+                                    v-if="!access.application_enabled"
+                                    variant="destructive"
+                                >
+                                    Disabled
+                                </Badge>
+                            </div>
+
+                            <span class="text-muted-foreground text-sm">
+                                {{ access.role_name ?? 'No role' }}
+                            </span>
+                        </li>
+                    </ul>
+
+                    <p v-else class="text-muted-foreground text-sm">
+                        This user has not been granted access to any
+                        application.
+                    </p>
                 </CardContent>
             </Card>
 
@@ -171,10 +228,12 @@ function formatDate(value: string | null): string {
                     </CardHeader>
 
                     <CardContent>
-                        <RoleFields
-                            :roles="availableRoles"
+                        <CheckboxFields
+                            name="roles"
+                            :options="roleOptions"
                             :selected="user.roles"
                             :errors="errors"
+                            error-key="roles"
                             :disabled="!canManage"
                         />
                     </CardContent>

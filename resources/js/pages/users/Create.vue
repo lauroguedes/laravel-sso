@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { Form, Head, Link } from '@inertiajs/vue3';
+import { computed } from 'vue';
 import Heading from '@/components/Heading.vue';
+import CheckboxFields from '@/components/CheckboxFields.vue';
 import InputError from '@/components/InputError.vue';
 import PasswordInput from '@/components/PasswordInput.vue';
 import { Button } from '@/components/ui/button';
@@ -12,7 +14,6 @@ import {
     CardTitle,
 } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
-import RoleFields from '@/components/users/RoleFields.vue';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Spinner } from '@/components/ui/spinner';
@@ -27,9 +28,13 @@ defineOptions({
     },
 });
 
-defineProps<{
+const { availableRoles } = defineProps<{
     availableRoles: string[];
 }>();
+
+const roleOptions = computed(() =>
+    availableRoles.map((role) => ({ value: role, label: role })),
+);
 </script>
 
 <template>
@@ -140,10 +145,12 @@ defineProps<{
                 </CardHeader>
 
                 <CardContent>
-                    <RoleFields
-                        :roles="availableRoles"
+                    <CheckboxFields
+                        name="roles"
+                        :options="roleOptions"
                         :selected="[]"
                         :errors="errors"
+                        error-key="roles"
                     />
                 </CardContent>
             </Card>

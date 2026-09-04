@@ -123,6 +123,16 @@ return [
             'description' => 'Access your email address',
             'claims' => ['email', 'email_verified'],
         ],
+        /*
+         * Authorization claims are opt in. An application only learns the
+         * role and permissions a user holds *in that application* when it has
+         * been granted this scope, and never learns anything about any other
+         * application. See App\Services\ApplicationClaimsService.
+         */
+        'roles' => [
+            'description' => 'Access your role and permissions in this application',
+            'claims' => ['roles', 'permissions'],
+        ],
     ],
 
     /*

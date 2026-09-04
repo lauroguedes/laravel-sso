@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { Head, Link, router } from '@inertiajs/vue3';
 import { Pencil, TriangleAlert } from '@lucide/vue';
+import ApplicationNav from '@/components/applications/ApplicationNav.vue';
 import CopyButton from '@/components/CopyButton.vue';
 import CredentialValue from '@/components/applications/CredentialValue.vue';
 import DangerousAction from '@/components/DangerousAction.vue';
@@ -69,6 +70,8 @@ function regenerateSecret() {
                 </Button>
             </div>
         </div>
+
+        <ApplicationNav :application-id="application.id" />
 
         <div class="space-y-6">
             <Alert v-if="clientSecret" class="border-amber-500/50">

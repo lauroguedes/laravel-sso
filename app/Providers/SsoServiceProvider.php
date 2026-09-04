@@ -4,6 +4,10 @@ declare(strict_types=1);
 
 namespace App\Providers;
 
+use Admin9\OidcServer\Services\ClaimsService;
+use Admin9\OidcServer\Services\IdTokenService;
+use App\Services\ApplicationClaimsService;
+use App\Services\ApplicationIdTokenService;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\RateLimiter;
@@ -29,6 +33,20 @@ use Illuminate\Support\ServiceProvider;
  */
 class SsoServiceProvider extends ServiceProvider
 {
+    /**
+     * Register any application services.
+     *
+     * The OIDC package binds both of these as singletons in its own register
+     * step, so these replacements are declared here to take precedence.
+     * Together they give claim resolution the one thing the package does not
+     * pass down: which application is asking.
+     */
+    public function register(): void
+    {
+        $this->app->singleton(ClaimsService::class, ApplicationClaimsService::class);
+        $this->app->singleton(IdTokenService::class, ApplicationIdTokenService::class);
+    }
+
     /**
      * Bootstrap any application services.
      */
