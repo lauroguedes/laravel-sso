@@ -39,14 +39,17 @@ return [
     |--------------------------------------------------------------------------
     |
     | An Identity Provider is rarely open to the public, so self-registration
-    | is disabled by default and administrators create users instead. These
-    | values toggle the matching Fortify features in "config/fortify.php".
+    | is disabled by default and administrators create users instead.
+    |
+    | Both this and SSO_REQUIRE_EMAIL_VERIFICATION are read in
+    | "config/fortify.php", which decides which features exist. Ask Fortify
+    | whether a feature is enabled rather than re-reading the environment, or
+    | the two answers drift apart.
     |
     */
 
     'registration' => [
         'enabled' => env('SSO_ALLOW_REGISTRATION', false),
-        'require_email_verification' => env('SSO_REQUIRE_EMAIL_VERIFICATION', true),
     ],
 
     /*
@@ -57,11 +60,10 @@ return [
     | Token lifetimes are expressed in seconds and are handed to Passport by
     | the OIDC server package, which reads the same environment variables.
     |
-    | "require_pkce" is the intended policy for every authorization code
-    | request. The underlying OAuth2 server already enforces PKCE for public
-    | clients unconditionally; extending that to confidential clients needs a
-    | custom grant and is not wired up yet, so today this flag documents intent
-    | for confidential clients rather than enforcing it.
+    | "require_pkce" requires Proof Key for Code Exchange on every authorization
+    | code request. The underlying OAuth2 server already enforces it for public
+    | clients unconditionally, so turning this off only relaxes the requirement
+    | for confidential clients; it can never weaken a public one.
     |
     */
 

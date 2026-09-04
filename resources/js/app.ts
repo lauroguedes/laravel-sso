@@ -15,6 +15,14 @@ void createInertiaApp({
                 return null;
             case name.startsWith('auth/'):
                 return AuthLayout;
+            /*
+             * The consent screen is shown to a user arriving from another
+             * application, so it stands alone rather than inside the
+             * administration shell. It supplies its own title and description,
+             * which depend on the application asking.
+             */
+            case name.startsWith('oauth/'):
+                return null;
             case name.startsWith('settings/'):
                 return [AppLayout, SettingsLayout];
             default:

@@ -195,6 +195,21 @@ function regenerateSecret() {
 
             <Card>
                 <CardHeader>
+                    <CardTitle>Who may sign in</CardTitle>
+                </CardHeader>
+
+                <CardContent class="text-sm">
+                    <template v-if="application.restricts_access">
+                        Only users granted access to this application.
+                    </template>
+                    <template v-else>
+                        Anyone with an account on this server.
+                    </template>
+                </CardContent>
+            </Card>
+
+            <Card>
+                <CardHeader>
                     <CardTitle>Consent</CardTitle>
                 </CardHeader>
 

@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Middleware\EnsureEmailIsVerifiedWhenRequired;
 use App\Http\Middleware\EnsureUserIsEnabled;
 use App\Http\Middleware\HandleAppearance;
 use App\Http\Middleware\HandleInertiaRequests;
@@ -17,6 +18,13 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->encryptCookies(except: ['appearance', 'sidebar_state']);
+
+        /*
+         * Verification is a deployment switch, so the framework's middleware
+         * is replaced by one that stands aside when this server never asks
+         * users to confirm their address.
+         */
+        $middleware->alias(['verified' => EnsureEmailIsVerifiedWhenRequired::class]);
 
         $middleware->web(append: [
             EnsureUserIsEnabled::class,

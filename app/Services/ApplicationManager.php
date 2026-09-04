@@ -34,7 +34,11 @@ class ApplicationManager
      * the remainder of this request only. It is never persisted in plain form
      * and cannot be recovered afterwards.
      *
-     * @param  array{name: string, description?: string|null, type: ApplicationType, redirect_uris?: array<int, string>, scopes?: array<int, string>, skips_authorization?: bool}  $attributes
+     * Consent and access restriction are not set here: both start at their
+     * safe default and are turned on afterwards from the application's own
+     * page, which is where their consequences are explained.
+     *
+     * @param  array{name: string, description?: string|null, type: ApplicationType, redirect_uris?: array<int, string>, scopes?: array<int, string>}  $attributes
      */
     public function create(array $attributes): Application
     {
@@ -54,7 +58,6 @@ class ApplicationManager
                 'description' => $attributes['description'] ?? null,
                 'grant_types' => $type->grantTypes(),
                 'scopes' => $attributes['scopes'] ?? [],
-                'skips_authorization' => $attributes['skips_authorization'] ?? false,
             ])->save();
 
             $client->plainSecret = $plainSecret;
@@ -74,7 +77,7 @@ class ApplicationManager
      * is fixed at creation: changing it would silently invalidate every
      * integration already using the client.
      *
-     * @param  array{name: string, description?: string|null, redirect_uris?: array<int, string>, scopes?: array<int, string>, skips_authorization?: bool}  $attributes
+     * @param  array{name: string, description?: string|null, redirect_uris?: array<int, string>, scopes?: array<int, string>, skips_authorization?: bool, restricts_access?: bool}  $attributes
      */
     public function update(Application $application, array $attributes): Application
     {
@@ -87,6 +90,7 @@ class ApplicationManager
                 'redirect_uris' => $type->usesRedirectUris() ? ($attributes['redirect_uris'] ?? []) : [],
                 'scopes' => $attributes['scopes'] ?? [],
                 'skips_authorization' => $attributes['skips_authorization'] ?? false,
+                'restricts_access' => $attributes['restricts_access'] ?? false,
             ])->save();
         });
 

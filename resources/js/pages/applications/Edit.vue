@@ -3,6 +3,7 @@ import { Form, Head, Link } from '@inertiajs/vue3';
 import { computed } from 'vue';
 import RedirectUriFields from '@/components/applications/RedirectUriFields.vue';
 import CheckboxFields from '@/components/CheckboxFields.vue';
+import SwitchField from '@/components/SwitchField.vue';
 import Heading from '@/components/Heading.vue';
 import InputError from '@/components/InputError.vue';
 import { Button } from '@/components/ui/button';
@@ -16,7 +17,6 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Spinner } from '@/components/ui/spinner';
-import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
 import { index, show, update } from '@/routes/applications';
 import type { ApplicationDetail, ScopeOption } from '@/types/administration';
@@ -124,33 +124,32 @@ const scopeOptions = computed(() =>
 
             <Card>
                 <CardHeader>
+                    <CardTitle>Who may sign in</CardTitle>
+                </CardHeader>
+
+                <CardContent>
+                    <SwitchField
+                        name="restricts_access"
+                        label="Restrict to users with access"
+                        description="Only users granted access on the Access page may sign in. Leave off to admit anyone with an account on this server."
+                        :default-value="application.restricts_access"
+                        :errors="errors"
+                    />
+                </CardContent>
+            </Card>
+
+            <Card>
+                <CardHeader>
                     <CardTitle>Consent</CardTitle>
                 </CardHeader>
 
                 <CardContent>
-                    <div class="flex items-start justify-between gap-4">
-                        <div class="grid gap-1">
-                            <Label for="skips_authorization">
-                                Skip the consent screen
-                            </Label>
-                            <p class="text-muted-foreground text-sm">
-                                Users will not be asked to approve this
-                                application. Only enable this for applications
-                                you own.
-                            </p>
-                        </div>
-
-                        <Switch
-                            id="skips_authorization"
-                            name="skips_authorization"
-                            value="1"
-                            :default-value="application.skips_authorization"
-                        />
-                    </div>
-
-                    <InputError
-                        class="mt-2"
-                        :message="errors.skips_authorization"
+                    <SwitchField
+                        name="skips_authorization"
+                        label="Skip the consent screen"
+                        description="Users will not be asked to approve this application. Only enable this for applications you own."
+                        :default-value="application.skips_authorization"
+                        :errors="errors"
                     />
                 </CardContent>
             </Card>

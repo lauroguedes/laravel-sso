@@ -70,7 +70,6 @@ class ApplicationController extends Controller
             'type' => $request->applicationType(),
             'redirect_uris' => $request->validated('redirect_uris', []),
             'scopes' => $request->validated('scopes', []),
-            'skips_authorization' => $request->boolean('skips_authorization'),
         ]);
 
         return to_route('applications.show', $application)
@@ -124,6 +123,7 @@ class ApplicationController extends Controller
             'redirect_uris' => $request->validated('redirect_uris', []),
             'scopes' => $request->validated('scopes', []),
             'skips_authorization' => $request->boolean('skips_authorization'),
+            'restricts_access' => $request->boolean('restricts_access'),
         ]);
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Application updated.')]);
@@ -167,6 +167,7 @@ class ApplicationController extends Controller
             'redirect_uris' => $application->redirect_uris ?? [],
             'scopes' => $application->scopes ?? [],
             'skips_authorization' => $application->skips_authorization,
+            'restricts_access' => $application->restricts_access,
         ];
     }
 

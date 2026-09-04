@@ -40,6 +40,7 @@ class UpdateApplicationRequest extends FormRequest
             'scopes' => ['array'],
             'scopes.*' => ['string', Rule::in(app(ScopeRegistry::class)->ids())],
             'skips_authorization' => ['boolean'],
+            'restricts_access' => ['boolean'],
         ];
     }
 }

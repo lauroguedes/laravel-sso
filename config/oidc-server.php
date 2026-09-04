@@ -2,6 +2,8 @@
 
 declare(strict_types=1);
 
+use App\Http\Middleware\EnsureApplicationAdmitsUser;
+use App\Http\Middleware\EnsurePkceIsUsed;
 use App\Models\Application;
 use App\Models\User;
 
@@ -283,13 +285,20 @@ return [
     |
     | Note: the package applies "discovery_middleware" to the /oauth/authorize
     | routes as well as to the /.well-known endpoints, so that limiter is sized
-    | for interactive browser traffic behind shared IP addresses.
+    | for interactive browser traffic behind shared IP addresses. That shared
+    | group is also the only seam for the two policies that belong to the
+    | authorization endpoint — requiring PKCE, and turning away users who have
+    | not been granted access. Both ignore every other request.
     |
     */
 
     'routes' => [
         'enabled' => true,
-        'discovery_middleware' => ['throttle:sso-discovery'],
+        'discovery_middleware' => [
+            'throttle:sso-discovery',
+            EnsurePkceIsUsed::class,
+            EnsureApplicationAdmitsUser::class,
+        ],
         'token_middleware' => ['throttle:sso-token'],
         'userinfo_middleware' => ['auth:api', 'throttle:sso-userinfo'],
     ],

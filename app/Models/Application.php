@@ -32,6 +32,7 @@ use Stringable;
  * @property array<int, string>|null $scopes
  * @property bool $revoked
  * @property bool $skips_authorization
+ * @property bool $restricts_access
  */
 class Application extends OidcClient
 {
@@ -46,6 +47,7 @@ class Application extends OidcClient
      */
     protected $attributes = [
         'skips_authorization' => false,
+        'restricts_access' => false,
     ];
 
     /**
@@ -73,6 +75,7 @@ class Application extends OidcClient
         return [
             ...parent::casts(),
             'skips_authorization' => 'boolean',
+            'restricts_access' => 'boolean',
         ];
     }
 
@@ -152,6 +155,22 @@ class Application extends OidcClient
     public function grants(): HasMany
     {
         return $this->hasMany(ApplicationUser::class);
+    }
+
+    /**
+     * Determine whether a user may sign in to this application.
+     *
+     * An unrestricted application admits any authenticated user. A restricted
+     * one admits only those an administrator has granted access to, which is
+     * the same record that carries their role.
+     */
+    public function admits(User $user): bool
+    {
+        if (! $this->restricts_access) {
+            return true;
+        }
+
+        return $this->grants()->where('user_id', $user->getKey())->exists();
     }
 
     /**

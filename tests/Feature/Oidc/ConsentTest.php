@@ -2,7 +2,6 @@
 
 use App\Models\Application;
 use App\Models\User;
-use Illuminate\Support\Str;
 use Laravel\Passport\ClientRepository;
 
 /**
@@ -15,20 +14,6 @@ use Laravel\Passport\ClientRepository;
  */
 const CONSENT_REDIRECT_URI = 'https://consent.example.com/auth/callback';
 
-function authorizationRequest($test, User $user, Application $client)
-{
-    $verifier = Str::random(64);
-
-    return $test->actingAs($user)->get('/oauth/authorize?'.http_build_query([
-        'client_id' => $client->id,
-        'redirect_uri' => CONSENT_REDIRECT_URI,
-        'response_type' => 'code',
-        'scope' => 'openid email',
-        'code_challenge' => pkceChallenge($verifier),
-        'code_challenge_method' => 'S256',
-    ]));
-}
-
 beforeEach(function () {
     $this->user = User::factory()->create();
 
@@ -39,7 +24,7 @@ beforeEach(function () {
 test('a newly registered application asks the user to approve it', function () {
     expect($this->client->skips_authorization)->toBeFalse();
 
-    $response = authorizationRequest($this, $this->user, $this->client);
+    $response = authorizationRequest($this->user, $this->client, ['scope' => 'openid email']);
 
     $response->assertOk();
 
@@ -49,7 +34,7 @@ test('a newly registered application asks the user to approve it', function () {
 test('an application marked trusted redirects without asking for approval', function () {
     $this->client->forceFill(['skips_authorization' => true])->save();
 
-    $response = authorizationRequest($this, $this->user, $this->client);
+    $response = authorizationRequest($this->user, $this->client, ['scope' => 'openid email']);
 
     $response->assertRedirectContains(CONSENT_REDIRECT_URI);
 

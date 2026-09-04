@@ -1,7 +1,10 @@
 <?php
 
+use App\Models\Application;
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Str;
+use Illuminate\Testing\TestResponse;
 use Lcobucci\JWT\Encoding\JoseEncoder;
 use Lcobucci\JWT\Token\DataSet;
 use Lcobucci\JWT\Token\Parser;
@@ -66,6 +69,46 @@ function pkcePair(): array
     $verifier = Str::random(64);
 
     return [$verifier, pkceChallenge($verifier)];
+}
+
+/**
+ * Start an authorization request against an application.
+ *
+ * Defaults to the application's first redirect URI and a fresh PKCE pair,
+ * which is what almost every case wants; pass overrides for the rest. A null
+ * value in the overrides removes that parameter, so a test can ask for a
+ * request that omits one.
+ *
+ * @param  array<string, string|null>  $overrides
+ */
+function authorizationRequest(
+    ?User $user,
+    Application $application,
+    array $overrides = []
+): TestResponse {
+    [, $challenge] = pkcePair();
+
+    $parameters = array_filter([
+        'client_id' => $application->id,
+        'redirect_uri' => $application->redirect_uris[0] ?? null,
+        'response_type' => 'code',
+        'scope' => 'openid',
+        'code_challenge' => $challenge,
+        'code_challenge_method' => 'S256',
+        ...$overrides,
+    ], fn (?string $value): bool => $value !== null);
+
+    $test = $user === null ? test() : test()->actingAs($user);
+
+    return $test->get('/oauth/authorize?'.http_build_query($parameters));
+}
+
+/**
+ * Decode the headers of an ID Token without verifying its signature.
+ */
+function idTokenHeaders(string $idToken): DataSet
+{
+    return (new Parser(new JoseEncoder))->parse($idToken)->headers();
 }
 
 /**

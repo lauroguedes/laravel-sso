@@ -33,6 +33,7 @@ export type ApplicationDetail = ApplicationSummary & {
     redirect_uris: string[];
     scopes: string[];
     skips_authorization: boolean;
+    restricts_access: boolean;
 };
 
 export type ApplicationTypeOption = {

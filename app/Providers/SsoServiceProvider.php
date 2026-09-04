@@ -6,12 +6,17 @@ namespace App\Providers;
 
 use Admin9\OidcServer\Services\ClaimsService;
 use Admin9\OidcServer\Services\IdTokenService;
+use App\Models\Application;
 use App\Services\ApplicationClaimsService;
 use App\Services\ApplicationIdTokenService;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
+use Inertia\Inertia;
+use Laravel\Passport\Passport;
+use Laravel\Passport\Scope;
+use Symfony\Component\HttpFoundation\Response;
 
 /**
  * Wires the Identity Provider's OAuth2 / OpenID Connect layer.
@@ -53,6 +58,37 @@ class SsoServiceProvider extends ServiceProvider
     public function boot(): void
     {
         $this->configureRateLimiting();
+        $this->configureConsentScreen();
+    }
+
+    /**
+     * Render the consent screen through Inertia rather than the package's
+     * bundled Blade view, so it matches the rest of the interface.
+     *
+     * Registered from a booted callback because the OIDC package points
+     * Passport at its own view during its boot, and configuration cannot hold
+     * a closure without breaking "config:cache".
+     *
+     * @see Application::skipsAuthorization() for when this is
+     *      shown at all.
+     */
+    private function configureConsentScreen(): void
+    {
+        $this->app->booted(function (): void {
+            Passport::authorizationView(
+                fn (array $parameters): Response => Inertia::render('oauth/Authorize', [
+                    'application' => [
+                        'name' => $parameters['client']->name,
+                        'description' => $parameters['client']->description,
+                    ],
+                    'scopes' => array_map(fn (Scope $scope): array => [
+                        'id' => $scope->id,
+                        'description' => $scope->description,
+                    ], $parameters['scopes']),
+                    'authToken' => $parameters['authToken'],
+                ])->toResponse($parameters['request'])
+            );
+        });
     }
 
     /**
