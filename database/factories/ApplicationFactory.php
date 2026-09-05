@@ -63,6 +63,14 @@ class ApplicationFactory extends ClientFactory
     }
 
     /**
+     * Register somewhere the browser may be sent after signing out.
+     */
+    public function withPostLogoutRedirect(string $uri): static
+    {
+        return $this->state(['post_logout_redirect_uris' => [$uri]]);
+    }
+
+    /**
      * Allow the application to receive authorization claims.
      */
     public function withRolesScope(): static

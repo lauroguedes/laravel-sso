@@ -171,6 +171,45 @@ test('the page says so when sessions are not stored in the database', function (
             ->has('browserSessions', 0));
 });
 
+describe('the controls are shown only to whoever may use them', function () {
+    test('the user page offers to sign someone out everywhere', function () {
+        $this->actingAs($this->admin)
+            ->get(route('users.edit', $this->user))
+            ->assertInertia(fn ($page) => $page->where('canRevokeSessions', true));
+    });
+
+    test('a viewer is not offered it', function () {
+        $viewer = User::factory()->create();
+        Permission::findOrCreate(PlatformPermission::UsersView->value, 'web');
+        $viewer->givePermissionTo(PlatformPermission::UsersView->value);
+
+        $this->actingAs($viewer)
+            ->get(route('users.edit', $this->user))
+            ->assertInertia(fn ($page) => $page->where('canRevokeSessions', false));
+    });
+
+    test('the application page offers to revoke its tokens', function () {
+        /*
+         * Revoking an application's tokens is gated by the same ability that
+         * edits it, so the existing "canManage" prop is what the control
+         * reads; asserting it here pins that they stay the same ability.
+         */
+        $this->actingAs($this->admin)
+            ->get(route('applications.show', $this->application))
+            ->assertInertia(fn ($page) => $page->where('canManage', true));
+    });
+
+    test('an application viewer is not offered it', function () {
+        $viewer = User::factory()->create();
+        Permission::findOrCreate(PlatformPermission::ApplicationsView->value, 'web');
+        $viewer->givePermissionTo(PlatformPermission::ApplicationsView->value);
+
+        $this->actingAs($viewer)
+            ->get(route('applications.show', $this->application))
+            ->assertInertia(fn ($page) => $page->where('canManage', false));
+    });
+});
+
 describe('permission isolation', function () {
     test('view permission alone does not allow ending a session', function () {
         $viewer = User::factory()->create();
@@ -182,6 +221,34 @@ describe('permission isolation', function () {
         $this->actingAs($viewer)
             ->delete(route('sessions.destroy', seedSession($this->user)))
             ->assertForbidden();
+    });
+
+    test('view permission alone does not allow signing a user out everywhere', function () {
+        $viewer = User::factory()->create();
+        Permission::findOrCreate(PlatformPermission::UsersView->value, 'web');
+        $viewer->givePermissionTo(PlatformPermission::UsersView->value);
+
+        seedSession($this->user);
+
+        $this->actingAs($viewer)
+            ->delete(route('users.sessions.destroy', $this->user))
+            ->assertForbidden();
+
+        expect(DB::table('sessions')->where('user_id', $this->user->id)->exists())->toBeTrue();
+    });
+
+    test('view permission alone does not allow revoking an application tokens', function () {
+        $viewer = User::factory()->create();
+        Permission::findOrCreate(PlatformPermission::ApplicationsView->value, 'web');
+        $viewer->givePermissionTo(PlatformPermission::ApplicationsView->value);
+
+        $token = seedToken($this->user, $this->application);
+
+        $this->actingAs($viewer)
+            ->delete(route('applications.tokens.destroy', $this->application))
+            ->assertForbidden();
+
+        expect($token->refresh()->revoked)->toBeFalse();
     });
 
     test('a user without any platform permission cannot see sessions', function () {

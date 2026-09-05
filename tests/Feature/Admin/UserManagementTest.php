@@ -70,6 +70,21 @@ test('the user list can be filtered by name or email', function () {
         ->where('users.data.0.email', 'alice@example.com'));
 });
 
+test('a surname matches without a leading wildcard', function () {
+    /*
+     * Searching anchors on a word boundary rather than "%term%", so an index
+     * can serve it on the table that grows with every account. A surname still
+     * has to find the person.
+     */
+    User::factory()->create(['name' => 'Grace Hopper', 'email' => 'grace@example.com']);
+    User::factory()->create(['name' => 'Bob Jones', 'email' => 'bob@example.com']);
+
+    $this->actingAs($this->admin)->get(route('users.index', ['search' => 'Hopper']))
+        ->assertInertia(fn ($page) => $page
+            ->has('users.data', 1)
+            ->where('users.data.0.email', 'grace@example.com'));
+});
+
 test('an administrator creates a user', function () {
     Event::fake([UserCreated::class]);
 

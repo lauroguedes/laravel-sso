@@ -29,7 +29,7 @@ class UpdateUserRequest extends FormRequest
     {
         return [
             'name' => $this->nameRules(),
-            'email' => [...$this->emailRules($this->targetUser()->id), 'lowercase'],
+            'email' => $this->emailRules($this->targetUser()->id),
             'password' => ['nullable', 'string', Password::default(), 'confirmed'],
             'email_verified' => ['boolean'],
             'roles' => ['array'],

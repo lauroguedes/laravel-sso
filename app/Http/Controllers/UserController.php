@@ -4,21 +4,21 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers;
 
-use App\Events\UserCreated;
-use App\Events\UserUpdated;
 use App\Http\Requests\Admin\StoreUserRequest;
 use App\Http\Requests\Admin\UpdateUserRequest;
 use App\Models\ApplicationUser;
 use App\Models\User;
+use App\Services\UserManager;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
 use Spatie\Permission\Models\Role;
 
 class UserController extends Controller
 {
+    public function __construct(private readonly UserManager $users) {}
+
     /**
      * List the users of this Identity Provider.
      */
@@ -62,23 +62,13 @@ class UserController extends Controller
     {
         $this->authorize('create', User::class);
 
-        $user = DB::transaction(function () use ($request): User {
-            $user = User::create([
-                'name' => $request->validated('name'),
-                'email' => $request->validated('email'),
-                'password' => $request->validated('password'),
-            ]);
-
-            if ($request->boolean('email_verified')) {
-                $user->forceFill(['email_verified_at' => $user->freshTimestamp()])->save();
-            }
-
-            $user->syncRoles($request->validated('roles', []));
-
-            return $user;
-        });
-
-        UserCreated::dispatch($user);
+        $user = $this->users->create([
+            'name' => $request->validated('name'),
+            'email' => $request->validated('email'),
+            'password' => $request->validated('password'),
+            'email_verified' => $request->boolean('email_verified'),
+            'roles' => $request->validated('roles', []),
+        ]);
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('User created.')]);
 
@@ -98,6 +88,7 @@ class UserController extends Controller
             'availableRoles' => $this->availableRoles(),
             'canManage' => $request->user()->can('update', $user),
             'canChangeStatus' => $request->user()->can('updateStatus', $user),
+            'canRevokeSessions' => $request->user()->can('revokeSessions', User::class),
         ]);
     }
 
@@ -108,36 +99,13 @@ class UserController extends Controller
     {
         $this->authorize('update', $user);
 
-        DB::transaction(function () use ($request, $user): void {
-            $user->fill([
-                'name' => $request->validated('name'),
-                'email' => $request->validated('email'),
-            ]);
-
-            /*
-             * Changing an address invalidates the previous verification, but
-             * an administrator may mark the new address as already verified.
-             */
-            if ($user->isDirty('email')) {
-                $user->email_verified_at = null;
-            }
-
-            if ($request->boolean('email_verified')) {
-                $user->email_verified_at ??= $user->freshTimestamp();
-            } else {
-                $user->email_verified_at = null;
-            }
-
-            if ($password = $request->validated('password')) {
-                $user->password = $password;
-            }
-
-            $user->save();
-
-            $user->syncRoles($request->validated('roles', []));
-        });
-
-        UserUpdated::dispatch($user);
+        $this->users->update($user, [
+            'name' => $request->validated('name'),
+            'email' => $request->validated('email'),
+            'password' => $request->validated('password'),
+            'email_verified' => $request->boolean('email_verified'),
+            'roles' => $request->validated('roles', []),
+        ]);
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('User updated.')]);
 

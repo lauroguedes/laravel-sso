@@ -1,11 +1,20 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Database\Seeders;
 
-use App\Models\User;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 
+/**
+ * Seeds what this server needs in order to function at all.
+ *
+ * Only the platform roles and permissions: an Identity Provider has no users
+ * or applications until an operator creates them. Run
+ * "php artisan db:seed --class=SsoDemoSeeder" for something to look at in
+ * development.
+ */
 class DatabaseSeeder extends Seeder
 {
     use WithoutModelEvents;
@@ -15,11 +24,6 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        // User::factory(10)->create();
-
-        User::factory()->create([
-            'name' => 'Test User',
-            'email' => 'test@example.com',
-        ]);
+        $this->call(PlatformPermissionsSeeder::class);
     }
 }

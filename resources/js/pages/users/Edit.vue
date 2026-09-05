@@ -22,6 +22,7 @@ import DangerousAction from '@/components/DangerousAction.vue';
 import { edit, index, update } from '@/routes/users';
 import { formatDateTime } from '@/lib/datetime';
 import { index as grants } from '@/routes/applications/grants';
+import { destroy as revokeSessions } from '@/routes/users/sessions';
 import { update as updateStatus } from '@/routes/users/status';
 import type {
     ApplicationAccessSummary,
@@ -34,6 +35,7 @@ const { user, availableRoles } = defineProps<{
     availableRoles: string[];
     canManage: boolean;
     canChangeStatus: boolean;
+    canRevokeSessions: boolean;
 }>();
 
 defineOptions({
@@ -48,6 +50,10 @@ const roleOptions = computed(() =>
 
 function setEnabled(enabled: boolean) {
     router.put(updateStatus(user.id).url, { enabled });
+}
+
+function signOutEverywhere() {
+    router.delete(revokeSessions(user.id).url);
 }
 </script>
 
@@ -246,6 +252,33 @@ function setEnabled(enabled: boolean) {
                 </Button>
             </Form>
 
+            <Card v-if="canRevokeSessions" class="border-destructive/40">
+                <CardHeader>
+                    <CardTitle>Sign out everywhere</CardTitle>
+                    <CardDescription>
+                        Ends every browser session and revokes every token
+                        applications hold for this user. They can sign in again
+                        unless the account is also disabled.
+                    </CardDescription>
+                </CardHeader>
+
+                <CardContent>
+                    <DangerousAction
+                        title="Sign this user out everywhere?"
+                        :description="`${user.name} will be signed out of this server and every application that holds a token for them. Applications will have to send them back to sign in.`"
+                        confirm-label="Sign out everywhere"
+                        @confirm="signOutEverywhere"
+                    >
+                        <Button
+                            variant="destructive"
+                            :aria-label="`Sign ${user.name} out everywhere`"
+                        >
+                            Sign out everywhere
+                        </Button>
+                    </DangerousAction>
+                </CardContent>
+            </Card>
+
             <Card v-if="canChangeStatus" class="border-destructive/40">
                 <CardHeader>
                     <CardTitle>{{
@@ -256,8 +289,11 @@ function setEnabled(enabled: boolean) {
                             The user will be able to sign in again immediately.
                         </template>
                         <template v-else>
-                            The user will be signed out and refused at every
-                            sign-in. Their account and history are kept.
+                            The user will be signed out of this server and
+                            refused at every sign-in. Their account and history
+                            are kept. Tokens applications already hold keep
+                            working until they expire &mdash; revoke those
+                            above.
                         </template>
                     </CardDescription>
                 </CardHeader>
@@ -274,7 +310,7 @@ function setEnabled(enabled: boolean) {
                     <DangerousAction
                         v-else
                         title="Disable this user?"
-                        :description="`${user.name} will be signed out of every session and refused at sign-in until re-enabled.`"
+                        :description="`${user.name} will be refused at sign-in until re-enabled. Tokens applications already hold are not revoked.`"
                         confirm-label="Disable user"
                         @confirm="setEnabled(false)"
                     >

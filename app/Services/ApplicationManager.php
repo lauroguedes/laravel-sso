@@ -40,7 +40,7 @@ class ApplicationManager
      * safe default and are turned on afterwards from the application's own
      * page, which is where their consequences are explained.
      *
-     * @param  array{name: string, description?: string|null, type: ApplicationType, redirect_uris?: array<int, string>, scopes?: array<int, string>}  $attributes
+     * @param  array{name: string, description?: string|null, type: ApplicationType, redirect_uris?: array<int, string>, post_logout_redirect_uris?: array<int, string>, scopes?: array<int, string>}  $attributes
      */
     public function create(array $attributes): Application
     {
@@ -59,6 +59,7 @@ class ApplicationManager
             $client->forceFill([
                 'description' => $attributes['description'] ?? null,
                 'grant_types' => $type->grantTypes(),
+                'post_logout_redirect_uris' => $type->usesRedirectUris() ? ($attributes['post_logout_redirect_uris'] ?? []) : [],
                 'scopes' => $attributes['scopes'] ?? [],
             ])->save();
 
@@ -79,7 +80,7 @@ class ApplicationManager
      * is fixed at creation: changing it would silently invalidate every
      * integration already using the client.
      *
-     * @param  array{name: string, description?: string|null, redirect_uris?: array<int, string>, scopes?: array<int, string>, skips_authorization?: bool, restricts_access?: bool}  $attributes
+     * @param  array{name: string, description?: string|null, redirect_uris?: array<int, string>, post_logout_redirect_uris?: array<int, string>, scopes?: array<int, string>, skips_authorization?: bool, restricts_access?: bool}  $attributes
      */
     public function update(Application $application, array $attributes): Application
     {
@@ -90,6 +91,7 @@ class ApplicationManager
                 'name' => $attributes['name'],
                 'description' => $attributes['description'] ?? null,
                 'redirect_uris' => $type->usesRedirectUris() ? ($attributes['redirect_uris'] ?? []) : [],
+                'post_logout_redirect_uris' => $type->usesRedirectUris() ? ($attributes['post_logout_redirect_uris'] ?? []) : [],
                 'scopes' => $attributes['scopes'] ?? [],
                 'skips_authorization' => $attributes['skips_authorization'] ?? false,
                 'restricts_access' => $attributes['restricts_access'] ?? false,

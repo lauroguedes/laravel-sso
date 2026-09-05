@@ -30,6 +30,8 @@ class StoreApplicationRequest extends FormRequest
                 Rule::requiredIf(fn (): bool => $this->applicationType()?->usesRedirectUris() === true),
             ],
             'redirect_uris.*' => ['required', 'string', 'max:2000', 'distinct', new RedirectUri],
+            'post_logout_redirect_uris' => ['array', 'max:20'],
+            'post_logout_redirect_uris.*' => ['required', 'string', 'max:2000', 'distinct', new RedirectUri],
             'scopes' => ['array'],
             'scopes.*' => ['string', Rule::in(app(ScopeRegistry::class)->ids())],
         ];

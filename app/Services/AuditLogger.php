@@ -94,8 +94,7 @@ class AuditLogger
          */
         $activity->tap(fn (AuditRecord $record) => $record->forceFill([
             'application_id' => $application?->id,
-            'ip_address' => $this->request->ip(),
-            'user_agent' => substr((string) $this->request->userAgent(), 0, 1000),
+            ...$this->origin(),
         ]));
 
         /*
@@ -107,6 +106,35 @@ class AuditLogger
         $record = $activity->log($event->value);
 
         return $record instanceof AuditRecord ? $record : null;
+    }
+
+    /**
+     * Where the action came from.
+     *
+     * An Artisan command has no client, but the framework still binds a
+     * request in the console: one synthesised from APP_URL, whose address is
+     * always 127.0.0.1 and whose user agent is always "Symfony". Recording
+     * those would put fabricated evidence in the one column an operator uses
+     * to trace an action, so a console run records neither.
+     *
+     * A routed request is the test for a real one, and it holds under a
+     * simulated request in the test suite, where the runtime is the console
+     * but the request is genuine.
+     *
+     * @return array{ip_address: string|null, user_agent: string|null}
+     */
+    private function origin(): array
+    {
+        if ($this->request->route() === null) {
+            return ['ip_address' => null, 'user_agent' => null];
+        }
+
+        $agent = $this->request->userAgent();
+
+        return [
+            'ip_address' => $this->request->ip(),
+            'user_agent' => $agent === null ? null : substr($agent, 0, 1000),
+        ];
     }
 
     /**

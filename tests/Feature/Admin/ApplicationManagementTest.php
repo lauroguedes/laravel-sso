@@ -18,6 +18,18 @@ beforeEach(function () {
     $this->admin = User::factory()->superAdmin()->create();
 });
 
+test('applications can be found by name, word or client id', function () {
+    $reporting = Application::factory()->create(['name' => 'Quarterly Reporting']);
+    Application::factory()->create(['name' => 'Billing']);
+
+    foreach (['Quarterly', 'Reporting', $reporting->id] as $term) {
+        $this->actingAs($this->admin)->get(route('applications.index', ['search' => $term]))
+            ->assertInertia(fn ($page) => $page
+                ->has('applications.data', 1)
+                ->where('applications.data.0.name', 'Quarterly Reporting'));
+    }
+});
+
 test('the application list is rendered for an administrator', function () {
     app(ApplicationManager::class)->create([
         'name' => 'Customer Portal',

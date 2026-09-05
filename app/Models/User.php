@@ -138,11 +138,19 @@ class User extends Authenticatable implements MustVerifyEmail, OAuthenticatable,
      */
     public function scopeSearch(Builder $query, ?string $term): Builder
     {
-        return $query->when($term, fn (Builder $query, string $term) => $query->where(
-            fn (Builder $query) => $query
-                ->where('name', 'like', "%{$term}%")
-                ->orWhere('email', 'like', "%{$term}%")
-        ));
+        return $query->when($term, function (Builder $query, string $term): void {
+            /*
+             * An address is matched by prefix, which an index on "email" can
+             * serve, and so is each word of a name: an administrator looking
+             * for "Hopper" should find "Grace Hopper", without the leading
+             * wildcard that forces a scan of the whole table.
+             */
+            $query->where(fn (Builder $query) => $query
+                ->where('email', 'like', "{$term}%")
+                ->orWhere('name', 'like', "{$term}%")
+                ->orWhere('name', 'like', "% {$term}%")
+            );
+        });
     }
 
     /**

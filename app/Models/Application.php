@@ -28,6 +28,7 @@ use Stringable;
  * @property string|null $description
  * @property string|null $secret
  * @property array<int, string> $redirect_uris
+ * @property array<int, string>|null $post_logout_redirect_uris
  * @property array<int, string> $grant_types
  * @property array<int, string>|null $scopes
  * @property bool $revoked
@@ -74,6 +75,7 @@ class Application extends OidcClient
     {
         return [
             ...parent::casts(),
+            'post_logout_redirect_uris' => 'array',
             'skips_authorization' => 'boolean',
             'restricts_access' => 'boolean',
         ];
@@ -192,6 +194,19 @@ class Application extends OidcClient
     }
 
     /**
+     * Determine whether the browser may be sent to this URI after logout.
+     *
+     * Matched exactly, like a redirect URI, and against this application's own
+     * list. The specification requires post-logout URIs to be registered, so
+     * an application that has registered none accepts none: it is logged out
+     * and left here rather than redirected somewhere nobody vouched for.
+     */
+    public function permitsLogoutRedirect(string $uri): bool
+    {
+        return in_array($uri, $this->post_logout_redirect_uris ?? [], true);
+    }
+
+    /**
      * Scope the query to applications matching a search term.
      *
      * @param  Builder<Application>  $query
@@ -199,11 +214,19 @@ class Application extends OidcClient
      */
     public function scopeSearch(Builder $query, ?string $term): Builder
     {
-        return $query->when($term, fn (Builder $query, string $term) => $query->where(
-            fn (Builder $query) => $query
-                ->where('name', 'like', "%{$term}%")
+        return $query->when($term, function (Builder $query, string $term): void {
+            /*
+             * A client id is matched by prefix, which is how an administrator
+             * pastes one, and so is each word of a name. Only the free-text
+             * description keeps a leading wildcard, since there is no useful
+             * anchor in a sentence.
+             */
+            $query->where(fn (Builder $query) => $query
+                ->where('id', 'like', "{$term}%")
+                ->orWhere('name', 'like', "{$term}%")
+                ->orWhere('name', 'like', "% {$term}%")
                 ->orWhere('description', 'like', "%{$term}%")
-                ->orWhere('id', 'like', "%{$term}%")
-        ));
+            );
+        });
     }
 }

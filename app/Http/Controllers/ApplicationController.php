@@ -69,6 +69,7 @@ class ApplicationController extends Controller
             'description' => $request->validated('description'),
             'type' => $request->applicationType(),
             'redirect_uris' => $request->validated('redirect_uris', []),
+            'post_logout_redirect_uris' => $request->validated('post_logout_redirect_uris', []),
             'scopes' => $request->validated('scopes', []),
         ]);
 
@@ -121,6 +122,7 @@ class ApplicationController extends Controller
             'name' => $request->validated('name'),
             'description' => $request->validated('description'),
             'redirect_uris' => $request->validated('redirect_uris', []),
+            'post_logout_redirect_uris' => $request->validated('post_logout_redirect_uris', []),
             'scopes' => $request->validated('scopes', []),
             'skips_authorization' => $request->boolean('skips_authorization'),
             'restricts_access' => $request->boolean('restricts_access'),
@@ -165,6 +167,7 @@ class ApplicationController extends Controller
             'confidential' => $application->isConfidential(),
             'uses_redirect_uris' => $application->type()->usesRedirectUris(),
             'redirect_uris' => $application->redirect_uris ?? [],
+            'post_logout_redirect_uris' => $application->post_logout_redirect_uris ?? [],
             'scopes' => $application->scopes ?? [],
             'skips_authorization' => $application->skips_authorization,
             'restricts_access' => $application->restricts_access,

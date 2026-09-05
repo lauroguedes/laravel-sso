@@ -31,6 +31,7 @@ export type ApplicationDetail = ApplicationSummary & {
     confidential: boolean;
     uses_redirect_uris: boolean;
     redirect_uris: string[];
+    post_logout_redirect_uris: string[];
     scopes: string[];
     skips_authorization: boolean;
     restricts_access: boolean;

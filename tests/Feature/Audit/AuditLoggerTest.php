@@ -22,6 +22,36 @@ test('a record captures who did what, to what, from where', function () {
         ->and($record->created_at)->not->toBeNull();
 });
 
+describe('where an action came from', function () {
+    test('a record made during a request keeps the caller address and agent', function () {
+        $user = User::factory()->create();
+
+        $this->withServerVariables(['REMOTE_ADDR' => '203.0.113.9'])
+            ->withHeaders(['User-Agent' => 'ProbeAgent/1.0'])
+            ->post(route('login.store'), ['email' => $user->email, 'password' => 'wrong-password']);
+
+        $record = AuditRecord::where('event', AuditEvent::UserLoginFailed->value)->sole();
+
+        expect($record->ip_address)->toBe('203.0.113.9')
+            ->and($record->user_agent)->toBe('ProbeAgent/1.0');
+    });
+
+    test('a record made outside a request invents neither', function () {
+        /*
+         * The console still has a request bound, synthesised from APP_URL,
+         * whose address is always 127.0.0.1 and whose agent is always
+         * "Symfony". Recording those would put fabricated evidence in the one
+         * column an operator reads to trace an action.
+         */
+        app(AuditLogger::class)->record(AuditEvent::UserLoggedIn);
+
+        $record = AuditRecord::sole();
+
+        expect($record->ip_address)->toBeNull()
+            ->and($record->user_agent)->toBeNull();
+    });
+});
+
 test('administrative and security activity are separate streams', function () {
     $logger = app(AuditLogger::class);
 

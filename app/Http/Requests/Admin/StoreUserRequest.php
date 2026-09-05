@@ -23,7 +23,7 @@ class StoreUserRequest extends FormRequest
     {
         return [
             'name' => $this->nameRules(),
-            'email' => [...$this->emailRules(), 'lowercase'],
+            'email' => $this->emailRules(),
             'password' => $this->passwordRules(),
             'email_verified' => ['boolean'],
             'roles' => ['array'],

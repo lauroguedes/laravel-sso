@@ -13,8 +13,13 @@ Route::middleware(['auth'])->group(function () {
 });
 
 Route::middleware(['auth', 'verified'])->group(function () {
-    Route::delete('settings/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
-
+    /*
+     * There is deliberately no route for deleting your own account. This
+     * server disables accounts rather than deleting them, so that the audit
+     * trail keeps naming a real person; a self-service delete would leave
+     * their entries with no causer and silently drop their access grants.
+     * Administrators disable an account from the user's page.
+     */
     Route::get('settings/security', [SecurityController::class, 'edit'])
         ->middleware(RequirePassword::class)
         ->name('security.edit');

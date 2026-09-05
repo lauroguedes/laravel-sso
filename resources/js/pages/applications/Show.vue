@@ -19,6 +19,7 @@ import {
 import { edit, index } from '@/routes/applications';
 import { update as updateSecret } from '@/routes/applications/secret';
 import { update as updateStatus } from '@/routes/applications/status';
+import { destroy as revokeTokens } from '@/routes/applications/tokens';
 import type { ApplicationDetail } from '@/types/administration';
 
 defineOptions({
@@ -42,6 +43,10 @@ function setEnabled(enabled: boolean) {
 
 function regenerateSecret() {
     router.put(updateSecret(application.id).url);
+}
+
+function revokeAllTokens() {
+    router.delete(revokeTokens(application.id).url);
 }
 </script>
 
@@ -163,6 +168,36 @@ function regenerateSecret() {
                 </CardContent>
             </Card>
 
+            <Card v-if="application.uses_redirect_uris">
+                <CardHeader>
+                    <CardTitle>Post-logout redirect URIs</CardTitle>
+                    <CardDescription>
+                        Where this application may send the browser after
+                        signing out. Matched exactly.
+                    </CardDescription>
+                </CardHeader>
+
+                <CardContent>
+                    <ul
+                        v-if="application.post_logout_redirect_uris.length > 0"
+                        class="space-y-2"
+                    >
+                        <li
+                            v-for="uri in application.post_logout_redirect_uris"
+                            :key="uri"
+                            class="bg-muted overflow-x-auto rounded px-3 py-2 font-mono text-sm"
+                        >
+                            {{ uri }}
+                        </li>
+                    </ul>
+
+                    <p v-else class="text-muted-foreground text-sm">
+                        None registered. Signing out ends the session here and
+                        the user stays on this server.
+                    </p>
+                </CardContent>
+            </Card>
+
             <Card>
                 <CardHeader>
                     <CardTitle>Scopes</CardTitle>
@@ -222,6 +257,33 @@ function regenerateSecret() {
                         Users are asked to approve this application the first
                         time it requests access.
                     </template>
+                </CardContent>
+            </Card>
+
+            <Card v-if="canManage" class="border-destructive/40">
+                <CardHeader>
+                    <CardTitle>Revoke issued tokens</CardTitle>
+                    <CardDescription>
+                        Invalidates every token this application currently
+                        holds, without taking it out of service. Its users sign
+                        in again the next time it asks.
+                    </CardDescription>
+                </CardHeader>
+
+                <CardContent>
+                    <DangerousAction
+                        title="Revoke every token this application holds?"
+                        :description="`${application.name} will lose access immediately and everyone using it will be sent back to sign in. The application itself keeps working.`"
+                        confirm-label="Revoke tokens"
+                        @confirm="revokeAllTokens"
+                    >
+                        <Button
+                            variant="destructive"
+                            :aria-label="`Revoke every token held by ${application.name}`"
+                        >
+                            Revoke tokens
+                        </Button>
+                    </DangerousAction>
                 </CardContent>
             </Card>
 

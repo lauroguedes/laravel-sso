@@ -7,15 +7,28 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 
 /**
- * Edits the list of redirect URIs registered for an application.
+ * Edits a list of URIs registered for an application.
  *
- * Each URI is a separate field submitted as "redirect_uris[]", so the server
- * validates and stores them individually. They are matched exactly when an
- * authorization request arrives, which is why there is no pattern field.
+ * Each URI is a separate field submitted as "<name>[]", so the server
+ * validates and stores them individually. They are matched exactly when the
+ * request arrives, which is why there is no pattern field.
+ *
+ * The same component serves the redirect URIs, which receive authorization
+ * codes, and the post-logout URIs, which are where the browser may be sent
+ * after signing out. They are separate lists on purpose.
  */
-const { modelValue, errors } = defineProps<{
+const {
+    modelValue,
+    errors,
+    name = 'redirect_uris',
+    label = 'redirect URI',
+    placeholder = 'https://app.example.com/auth/callback',
+} = defineProps<{
     modelValue: string[];
     errors: Record<string, string>;
+    name?: string;
+    label?: string;
+    placeholder?: string;
 }>();
 
 const uris = ref<string[]>(modelValue.length > 0 ? [...modelValue] : ['']);
@@ -37,37 +50,37 @@ function remove(index: number) {
     <div class="space-y-3">
         <div v-for="(uri, position) in uris" :key="position" class="space-y-2">
             <div class="flex items-center gap-2">
-                <Label :for="`redirect-uri-${position}`" class="sr-only">
-                    Redirect URI {{ position + 1 }}
+                <Label :for="`${name}-${position}`" class="sr-only">
+                    {{ label }} {{ position + 1 }}
                 </Label>
                 <Input
-                    :id="`redirect-uri-${position}`"
+                    :id="`${name}-${position}`"
                     v-model="uris[position]"
-                    name="redirect_uris[]"
+                    :name="`${name}[]`"
                     type="url"
                     inputmode="url"
                     spellcheck="false"
-                    placeholder="https://app.example.com/auth/callback"
+                    :placeholder="placeholder"
                 />
                 <Button
                     type="button"
                     variant="ghost"
                     size="icon"
-                    :aria-label="`Remove redirect URI ${position + 1}`"
+                    :aria-label="`Remove ${label} ${position + 1}`"
                     @click="remove(position)"
                 >
                     <X class="size-4" />
                 </Button>
             </div>
 
-            <InputError :message="errors[`redirect_uris.${position}`]" />
+            <InputError :message="errors[`${name}.${position}`]" />
         </div>
 
-        <InputError :message="errors.redirect_uris" />
+        <InputError :message="errors[name]" />
 
         <Button type="button" variant="outline" size="sm" @click="add">
             <Plus class="size-4" />
-            Add redirect URI
+            Add {{ label }}
         </Button>
 
         <p class="text-muted-foreground text-sm">

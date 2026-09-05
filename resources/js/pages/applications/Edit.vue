@@ -102,6 +102,28 @@ const scopeOptions = computed(() =>
                 </CardContent>
             </Card>
 
+            <Card v-if="application.uses_redirect_uris">
+                <CardHeader>
+                    <CardTitle>Post-logout redirect URIs</CardTitle>
+                    <CardDescription>
+                        Where the browser may be sent after signing out. A
+                        separate list from the redirect URIs above, which
+                        receive authorization codes. Leave empty to end the
+                        session without redirecting anywhere.
+                    </CardDescription>
+                </CardHeader>
+
+                <CardContent>
+                    <RedirectUriFields
+                        :model-value="application.post_logout_redirect_uris"
+                        :errors="errors"
+                        name="post_logout_redirect_uris"
+                        label="post-logout URI"
+                        placeholder="https://app.example.com/signed-out"
+                    />
+                </CardContent>
+            </Card>
+
             <Card>
                 <CardHeader>
                     <CardTitle>Scopes</CardTitle>
