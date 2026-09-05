@@ -41,6 +41,14 @@ class ApplicationFactory extends ClientFactory
     }
 
     /**
+     * Take the application out of service.
+     */
+    public function disabled(): static
+    {
+        return $this->state(['revoked' => true]);
+    }
+
+    /**
      * Use a known client secret, so a test can authenticate as the client.
      *
      * Passport hashes the stored value and only keeps the plain text on the

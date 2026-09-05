@@ -91,3 +91,39 @@ export type ApplicationAccessSummary = {
     application_enabled: boolean;
     role_name: string | null;
 };
+
+export type AuditEntry = {
+    id: number;
+    event: string | null;
+    label: string;
+    stream: string;
+    causer: { name: string; email: string } | null;
+    application: string | null;
+    ip_address: string | null;
+    created_at: string | null;
+};
+
+export type BrowserSession = {
+    id: string;
+    user: { id: number; name: string; email: string };
+    ip_address: string | null;
+    user_agent: string | null;
+    last_activity: number;
+    current: boolean;
+};
+
+export type IssuedToken = {
+    id: string;
+    user: { id: number | null; name: string | null; email: string | null };
+    application: string | null;
+    scopes: string[];
+    expires_at: string | null;
+};
+
+export type DashboardCounts = {
+    applications: number;
+    users: number;
+    disabled_users: number;
+    sessions: number;
+    tokens: number;
+};

@@ -48,6 +48,18 @@ class UserPolicy
     }
 
     /**
+     * Determine whether the administrator can end sessions and revoke tokens.
+     *
+     * Its own ability rather than reusing create(): signing somebody out is
+     * not "may add a user", and mapping a destructive action onto an unrelated
+     * one means a condition added to either silently changes the other.
+     */
+    public function revokeSessions(User $user): bool
+    {
+        return $user->can(PlatformPermission::UsersManage->value);
+    }
+
+    /**
      * Determine whether the administrator can disable or re-enable a user.
      *
      * Administrators may not disable themselves, which would lock them out

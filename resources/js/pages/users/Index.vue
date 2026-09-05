@@ -17,6 +17,7 @@ import {
     TableRow,
 } from '@/components/ui/table';
 import { useSearchFilter } from '@/composables/useSearchFilter';
+import { formatDate } from '@/lib/datetime';
 import { create, edit, index } from '@/routes/users';
 import type { UserSummary } from '@/types/administration';
 
@@ -38,10 +39,6 @@ const { users, filters } = defineProps<{
 }>();
 
 const { search } = useSearchFilter(index().url, filters.search);
-
-function formatDate(value: string | null): string {
-    return value ? new Date(value).toLocaleDateString() : '—';
-}
 </script>
 
 <template>

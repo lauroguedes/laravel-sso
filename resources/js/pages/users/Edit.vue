@@ -20,6 +20,7 @@ import { Label } from '@/components/ui/label';
 import { Spinner } from '@/components/ui/spinner';
 import DangerousAction from '@/components/DangerousAction.vue';
 import { edit, index, update } from '@/routes/users';
+import { formatDateTime } from '@/lib/datetime';
 import { index as grants } from '@/routes/applications/grants';
 import { update as updateStatus } from '@/routes/users/status';
 import type {
@@ -48,10 +49,6 @@ const roleOptions = computed(() =>
 function setEnabled(enabled: boolean) {
     router.put(updateStatus(user.id).url, { enabled });
 }
-
-function formatDate(value: string | null): string {
-    return value ? new Date(value).toLocaleString() : 'Never';
-}
 </script>
 
 <template>
@@ -73,11 +70,15 @@ function formatDate(value: string | null): string {
                 <CardContent class="grid gap-3 text-sm sm:grid-cols-2">
                     <div>
                         <div class="text-muted-foreground">Last sign-in</div>
-                        <div>{{ formatDate(user.last_login_at) }}</div>
+                        <div>
+                            {{ formatDateTime(user.last_login_at, 'Never') }}
+                        </div>
                     </div>
                     <div>
                         <div class="text-muted-foreground">Created</div>
-                        <div>{{ formatDate(user.created_at) }}</div>
+                        <div>
+                            {{ formatDateTime(user.created_at, 'Never') }}
+                        </div>
                     </div>
                 </CardContent>
             </Card>

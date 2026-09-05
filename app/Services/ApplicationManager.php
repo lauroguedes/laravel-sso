@@ -13,7 +13,6 @@ use App\Events\ClientSecretRegenerated;
 use App\Models\Application;
 use Illuminate\Support\Facades\DB;
 use Laravel\Passport\ClientRepository;
-use Laravel\Passport\Passport;
 
 /**
  * Creates and maintains the OAuth2 clients behind administrator-managed
@@ -25,7 +24,10 @@ use Laravel\Passport\Passport;
  */
 class ApplicationManager
 {
-    public function __construct(private readonly ClientRepository $clients) {}
+    public function __construct(
+        private readonly ClientRepository $clients,
+        private readonly SessionManager $sessions,
+    ) {}
 
     /**
      * Register a new application.
@@ -120,21 +122,17 @@ class ApplicationManager
      * Leaving live tokens behind would let a disabled application keep calling
      * resource servers until its access tokens expired.
      *
-     * Passport's ClientRepository::delete() walks the tokens one at a time and
-     * issues two updates each, which holds row locks for the whole loop. A
-     * heavily used client can have very many live tokens, so this revokes them
-     * in two set-based statements instead.
+     * The token cascade is SessionManager's, so that disabling an application
+     * and revoking its tokens from the sessions page do exactly the same
+     * thing. Passport's own ClientRepository::delete() is not used: it walks
+     * the tokens one at a time, holding row locks for the whole loop.
      */
     public function disable(Application $application): void
     {
         DB::transaction(function () use ($application): void {
-            $liveTokens = $application->tokens()->where('revoked', false);
-
-            Passport::refreshTokenModel()::query()
-                ->whereIn('access_token_id', (clone $liveTokens)->select('id'))
-                ->update(['revoked' => true]);
-
-            $liveTokens->update(['revoked' => true]);
+            $this->sessions->revokeTokensWhere(
+                fn ($query) => $query->where('client_id', $application->id)
+            );
 
             $application->forceFill(['revoked' => true])->save();
         });

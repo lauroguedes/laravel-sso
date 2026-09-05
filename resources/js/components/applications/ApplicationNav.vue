@@ -2,7 +2,7 @@
 import { Link } from '@inertiajs/vue3';
 import { Button } from '@/components/ui/button';
 import { useCurrentUrl } from '@/composables/useCurrentUrl';
-import { show } from '@/routes/applications';
+import { audit as applicationAudit, show } from '@/routes/applications';
 import { index as grants } from '@/routes/applications/grants';
 import { index as roles } from '@/routes/applications/roles';
 import { toUrl } from '@/lib/utils';
@@ -23,6 +23,7 @@ const items = [
     { title: 'Overview', href: show(applicationId) },
     { title: 'Roles', href: roles(applicationId) },
     { title: 'Access', href: grants(applicationId) },
+    { title: 'Audit', href: applicationAudit(applicationId) },
 ];
 
 const { isCurrentUrl } = useCurrentUrl();

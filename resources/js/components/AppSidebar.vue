@@ -5,6 +5,8 @@ import {
     BookOpen,
     FolderGit2,
     LayoutGrid,
+    MonitorSmartphone,
+    ScrollText,
     Users,
 } from '@lucide/vue';
 import AppLogo from '@/components/AppLogo.vue';
@@ -23,6 +25,8 @@ import {
 import { dashboard } from '@/routes';
 import { discovery } from '@/routes/oidc';
 import { index as applications } from '@/routes/applications';
+import { index as audit } from '@/routes/audit';
+import { index as sessions } from '@/routes/sessions';
 import { index as users } from '@/routes/users';
 import type { NavItem } from '@/types';
 
@@ -41,6 +45,16 @@ const mainNavItems: NavItem[] = [
         title: 'Users',
         href: users(),
         icon: Users,
+    },
+    {
+        title: 'Sessions',
+        href: sessions(),
+        icon: MonitorSmartphone,
+    },
+    {
+        title: 'Audit',
+        href: audit(),
+        icon: ScrollText,
     },
 ];
 

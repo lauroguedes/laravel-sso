@@ -6,6 +6,8 @@ use App\Http\Controllers\ApplicationPermissionController;
 use App\Http\Controllers\ApplicationRoleController;
 use App\Http\Controllers\ApplicationSecretController;
 use App\Http\Controllers\ApplicationStatusController;
+use App\Http\Controllers\AuditController;
+use App\Http\Controllers\SessionController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\UserStatusController;
 use Illuminate\Support\Facades\Route;
@@ -58,4 +60,18 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::resource('applications.grants', ApplicationGrantController::class)
         ->only(['index', 'store', 'update', 'destroy'])
         ->scoped();
+
+    Route::get('applications/{application}/audit', [AuditController::class, 'forApplication'])
+        ->name('applications.audit');
+
+    Route::delete('applications/{application}/tokens', [SessionController::class, 'destroyForApplication'])
+        ->name('applications.tokens.destroy');
+
+    Route::get('sessions', [SessionController::class, 'index'])->name('sessions.index');
+    Route::delete('sessions/{session}', [SessionController::class, 'destroy'])->name('sessions.destroy');
+    Route::delete('tokens/{token}', [SessionController::class, 'destroyToken'])->name('tokens.destroy');
+    Route::delete('users/{user}/sessions', [SessionController::class, 'destroyForUser'])
+        ->name('users.sessions.destroy');
+
+    Route::get('audit', [AuditController::class, 'index'])->name('audit.index');
 });
