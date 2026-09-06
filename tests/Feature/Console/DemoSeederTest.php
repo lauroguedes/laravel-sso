@@ -36,8 +36,8 @@ describe('with the demo data seeded', function () {
 
     test('the restricted application admits only the users it was given', function () {
         $reporting = Application::where('name', 'Reporting')->sole();
-        $granted = User::where('email', 'grace@example.test')->sole();
-        $ungranted = User::where('email', 'former@example.test')->sole();
+        $granted = User::where('email', 'grace@'.SsoDemoSeeder::DOMAIN)->sole();
+        $ungranted = User::where('email', 'former@'.SsoDemoSeeder::DOMAIN)->sole();
 
         expect($reporting->restricts_access)->toBeTrue()
             ->and($reporting->admits($granted))->toBeTrue()
@@ -46,7 +46,7 @@ describe('with the demo data seeded', function () {
 
     test('the demo administrator can sign in with the published password', function () {
         $this->post('/login', [
-            'email' => 'admin@example.test',
+            'email' => 'admin@'.SsoDemoSeeder::DOMAIN,
             'password' => SsoDemoSeeder::PASSWORD,
         ]);
 

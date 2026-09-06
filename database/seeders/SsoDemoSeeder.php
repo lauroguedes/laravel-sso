@@ -31,7 +31,16 @@ class SsoDemoSeeder extends Seeder
     /**
      * The password shared by every demo account.
      */
-    public const PASSWORD = 'password';
+    public const PASSWORD = 'secret';
+
+    /**
+     * The domain every demo address and URL is built from.
+     *
+     * ".test" is reserved for exactly this by RFC 6761, so nothing here can
+     * collide with a real host or accidentally reach one. Change this one
+     * constant to move the whole demo onto a domain you control.
+     */
+    public const DOMAIN = 'user.test';
 
     /**
      * The command running this seeder, when one is.
@@ -96,8 +105,24 @@ class SsoDemoSeeder extends Seeder
         });
 
         $this->console?->newLine();
-        $this->console?->info('Demo data created. Sign in as admin@example.test.');
+        $this->console?->info('Demo data created. Sign in as '.self::email('admin').'.');
         $this->console?->line('Every demo account uses the password "'.self::PASSWORD.'".');
+    }
+
+    /**
+     * An address at the demo domain.
+     */
+    private static function email(string $mailbox): string
+    {
+        return $mailbox.'@'.self::DOMAIN;
+    }
+
+    /**
+     * A URL on a subdomain of the demo domain.
+     */
+    private static function url(string $subdomain, string $path): string
+    {
+        return 'https://'.$subdomain.'.'.self::DOMAIN.$path;
     }
 
     /**
@@ -107,7 +132,7 @@ class SsoDemoSeeder extends Seeder
     {
         return User::factory()->superAdmin()->create([
             'name' => 'Ada Admin',
-            'email' => 'admin@example.test',
+            'email' => self::email('admin'),
             'password' => self::PASSWORD,
         ]);
     }
@@ -120,15 +145,15 @@ class SsoDemoSeeder extends Seeder
     private function users(): Collection
     {
         return collect([
-            ['name' => 'Grace Hopper', 'email' => 'grace@example.test'],
-            ['name' => 'Alan Turing', 'email' => 'alan@example.test'],
+            ['name' => 'Grace Hopper', 'email' => self::email('grace')],
+            ['name' => 'Alan Turing', 'email' => self::email('alan')],
         ])->map(fn (array $attributes): User => User::factory()->create([
             ...$attributes,
             'password' => self::PASSWORD,
         ]))->push(
             User::factory()->disabled()->create([
                 'name' => 'Former Employee',
-                'email' => 'former@example.test',
+                'email' => self::email('former'),
                 'password' => self::PASSWORD,
             ])
         );
@@ -148,8 +173,8 @@ class SsoDemoSeeder extends Seeder
             'name' => 'Reporting',
             'description' => 'A server-side web application that reads report data.',
             'type' => ApplicationType::Confidential,
-            'redirect_uris' => ['https://reporting.example.test/auth/callback'],
-            'post_logout_redirect_uris' => ['https://reporting.example.test/signed-out'],
+            'redirect_uris' => [self::url('reporting', '/auth/callback')],
+            'post_logout_redirect_uris' => [self::url('reporting', '/signed-out')],
             'scopes' => ['openid', 'profile', 'email', 'roles'],
         ]);
 
@@ -176,7 +201,7 @@ class SsoDemoSeeder extends Seeder
             'name' => 'Team Dashboard',
             'description' => 'A browser application that signs in with PKCE and holds no secret.',
             'type' => ApplicationType::Public,
-            'redirect_uris' => ['https://dashboard.example.test/callback', 'http://localhost:5173/callback'],
+            'redirect_uris' => [self::url('dashboard', '/callback'), 'http://localhost:5173/callback'],
             'scopes' => ['openid', 'profile', 'email'],
         ]);
     }
