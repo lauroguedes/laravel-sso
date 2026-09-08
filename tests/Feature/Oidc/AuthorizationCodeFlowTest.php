@@ -85,7 +85,7 @@ test('a confidential client exchanges an authorization code for tokens', functio
     ]);
 
     expect($response->json('token_type'))->toBe('Bearer')
-        ->and($response->json('expires_in'))->toBe(config('sso.oauth.access_token_ttl'));
+        ->and($response->json('expires_in'))->toBe(config('oidc-server.tokens.access_token_ttl'));
 });
 
 test('the id token carries the standard claims for the granted scopes', function () {

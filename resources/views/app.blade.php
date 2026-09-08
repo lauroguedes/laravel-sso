@@ -37,6 +37,14 @@
         @fonts
 
         @vite(['resources/css/app.css', 'resources/js/app.ts', "resources/js/pages/{$page['component']}.vue"])
+
+        {{-- The palette an administrator chose, as overrides of the custom
+             properties every component reads. After the stylesheet, because
+             both define the same properties on :root and the later one wins.
+             Empty unless somebody changed a colour. --}}
+        @if (! empty($themeStylesheet))
+            <style>{!! $themeStylesheet !!}</style>
+        @endif
         <x-inertia::head>
             <title>{{ config('app.name', 'Laravel') }}</title>
         </x-inertia::head>

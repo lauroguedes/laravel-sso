@@ -16,14 +16,22 @@ declare module 'vite/client' {
 declare module '@inertiajs/core' {
     export interface InertiaConfig {
         sharedPageProps: {
-            name: string;
             auth: Auth;
             sidebarOpen: boolean;
             sso: { discoveryUrl: string };
+            branding: {
+                name: string;
+                logo: string | null;
+                sidebarVariant: 'sidebar' | 'floating' | 'inset';
+                authLayout: 'simple' | 'card' | 'split';
+                authBackground: string | null;
+                documentationLinks: { label: string; url: string }[];
+            };
             can: {
                 viewApplications: boolean;
                 viewUsers: boolean;
                 viewAudit: boolean;
+                manageSettings: boolean;
             };
             [key: string]: unknown;
         };

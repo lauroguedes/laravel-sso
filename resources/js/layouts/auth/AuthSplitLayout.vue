@@ -1,10 +1,12 @@
 <script setup lang="ts">
 import { Link, usePage } from '@inertiajs/vue3';
-import AppLogoIcon from '@/components/AppLogoIcon.vue';
+import { computed } from 'vue';
+import BrandMark from '@/components/BrandMark.vue';
 import { home } from '@/routes';
 
 const page = usePage();
-const name = page.props.name;
+const name = page.props.branding.name;
+const background = computed(() => page.props.branding.authBackground);
 
 defineProps<{
     title?: string;
@@ -19,12 +21,24 @@ defineProps<{
         <div
             class="bg-muted relative hidden h-full flex-col p-10 text-white lg:flex dark:border-r"
         >
-            <div class="absolute inset-0 bg-zinc-900" />
+            <!--
+                The panel keeps its dark ground behind any uploaded image, so
+                the brand stays legible while a large photograph is still
+                loading and if it fails to load at all.
+            -->
+            <div class="absolute inset-0 bg-zinc-900">
+                <img
+                    v-if="background"
+                    :src="background"
+                    alt=""
+                    class="size-full object-cover"
+                />
+            </div>
             <Link
                 :href="home()"
                 class="relative z-20 flex items-center text-lg font-medium"
             >
-                <AppLogoIcon class="mr-2 size-8 fill-current text-white" />
+                <BrandMark size="sm" class="mr-2" />
                 {{ name }}
             </Link>
         </div>

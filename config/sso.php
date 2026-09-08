@@ -2,6 +2,42 @@
 
 declare(strict_types=1);
 
+/*
+ * The settings an administrator can change, and the environment variable that
+ * pins each one.
+ *
+ * Declared once, because two facts are read off it and they must agree: what a
+ * setting is when nobody has changed it, and whether this deployment fixed it.
+ * Spelling the variable names out twice would make a typo read as "not
+ * pinned", which fails in the dangerous direction — the value a deployment
+ * meant to fix quietly becomes editable.
+ *
+ * This is also the only place these variables can be read: env() answers null
+ * once the configuration is cached, so anywhere else would forget the pin on
+ * exactly the installations that cache it.
+ */
+$pinnable = [
+    /* key => [environment variable, default, type] */
+    'brand_name' => ['SSO_BRAND_NAME', 'Laravel SSO', 'string'],
+    'base_color' => ['SSO_BASE_COLOR', 'neutral', 'string'],
+    'accent' => ['SSO_ACCENT', 'default', 'string'],
+    'rows_per_page' => ['SSO_ROWS_PER_PAGE', 15, 'int'],
+    'sidebar_variant' => ['SSO_SIDEBAR_VARIANT', 'inset', 'string'],
+    'auth_layout' => ['SSO_AUTH_LAYOUT', 'simple', 'string'],
+    'allow_registration' => ['SSO_ALLOW_REGISTRATION', false, 'bool'],
+    'require_email_verification' => ['SSO_REQUIRE_EMAIL_VERIFICATION', true, 'bool'],
+    'access_token_ttl' => ['SSO_DEFAULT_ACCESS_TOKEN_TTL', 900, 'int'],
+    'refresh_token_ttl' => ['SSO_DEFAULT_REFRESH_TOKEN_TTL', 1_209_600, 'int'],
+    'id_token_ttl' => ['SSO_DEFAULT_ID_TOKEN_TTL', 900, 'int'],
+    'audit_retention_days' => ['SSO_AUDIT_RETENTION_DAYS', 365, 'int'],
+];
+
+$configured = fn (array $setting): mixed => match ($setting[2]) {
+    'int' => (int) env($setting[0], $setting[1]),
+    'bool' => (bool) env($setting[0], $setting[1]),
+    default => (string) env($setting[0], $setting[1]),
+};
+
 return [
 
     /*
@@ -35,43 +71,22 @@ return [
 
     /*
     |--------------------------------------------------------------------------
-    | Registration & Verification
-    |--------------------------------------------------------------------------
-    |
-    | An Identity Provider is rarely open to the public, so self-registration
-    | is disabled by default and administrators create users instead.
-    |
-    | Both this and SSO_REQUIRE_EMAIL_VERIFICATION are read in
-    | "config/fortify.php", which decides which features exist. Ask Fortify
-    | whether a feature is enabled rather than re-reading the environment, or
-    | the two answers drift apart.
-    |
-    */
-
-    'registration' => [
-        'enabled' => env('SSO_ALLOW_REGISTRATION', false),
-    ],
-
-    /*
-    |--------------------------------------------------------------------------
     | OAuth2 Defaults
     |--------------------------------------------------------------------------
-    |
-    | Token lifetimes are expressed in seconds and are handed to Passport by
-    | the OIDC server package, which reads the same environment variables.
     |
     | "require_pkce" requires Proof Key for Code Exchange on every authorization
     | code request. The underlying OAuth2 server already enforces it for public
     | clients unconditionally, so turning this off only relaxes the requirement
     | for confidential clients; it can never weaken a public one.
     |
+    | Token lifetimes are not here: they are operator settings, and the value
+    | actually in force lives in "oidc-server.tokens", which is what the issuer
+    | reads. A second copy here would be one nobody consumes.
+    |
     */
 
     'oauth' => [
         'require_pkce' => env('SSO_PKCE_REQUIRED', true),
-        'access_token_ttl' => (int) env('SSO_DEFAULT_ACCESS_TOKEN_TTL', 900),
-        'refresh_token_ttl' => (int) env('SSO_DEFAULT_REFRESH_TOKEN_TTL', 1_209_600),
-        'id_token_ttl' => (int) env('SSO_DEFAULT_ID_TOKEN_TTL', 900),
     ],
 
     /*
@@ -110,5 +125,70 @@ return [
         'token' => (int) env('SSO_RATE_LIMIT_TOKEN', 30),
         'userinfo' => (int) env('SSO_RATE_LIMIT_USERINFO', 60),
     ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Operator Settings
+    |--------------------------------------------------------------------------
+    |
+    | What every setting under Settings → App settings is when nobody has
+    | changed it. App\Services\Settings merges the stored rows over these and
+    | deletes a row that matches one, so the table records decisions rather
+    | than a copy of this file — raising a default here still reaches an
+    | installation that left that setting alone.
+    |
+    | Nothing writes back to this block. The values an administrator chose are
+    | copied into the configuration their consumers read — "app.name",
+    | "session.lifetime", "fortify.features", "oidc-server.tokens" — so that
+    | "what shipped" stays a fixed reference to compare against.
+    |
+    */
+
+    'defaults' => [
+        ...array_map($configured, $pinnable),
+
+        /* Uploaded imagery, which has no sensible default. */
+        'brand_logo' => null,
+        'auth_background' => null,
+
+        /*
+         * The protocol reference starts here rather than being hard-coded in
+         * the sidebar, so an operator can reword it, move it below their own
+         * runbook, or remove it.
+         */
+        'documentation_links' => [
+            [
+                'label' => 'OpenID Connect',
+                'url' => 'https://openid.net/developers/how-connect-works/',
+            ],
+        ],
+
+        /*
+         * Follows SESSION_LIFETIME, the same variable "config/session.php"
+         * reads, so a deployment that sets it moves the default. It is not
+         * pinnable: every Laravel skeleton ships that line uncommented, and
+         * pinning it would lock the field on every installation.
+         */
+        'session_lifetime' => (int) env('SESSION_LIFETIME', 120),
+
+        'logout_other_sessions_on_password_change' => true,
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Pinned Settings
+    |--------------------------------------------------------------------------
+    |
+    | The settings this deployment fixed through the environment. The interface
+    | shows each as fixed rather than offering to change it, and refuses one
+    | submitted anyway — otherwise an administrator would save an edit that the
+    | next deploy silently reverts.
+    |
+    */
+
+    'pinned' => array_keys(array_filter(
+        $pinnable,
+        fn (array $setting): bool => env($setting[0]) !== null,
+    )),
 
 ];

@@ -140,6 +140,78 @@ A page they may not open, or one that does not exist, sends them back to that
 dashboard with an explanation rather than replacing the interface with an error
 page. A problem with the request is amber; a fault on this server is red.
 
+## App settings
+
+One decision for the whole installation, so it needs `sso.settings.manage`
+rather than being something each reader sets. **Settings → App settings.**
+
+Each tab saves on its own, so a mistake in one section never blocks another.
+
+**Brand**
+
+| Setting | Reaches                                                                                 |
+| ------- | --------------------------------------------------------------------------------------- |
+| Name    | The interface, the sign-in page, the consent screen, and the messages this server sends |
+| Logo    | The same places. Shown before anybody signs in, so avoid anything confidential          |
+
+The name becomes `APP_NAME` at runtime, which is what puts it in the greeting
+and signature of every message Laravel sends. Uploaded imagery lives on the
+public disk, so `php artisan storage:link` must have been run — `sso:install`
+does not do it for you.
+
+**Appearance**
+
+A base colour — the greys the interface is mostly made of — and an accent, the
+one colour it draws attention with. Both are custom-property overrides written
+into the page, which is all shadcn theming is; nothing is fetched from anybody
+else's registry, and there is no build step. Light and dark remain each
+reader's own choice, in the header.
+
+Saving a colour reloads the page, because the stylesheet lives in the document
+head.
+
+**Layout**
+
+| Setting            | Reaches                                                          |
+| ------------------ | ---------------------------------------------------------------- |
+| Rows per table     | The default page size, which a reader can still change per table |
+| Navigation         | Inset, flush or floating menu                                    |
+| Sign-in page       | Simple, card or split                                            |
+| Sign-in background | The panel beside the form. Only the split layout has one         |
+
+**Links**
+
+Shown at the foot of the menu, for whoever integrates applications. The OpenID
+Connect reference starts here rather than being built in, so it can be
+reworded, moved below your own runbook, or removed.
+
+**Access**
+
+| Setting                                | Reaches                                                                  |
+| -------------------------------------- | ------------------------------------------------------------------------ |
+| Self-registration                      | Whether `/register` exists at all — it is removed, not hidden            |
+| Require a verified email address       | Whether `/email/verify` stands between a new account and everything else |
+| Sign other sessions out                | Whether changing a password ends that person's other browser sessions    |
+| Access, refresh and ID token lifetimes | What the OAuth2 server issues, in seconds                                |
+| Session lifetime                       | Minutes of inactivity before somebody signs in to this server again      |
+| Audit retention                        | Days kept by the scheduled `activitylog:clean`                           |
+
+### Storage and pinning
+
+Only what you actually change is stored, so raising a default in
+`config/sso.php` still reaches an installation that left that setting alone.
+**Reset**, opposite the page title, discards every stored value and the
+uploaded imagery with it.
+
+Most settings can be pinned through the environment instead — `SSO_BRAND_NAME`,
+`SSO_BASE_COLOR`, `SSO_ACCENT`, `SSO_SIDEBAR_VARIANT`, `SSO_AUTH_LAYOUT`,
+`SSO_ROWS_PER_PAGE`, `SSO_ALLOW_REGISTRATION`,
+`SSO_REQUIRE_EMAIL_VERIFICATION`, `SSO_DEFAULT_ACCESS_TOKEN_TTL`,
+`SSO_DEFAULT_REFRESH_TOKEN_TTL`, `SSO_DEFAULT_ID_TOKEN_TTL`,
+`SSO_AUDIT_RETENTION_DAYS`. A pinned setting is shown on the page as fixed and
+refused if submitted anyway, so a deployment that manages its own configuration
+cannot have it edited away.
+
 ## Your own account
 
 Under **Settings**, and available to every signed-in user, not only

@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { usePage } from '@inertiajs/vue3';
 import { ChevronsUpDown } from '@lucide/vue';
-import { computed } from 'vue';
+import { computed, ref } from 'vue';
+import DiscoveryDialog from '@/components/DiscoveryDialog.vue';
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -19,6 +20,13 @@ import UserMenuContent from '@/components/UserMenuContent.vue';
 const page = usePage();
 const user = computed(() => page.props.auth.user);
 const { isMobile, state } = useSidebar();
+
+/*
+ * Held here rather than in the menu: choosing the item closes the menu, and a
+ * dialog rendered inside it would be unmounted in the same moment.
+ */
+const discoveryOpen = ref(false);
+const discoveryUrl = computed(() => page.props.sso.discoveryUrl);
 </script>
 
 <template>
@@ -47,9 +55,14 @@ const { isMobile, state } = useSidebar();
                     align="end"
                     :side-offset="4"
                 >
-                    <UserMenuContent :user="user" />
+                    <UserMenuContent
+                        :user="user"
+                        @show-discovery="discoveryOpen = true"
+                    />
                 </DropdownMenuContent>
             </DropdownMenu>
         </SidebarMenuItem>
     </SidebarMenu>
+
+    <DiscoveryDialog v-model:open="discoveryOpen" :url="discoveryUrl" />
 </template>

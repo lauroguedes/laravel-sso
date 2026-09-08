@@ -2,10 +2,13 @@
 
 namespace App\Http\Middleware;
 
+use App\Enums\PlatformPermission;
 use App\Models\Application;
 use App\Models\AuditRecord;
 use App\Models\User;
+use App\Services\Settings;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 use Inertia\Middleware;
 
 class HandleInertiaRequests extends Middleware
@@ -29,6 +32,35 @@ class HandleInertiaRequests extends Middleware
         return parent::version($request);
     }
 
+    public function __construct(private readonly Settings $settings) {}
+
+    /**
+     * How this server presents itself, chosen by an administrator.
+     *
+     * Shared on every page because the brand appears in the shell and the
+     * layout choice decides which shell renders at all — including on the
+     * sign-in page, before anybody is authenticated.
+     *
+     * @return array<string, mixed>
+     */
+    private function branding(): array
+    {
+        $settings = $this->settings->all();
+        $disk = Storage::disk('public');
+        $url = fn (string $key): ?string => ($path = $this->settings->path($key)) === null
+            ? null
+            : $disk->url($path);
+
+        return [
+            'name' => $settings['brand_name'],
+            'logo' => $url('brand_logo'),
+            'sidebarVariant' => $settings['sidebar_variant'],
+            'authLayout' => $settings['auth_layout'],
+            'authBackground' => $url('auth_background'),
+            'documentationLinks' => $settings['documentation_links'],
+        ];
+    }
+
     /**
      * The sections of the interface this user may open.
      *
@@ -46,6 +78,7 @@ class HandleInertiaRequests extends Middleware
             'viewApplications' => $user->can('viewAny', Application::class),
             'viewUsers' => $user->can('viewAny', User::class),
             'viewAudit' => $user->can('viewAudit', AuditRecord::class),
+            'manageSettings' => $user->can(PlatformPermission::SettingsManage->value),
         ];
     }
 
@@ -60,7 +93,7 @@ class HandleInertiaRequests extends Middleware
     {
         return [
             ...parent::share($request),
-            'name' => config('app.name'),
+            'branding' => $this->branding(),
             'auth' => [
                 'user' => $request->user(),
             ],

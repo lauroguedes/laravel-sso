@@ -3,6 +3,13 @@ import { Link } from '@inertiajs/vue3';
 import { Rows3 } from '@lucide/vue';
 import { computed } from 'vue';
 import { Button } from '@/components/ui/button';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/components/ui/select';
 
 export type PaginationLink = {
     url: string | null;
@@ -33,7 +40,7 @@ const { links, from, to, total, prevPageUrl, nextPageUrl, perPage } =
 
 const emit = defineEmits<{ 'update:perPage': [number] }>();
 
-/** Matches SortsListings::PER_PAGE_OPTIONS, which validates the request. */
+/** Matches InterfaceOptions::PAGE_SIZES, which validates the request. */
 const sizes = [15, 25, 50, 100];
 
 const hasNeighbours = computed(
@@ -53,30 +60,31 @@ const hasNeighbours = computed(
                 <template v-if="total !== undefined">of {{ total }}</template>
             </span>
 
-            <label
+            <Select
                 v-if="perPage !== undefined"
-                class="border-input bg-background flex items-center gap-1 rounded-md border pl-2"
-                title="Rows per page"
+                :model-value="String(perPage)"
+                @update:model-value="emit('update:perPage', Number($event))"
             >
-                <!-- The icon carries the meaning, so the options stay numbers. -->
-                <Rows3 class="text-muted-foreground size-4" />
-                <span class="sr-only">Rows per page</span>
-                <select
-                    class="h-8 rounded-md bg-transparent pr-1 text-sm outline-none"
-                    :value="perPage"
+                <SelectTrigger
+                    size="sm"
+                    class="gap-1 px-2"
                     aria-label="Rows per page"
-                    @change="
-                        emit(
-                            'update:perPage',
-                            Number(($event.target as HTMLSelectElement).value),
-                        )
-                    "
                 >
-                    <option v-for="size in sizes" :key="size" :value="size">
+                    <!-- The icon carries the meaning, so the options stay numbers. -->
+                    <Rows3 class="text-muted-foreground size-4" />
+                    <SelectValue />
+                </SelectTrigger>
+
+                <SelectContent>
+                    <SelectItem
+                        v-for="size in sizes"
+                        :key="size"
+                        :value="String(size)"
+                    >
                         {{ size }}
-                    </option>
-                </select>
-            </label>
+                    </SelectItem>
+                </SelectContent>
+            </Select>
         </div>
 
         <div v-if="hasNeighbours" class="flex flex-wrap items-center gap-1">

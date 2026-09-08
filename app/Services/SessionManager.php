@@ -170,6 +170,29 @@ class SessionManager
     }
 
     /**
+     * End a user's other browser sessions, keeping the one they are using.
+     *
+     * Their tokens are deliberately left alone: this follows a password
+     * change, where the point is to evict whoever else knew the old password,
+     * not to make the person re-authorize every application they use.
+     */
+    public function revokeOtherBrowserSessionsFor(User $user, string $keepSessionId): void
+    {
+        if (! $this->tracksSessions()) {
+            return;
+        }
+
+        $ended = DB::table('sessions')
+            ->where('user_id', $user->id)
+            ->where('id', '!=', $keepSessionId)
+            ->delete();
+
+        if ($ended > 0) {
+            SessionRevoked::dispatch('others', $user, null, ['sessions' => $ended]);
+        }
+    }
+
+    /**
      * End every browser session belonging to a user, and revoke their tokens.
      *
      * Both, because leaving either behind would let the user carry on: the

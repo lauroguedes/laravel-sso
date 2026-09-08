@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { Link, router } from '@inertiajs/vue3';
-import { LogOut, Settings } from '@lucide/vue';
+import { Link, router, usePage } from '@inertiajs/vue3';
+import { FolderGit2, LogOut, Settings } from '@lucide/vue';
+import { computed } from 'vue';
 import {
     DropdownMenuGroup,
     DropdownMenuItem,
@@ -20,6 +21,16 @@ const handleLogout = () => {
     router.flushAll();
 };
 
+/*
+ * The discovery document is for whoever integrates an application, which is
+ * the same reader who can see the applications section. A member who only
+ * signs in through this server has nothing to point at it.
+ */
+const page = usePage();
+const canIntegrate = computed(() => page.props.can.viewApplications);
+
+const emit = defineEmits<{ showDiscovery: [] }>();
+
 defineProps<Props>();
 </script>
 
@@ -31,6 +42,15 @@ defineProps<Props>();
     </DropdownMenuLabel>
     <DropdownMenuSeparator />
     <DropdownMenuGroup>
+        <DropdownMenuItem
+            v-if="canIntegrate"
+            class="cursor-pointer"
+            @select="emit('showDiscovery')"
+        >
+            <FolderGit2 class="mr-2 h-4 w-4" />
+            Discovery document
+        </DropdownMenuItem>
+
         <DropdownMenuItem :as-child="true">
             <Link class="block w-full cursor-pointer" :href="edit()" prefetch>
                 <Settings class="mr-2 h-4 w-4" />
@@ -39,7 +59,14 @@ defineProps<Props>();
         </DropdownMenuItem>
     </DropdownMenuGroup>
     <DropdownMenuSeparator />
-    <DropdownMenuItem :as-child="true">
+    <!--
+        Signing out is the one item here that ends something, so it carries the
+        destructive colour the rest of the interface uses for that.
+    -->
+    <DropdownMenuItem
+        :as-child="true"
+        class="text-destructive focus:text-destructive focus:bg-destructive/10"
+    >
         <Link
             class="block w-full cursor-pointer"
             :href="logout()"
@@ -47,7 +74,7 @@ defineProps<Props>();
             as="button"
             data-test="logout-button"
         >
-            <LogOut class="mr-2 h-4 w-4" />
+            <LogOut class="text-destructive mr-2 h-4 w-4" />
             Log out
         </Link>
     </DropdownMenuItem>

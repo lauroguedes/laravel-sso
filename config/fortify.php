@@ -163,8 +163,14 @@ return [
     'features' => array_values(array_filter([
         /*
          * An Identity Provider is not usually open to the public, so
-         * self-registration and email verification follow the SSO_* switches
-         * documented in "config/sso.php".
+         * self-registration and email verification are switches, documented in
+         * "config/sso.php".
+         *
+         * The environment is read here rather than config('sso...') because
+         * configuration files load in name order and "sso" comes after this
+         * one. These two are only the defaults: SettingsServiceProvider
+         * replaces them with what an administrator chose, early enough that
+         * Fortify has not yet registered its routes.
          */
         env('SSO_ALLOW_REGISTRATION', false) ? Features::registration() : null,
         Features::resetPasswords(),

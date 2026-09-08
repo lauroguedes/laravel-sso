@@ -5,6 +5,8 @@ namespace App\Http\Controllers\Settings;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Settings\PasswordUpdateRequest;
 use App\Http\Requests\Settings\TwoFactorAuthenticationRequest;
+use App\Services\SessionManager;
+use App\Services\Settings;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Validation\Rules\Password;
 use Inertia\Inertia;
@@ -13,6 +15,11 @@ use Laravel\Fortify\Features;
 
 class SecurityController extends Controller
 {
+    public function __construct(
+        private readonly Settings $settings,
+        private readonly SessionManager $sessions,
+    ) {}
+
     /**
      * Show the user's security settings page.
      */
@@ -55,9 +62,21 @@ class SecurityController extends Controller
      */
     public function update(PasswordUpdateRequest $request): RedirectResponse
     {
-        $request->user()->update([
+        $user = $request->user();
+
+        $user->update([
             'password' => $request->password,
         ]);
+
+        /*
+         * Somebody changing their password because it was exposed expects that
+         * to end whoever else was using it. An administrator can turn it off
+         * for an installation where being signed out elsewhere is the greater
+         * nuisance.
+         */
+        if ($this->settings->get('logout_other_sessions_on_password_change') === true) {
+            $this->sessions->revokeOtherBrowserSessionsFor($user, $request->session()->getId());
+        }
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Password updated.')]);
 

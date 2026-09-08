@@ -3,14 +3,13 @@ import { Link, usePage } from '@inertiajs/vue3';
 import { computed } from 'vue';
 import {
     AppWindow,
-    BookOpen,
+    ExternalLink,
     LayoutGrid,
     MonitorSmartphone,
     ScrollText,
     Users,
 } from '@lucide/vue';
 import AppLogo from '@/components/AppLogo.vue';
-import DiscoveryDialog from '@/components/DiscoveryDialog.vue';
 import NavFooter from '@/components/NavFooter.vue';
 import NavMain from '@/components/NavMain.vue';
 import NavUser from '@/components/NavUser.vue';
@@ -30,14 +29,7 @@ import { index as sessions } from '@/routes/sessions';
 import { index as users } from '@/routes/users';
 import type { NavItem } from '@/types';
 
-/*
- * Built from the issuer rather than route(), which would use APP_URL: the
- * discovery URL is the one relying parties fetch, and behind a proxy the two
- * differ. The server puts the canonical value on every page.
- */
 const page = usePage();
-
-const discoveryUrl = computed(() => page.props.sso.discoveryUrl);
 
 /*
  * Only what this user can actually open. The abilities come from the server,
@@ -69,17 +61,22 @@ const mainNavItems = computed<NavItem[]>(() => {
     ];
 });
 
-const footerNavItems: NavItem[] = [
-    {
-        title: 'OpenID Connect',
-        href: 'https://openid.net/developers/how-connect-works/',
-        icon: BookOpen,
-    },
-];
+/*
+ * Whatever an administrator listed, including the protocol reference they
+ * start with. Nothing is hard-coded here, so a link can be reworded, reordered
+ * or removed from the interface rather than from this file.
+ */
+const footerNavItems = computed<NavItem[]>(() =>
+    page.props.branding.documentationLinks.map((link) => ({
+        title: link.label,
+        href: link.url,
+        icon: ExternalLink,
+    })),
+);
 </script>
 
 <template>
-    <Sidebar collapsible="icon" variant="inset">
+    <Sidebar collapsible="icon" :variant="page.props.branding.sidebarVariant">
         <SidebarHeader>
             <SidebarMenu>
                 <SidebarMenuItem>
@@ -98,17 +95,15 @@ const footerNavItems: NavItem[] = [
 
         <SidebarFooter>
             <!--
-                Protocol references, for whoever integrates applications. A
-                member who only signs in through this server has no use for the
-                discovery document and no application to point at it.
+                Reference links, for whoever integrates applications. A member
+                who only signs in through this server has no application to
+                point at them.
             -->
-            <template v-if="page.props.can.viewApplications">
-                <SidebarMenu class="px-2 group-data-[collapsible=icon]:p-0">
-                    <DiscoveryDialog :url="discoveryUrl" />
-                </SidebarMenu>
+            <NavFooter
+                v-if="page.props.can.viewApplications"
+                :items="footerNavItems"
+            />
 
-                <NavFooter :items="footerNavItems" />
-            </template>
             <NavUser />
         </SidebarFooter>
     </Sidebar>

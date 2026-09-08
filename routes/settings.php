@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Settings\ApplicationSettingsController;
 use App\Http\Controllers\Settings\ProfileController;
 use App\Http\Controllers\Settings\SecurityController;
 use Illuminate\Auth\Middleware\RequirePassword;
@@ -27,6 +28,20 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::put('settings/password', [SecurityController::class, 'update'])
         ->middleware('throttle:6,1')
         ->name('user-password.update');
+
+    /*
+     * How the whole installation presents itself, as opposed to the settings
+     * above, which each reader owns. The controller authorizes; the route is
+     * here so the tab shares the settings layout.
+     */
+    Route::get('settings/application', [ApplicationSettingsController::class, 'edit'])
+        ->name('application-settings.edit');
+
+    Route::post('settings/application', [ApplicationSettingsController::class, 'update'])
+        ->name('application-settings.update');
+
+    Route::delete('settings/application', [ApplicationSettingsController::class, 'destroy'])
+        ->name('application-settings.destroy');
 
     /*
      * No appearance route: light, dark and system live in the application

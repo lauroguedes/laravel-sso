@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Concerns;
 
+use App\Services\InterfaceOptions;
+use App\Services\Settings;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 
@@ -21,9 +23,6 @@ use Illuminate\Http\Request;
  */
 trait SortsListings
 {
-    /** The page sizes a listing offers. The first is the default. */
-    private const PER_PAGE_OPTIONS = [15, 25, 50, 100];
-
     /**
      * Order the query by the requested column, or leave the default in place.
      *
@@ -80,9 +79,19 @@ trait SortsListings
     {
         $requested = $request->integer('per_page');
 
-        return in_array($requested, self::PER_PAGE_OPTIONS, true)
-            ? $requested
-            : self::PER_PAGE_OPTIONS[0];
+        if (in_array($requested, InterfaceOptions::PAGE_SIZES, true)) {
+            return $requested;
+        }
+
+        /*
+         * The operator's default, which they set once for everyone; a reader
+         * overrides it for themselves at the foot of any table.
+         */
+        $configured = app(Settings::class)->get('rows_per_page');
+
+        return in_array($configured, InterfaceOptions::PAGE_SIZES, true)
+            ? $configured
+            : InterfaceOptions::PAGE_SIZES[0];
     }
 
     /**

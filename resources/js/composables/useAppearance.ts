@@ -75,7 +75,7 @@ export function initializeTheme(): void {
         return;
     }
 
-    // Initialize theme from saved preference or default to system...
+    // Initialize theme from saved preference or fall back to system...
     const savedAppearance = getStoredAppearance();
     updateTheme(savedAppearance || 'system');
 
@@ -91,9 +91,7 @@ export function useAppearance(): UseAppearanceReturn {
             'appearance',
         ) as Appearance | null;
 
-        if (savedAppearance) {
-            appearance.value = savedAppearance;
-        }
+        appearance.value = savedAppearance ?? 'system';
     });
 
     const resolvedAppearance = computed<ResolvedAppearance>(() => {

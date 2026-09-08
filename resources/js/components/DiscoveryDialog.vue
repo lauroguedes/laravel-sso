@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ExternalLink, FolderGit2 } from '@lucide/vue';
+import { ExternalLink } from '@lucide/vue';
 import { computed, ref, watch } from 'vue';
 import CopyButton from '@/components/CopyButton.vue';
 import IconButton from '@/components/IconButton.vue';
@@ -9,9 +9,7 @@ import {
     DialogDescription,
     DialogHeader,
     DialogTitle,
-    DialogTrigger,
 } from '@/components/ui/dialog';
-import { SidebarMenuButton, SidebarMenuItem } from '@/components/ui/sidebar';
 import { Spinner } from '@/components/ui/spinner';
 
 /**
@@ -23,8 +21,14 @@ import { Spinner } from '@/components/ui/spinner';
  *
  * A link to the raw document is kept alongside, because that is the URL a
  * client library is actually pointed at.
+ *
+ * Opened from outside rather than by a trigger of its own: it is reached from
+ * the account menu, and a menu item closes the menu it is in — taking a
+ * trigger rendered inside that menu, and the dialog with it.
  */
-const { url } = defineProps<{ url: string }>();
+const { url, open } = defineProps<{ url: string; open: boolean }>();
+
+const emit = defineEmits<{ 'update:open': [boolean] }>();
 
 /*
  * Displayed and fetched from different places on purpose. The displayed URL is
@@ -42,7 +46,6 @@ const source = computed(() => {
     }
 });
 
-const open = ref(false);
 const raw = ref<string | null>(null);
 const failure = ref<string | null>(null);
 const loading = ref(false);
@@ -119,26 +122,18 @@ function openRaw() {
     window.open(url, '_blank', 'noopener,noreferrer');
 }
 
-watch(open, (isOpen) => {
-    if (isOpen) {
-        void load();
-    }
-});
+watch(
+    () => open,
+    (isOpen) => {
+        if (isOpen) {
+            void load();
+        }
+    },
+);
 </script>
 
 <template>
-    <Dialog v-model:open="open">
-        <SidebarMenuItem>
-            <DialogTrigger as-child>
-                <SidebarMenuButton
-                    class="text-neutral-600 hover:text-neutral-800 dark:text-neutral-300 dark:hover:text-neutral-100"
-                >
-                    <FolderGit2 />
-                    <span>Discovery document</span>
-                </SidebarMenuButton>
-            </DialogTrigger>
-        </SidebarMenuItem>
-
+    <Dialog :open="open" @update:open="emit('update:open', $event)">
         <DialogContent class="max-h-[80vh] gap-4 sm:max-w-3xl">
             <DialogHeader>
                 <DialogTitle>Discovery document</DialogTitle>
