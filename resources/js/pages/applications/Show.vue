@@ -121,26 +121,12 @@ function revokeAllTokens() {
                     :copyable="clientSecret !== null"
                     copy-label="Copy client secret"
                 >
-                    <TooltipProvider
+                    <InputGroupIconButton
                         v-if="canRegenerateSecret"
-                        :delay-duration="150"
-                    >
-                        <Tooltip>
-                            <TooltipTrigger as-child>
-                                <InputGroupButton
-                                    size="icon-xs"
-                                    aria-label="Regenerate client secret"
-                                    @click="regenerating = true"
-                                >
-                                    <RefreshCw />
-                                </InputGroupButton>
-                            </TooltipTrigger>
-
-                            <TooltipContent>
-                                Regenerate client secret
-                            </TooltipContent>
-                        </Tooltip>
-                    </TooltipProvider>
+                        label="Regenerate client secret"
+                        :icon="RefreshCw"
+                        @click="regenerating = true"
+                    />
                 </ReadOnlyField>
 
                 <p v-else class="text-muted-foreground text-sm">

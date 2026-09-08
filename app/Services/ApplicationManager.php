@@ -90,15 +90,20 @@ class ApplicationManager
             $application->forceFill([
                 'name' => $attributes['name'],
                 'description' => $attributes['description'] ?? null,
-                'redirect_uris' => $type->usesRedirectUris() ? ($attributes['redirect_uris'] ?? []) : [],
-                'post_logout_redirect_uris' => $type->usesRedirectUris() ? ($attributes['post_logout_redirect_uris'] ?? []) : [],
-                'scopes' => $attributes['scopes'] ?? [],
                 /*
-                 * Absent means unchanged, not off. These two decide whether
-                 * the consent screen appears and whether the grants list is
-                 * enforced, so defaulting them would let a caller that may not
-                 * set them switch both off by not mentioning them.
+                 * Absent means unchanged throughout, never empty or off. A
+                 * caller that does not mention a field is not asking for it to
+                 * be cleared — and for the two access decisions that
+                 * distinction is load-bearing, because somebody who may not
+                 * set them could otherwise switch both off by omission.
                  */
+                'redirect_uris' => $type->usesRedirectUris()
+                    ? ($attributes['redirect_uris'] ?? $application->redirect_uris)
+                    : [],
+                'post_logout_redirect_uris' => $type->usesRedirectUris()
+                    ? ($attributes['post_logout_redirect_uris'] ?? $application->post_logout_redirect_uris)
+                    : [],
+                'scopes' => $attributes['scopes'] ?? $application->scopes,
                 'skips_authorization' => $attributes['skips_authorization'] ?? $application->skips_authorization,
                 'restricts_access' => $attributes['restricts_access'] ?? $application->restricts_access,
             ])->save();

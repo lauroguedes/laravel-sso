@@ -2,7 +2,7 @@
 import { computed } from 'vue';
 import IconButton from '@/components/IconButton.vue';
 import { Check, Copy } from '@lucide/vue';
-import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import { useCopyToClipboard } from '@/composables/useCopyToClipboard';
 
 /**
@@ -51,12 +51,15 @@ const {
             />
         </div>
 
-        <ScrollArea class="max-h-[50vh]">
+        <!--
+            The bound goes on the viewport, not the frame: the frame has no
+            height of its own, so a maximum there would clip the document
+            rather than let it scroll.
+        -->
+        <ScrollArea horizontal viewport-class="max-h-[50vh]">
             <pre
-                class="p-4 font-mono text-xs leading-relaxed"
+                class="w-max min-w-full p-4 font-mono text-xs leading-relaxed"
             ><code v-html="highlighted" /></pre>
-
-            <ScrollBar orientation="horizontal" />
         </ScrollArea>
     </div>
 </template>
