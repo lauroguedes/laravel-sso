@@ -1,11 +1,27 @@
 # Configuration
 
 Almost everything is an environment variable. The two configuration files that
-matter are `config/sso.php`, which holds the settings an operator changes, and
+matter are `config/sso.php`, which holds the defaults an operator changes, and
 `config/oidc-server.php`, which describes the protocol surface.
 
 Nothing here needs editing to run the server. Set the issuer, and the defaults
 are the ones you want.
+
+## Settings, and pinning them
+
+Many of the variables below are only the **default** for a setting an
+administrator can change from **Settings → App settings**. Only what they
+actually change is stored, so raising a default here still reaches an
+installation that left that setting alone.
+
+Setting the variable **pins** it: the interface shows the value as fixed and
+refuses one submitted anyway, so a deployment that manages its own
+configuration cannot have it edited away. Every pinnable variable appears in
+`.env.example`, commented out, beside the settings it belongs to; the
+authoritative list is `pinned` in `config/sso.php`.
+
+`SSO_ISSUER`, the redirect URI policy and the rate limits are not settings.
+They are protocol and deployment decisions, and stay in the environment.
 
 ## Identity
 
@@ -24,22 +40,27 @@ longer matches. Treat it as fixed once you are live.
 
 ## Accounts
 
+Both are settings, on the **Access** tab.
+
 ### `SSO_ALLOW_REGISTRATION` (default `false`)
 
 Whether anyone can create their own account at `/register`. An identity
 provider is rarely open to the public, so this is off, and administrators
-create users instead. Turning it on enables Fortify's registration feature and
-the route with it.
+create users instead.
+
+Turning it on adds Fortify's registration feature and the route with it — with
+it off the page does not exist rather than being hidden. That is decided before
+Fortify registers its routes, so the switch takes effect on the next request
+rather than needing a redeploy.
 
 ### `SSO_REQUIRE_EMAIL_VERIFICATION` (default `true`)
 
 Whether users must confirm their address before they can use the server.
 
-This is read by `config/fortify.php`, which decides whether the feature exists
-at all. Ask Fortify whether verification is enabled rather than reading the
-environment variable yourself, or the two answers drift apart. Turn it off if
-you have no mail transport, and be aware that you are then accepting
-unverified addresses as identity.
+Like registration, this decides whether the feature exists at all. Ask Fortify
+whether verification is enabled rather than reading the setting yourself, or
+the two answers drift apart. Turn it off if you have no mail transport, and be
+aware that you are then accepting unverified addresses as identity.
 
 ## OAuth 2.0
 
@@ -60,9 +81,12 @@ have a legacy confidential client that cannot be changed.
 | `SSO_DEFAULT_REFRESH_TOKEN_TTL` | `1209600` (14 days) | How long a client may exchange a refresh token for a new access token |
 | `SSO_DEFAULT_ID_TOKEN_TTL`      | `900` (15 minutes)  | How long an ID Token is valid                                         |
 
-All in seconds. Short access tokens with longer refresh tokens is the right
-shape: a leaked access token expires quickly, and revoking the session
-invalidates the refresh token that would have renewed it.
+All in seconds, and all three are settings on the **Access** tab, where the
+field shows what the number comes to — `1209600` reads as `14 days`.
+
+Short access tokens with longer refresh tokens is the right shape: a leaked
+access token expires quickly, and revoking the session invalidates the refresh
+token that would have renewed it.
 
 ## Redirect URIs
 
@@ -102,6 +126,10 @@ and IP together.
 | `SSO_AUDIT_RETENTION_DAYS` | `365`   | Entries older than this are removed by the daily `activitylog:clean` command |
 | `ACTIVITYLOG_ENABLED`      | `true`  | Set to `false` to stop recording entirely                                    |
 
+Retention is a setting on the **Access** tab. Whether recording happens at all
+is not: switching off the audit trail from inside the interface would be the
+first thing worth doing to it.
+
 Retention only happens if the scheduler is running. See
 [Deployment](deployment.md).
 
@@ -112,6 +140,31 @@ error loses whatever had not been flushed, and on this server that could be the
 record of the sign-in that preceded it. The columns this project adds — the
 application, the address and the user agent — do survive the buffer, so
 enabling it is safe in that respect if you decide the trade is worth making.
+
+## Appearance and layout
+
+Settings, on the **Brand**, **Appearance** and **Layout** tabs. The six below
+are pinnable; the uploaded logo, the sign-in background and the reference links
+on the **Links** tab are not, having no sensible value to express as a
+variable.
+
+| Variable              |                                                               |
+| --------------------- | ------------------------------------------------------------- |
+| `SSO_BRAND_NAME`      | What this server calls itself, including in the mail it sends |
+| `SSO_BASE_COLOR`      | `neutral`, `zinc`, `slate`, `stone` or `gray`                 |
+| `SSO_ACCENT`          | The one colour the interface draws attention with             |
+| `SSO_ROWS_PER_PAGE`   | Default page size for listings                                |
+| `SSO_SIDEBAR_VARIANT` | `inset`, `sidebar` or `floating`                              |
+| `SSO_AUTH_LAYOUT`     | `simple`, `card` or `split`                                   |
+
+The palette is a set of CSS custom properties written into the page, which is
+all a shadcn theme is. Nothing is fetched from anywhere, and there is no build
+step: an administrator picks a colour and the next page is that colour.
+
+The brand name becomes `APP_NAME` at runtime, which is what puts it in the
+greeting and signature of every message. Uploaded imagery lives on the public
+disk, so `php artisan storage:link` must have been run — `sso:install` does not
+do it for you.
 
 ## Scopes and claims
 

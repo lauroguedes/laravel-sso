@@ -41,7 +41,7 @@ installation.
 | Application key                | Generated if `APP_KEY` is empty. An existing key is never replaced.                                                                                       |
 | Migrations                     | Run. Pass `--skip-migrations` to leave the database alone.                                                                                                |
 | OAuth signing keys             | Generated if `storage/oauth-private.key` is absent. **An existing key pair is never replaced** — doing so would invalidate every ID Token already issued. |
-| Platform roles and permissions | Reconciled with the enums in `app/Enums`.                                                                                                                 |
+| Platform roles and permissions | Reconciled with the enums in `app/Enums` — the Super Admin and Developer roles, and every permission.                                                     |
 | First administrator            | Offered if nobody holds the Super Admin role.                                                                                                             |
 | Report                         | Prints the issuer, the discovery URL and every protocol endpoint.                                                                                         |
 

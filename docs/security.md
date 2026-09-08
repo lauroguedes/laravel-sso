@@ -77,9 +77,19 @@ separately from the database, and restrict who can read it on the server. See
 including the ability to register applications and read the audit trail. Grant
 it narrowly, and review it — the trail records every grant.
 
+**Who stewards which application.** The Developer role lets somebody
+administer the applications you assign them, and nothing else. It is the
+narrower thing to give an integrator, but it is still a delegation: a steward
+chooses their application's redirect URIs, which is where its authorization
+codes are delivered. Assign applications, not the role, to control the reach —
+and withdraw the role to silence every assignment at once. See
+[Authorization](authorization.md#stewarding-an-application).
+
 **The consent switch.** Turning off the consent screen for an application you
 do not control means its users are never asked before it receives their
-identity.
+identity. Together with **Restrict access**, it is the pair that decides who
+reaches an application at all, which is why both stay with administrators
+rather than with the application's steward.
 
 **Two-factor authentication for administrators.** It is available — TOTP and
 passkeys — but it is not compulsory. If someone can administer this server,

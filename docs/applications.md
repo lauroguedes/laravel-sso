@@ -60,7 +60,8 @@ already holds keep working until they expire.
 ## Settings
 
 Two switches on the application's page change how it behaves, and both start
-off:
+off. Both decide who reaches the application, so both stay with administrators
+even when somebody else looks after it:
 
 **Skip the consent screen.** Users are not asked to approve this application;
 they are sent straight back to it. Reasonable for an application you operate
@@ -70,6 +71,17 @@ answer. Never turn it on for an application somebody else controls.
 **Restrict access.** Only users who have been explicitly granted access may
 sign in to this application. Everyone else is refused at the authorization
 endpoint, before a code is issued. See [Authorization](authorization.md).
+
+## Who looks after it
+
+**Managers** on the application's page assigns it to somebody holding the
+Developer role. They can then edit it, rotate its secret, define its roles and
+read its history, without being given the rest of the server — useful when the
+person integrating an application is not the person running this one.
+
+They cannot enable or disable it, revoke its tokens, decide who signs in, or
+change the two switches above. See
+[Authorization](authorization.md#stewarding-an-application).
 
 ## Disabling
 
@@ -123,3 +135,6 @@ For the protocol details, and for what to do without a library, see
 Each application has its own audit page, listing everything that has happened
 to it and to access grants on it: registration, edits, secret regeneration,
 enabling and disabling, and every grant and revocation.
+
+Somebody who only stewards the application sees what happened to it, but not
+which administrator did it or from where.

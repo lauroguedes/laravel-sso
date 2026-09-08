@@ -20,7 +20,8 @@ addresses.
 
 Every listing sorts by clicking a column heading, narrows through the
 **Filters** menu, hides columns it does not need through **Columns**, and shows
-15 rows at a time unless you choose otherwise at the foot of the table. Sorting
+as many rows as the server is set to — 15 unless an administrator changed it —
+unless you choose otherwise at the foot of the table. Sorting
 and filtering are applied by the database, so they cover the whole table rather
 than the page on screen.
 
@@ -78,9 +79,10 @@ Covered in full in [Applications](applications.md): registering clients, their
 credentials, redirect URIs, scopes, consent, access restriction, and each
 application's own roles, permissions, access list and history.
 
-Each application has four sections, listed down the left of its pages:
-**Overview** (credentials and configuration), **Roles**, **Access**, and
-**Audit**.
+Each application has up to five sections, listed down the left of its pages:
+**Overview** (credentials and configuration), **Roles**, **Access**,
+**Managers** and **Audit**. You are shown the ones you may open, so somebody
+who only looks after the application sees three of them.
 
 ## Sessions
 

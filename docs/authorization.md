@@ -11,20 +11,27 @@ application registered on it.
 
 ## Platform permissions
 
-These govern the administration interface. There are seven:
+These govern the administration interface.
 
-| Permission                |                                                                   |
-| ------------------------- | ----------------------------------------------------------------- |
-| `sso.users.view`          | See users                                                         |
-| `sso.users.manage`        | Create and edit users, disable them, end their sessions           |
-| `sso.applications.view`   | See applications                                                  |
-| `sso.applications.manage` | Register and edit applications, regenerate secrets, revoke tokens |
-| `sso.roles.manage`        | Define application roles and permissions, and grant access        |
-| `sso.audit.view`          | Read the audit trail                                              |
-| `sso.settings.manage`     | Reserved for server settings                                      |
+| Permission                 |                                                                                                                      |
+| -------------------------- | -------------------------------------------------------------------------------------------------------------------- |
+| `sso.users.view`           | See users                                                                                                            |
+| `sso.users.manage`         | Create and edit users, disable them, end their sessions                                                              |
+| `sso.applications.view`    | See every application                                                                                                |
+| `sso.applications.manage`  | Register and edit applications, define their roles, regenerate secrets, revoke tokens, grant access, choose managers |
+| `sso.applications.develop` | Administer the applications assigned to you, and no others                                                           |
+| `sso.audit.view`           | Read the audit trail                                                                                                 |
+| `sso.settings.manage`      | Change the server's own settings                                                                                     |
 
-One role holds all of them: **Super Admin**. It is created by `sso:install` and
-by `sso:admin`.
+`sso.roles.manage` also exists in the enum and is currently gated by nothing —
+defining an application's roles needs `sso.applications.manage`. Granting it
+changes no answer.
+
+Two roles are seeded: **Super Admin**, which holds everything, and
+**Developer**, which holds `sso.applications.develop` alone. Both are created
+by `sso:install`, which reconciles them every time it runs. `sso:admin` seeds
+only when Super Admin is missing, so on a server upgraded from a version that
+predates a role, run `sso:install --skip-migrations` to get it.
 
 They are defined as enums in `app/Enums/PlatformPermission.php` and
 `app/Enums/PlatformRole.php`, and reconciled into the database by the
@@ -34,6 +41,30 @@ they may still be attached to a role somebody created.
 
 A user with only `sso.users.view` can look at users and can do nothing to them.
 Every action is authorized separately from every listing.
+
+## Stewarding an application
+
+`sso.applications.develop` is the one permission that answers nothing on its
+own. It says the holder may administer the applications an administrator
+assigns to them, under **Applications → (one application) → Managers**.
+
+Both halves are needed, and that is what makes the delegation revocable in one
+move: withdrawing the Developer role silences every assignment at once, without
+unpicking them one by one.
+
+For an application they steward, a developer may edit it, rotate its client
+secret, define the roles its tokens carry, and read its audit trail. They may
+not register applications, enable or disable one, revoke its tokens, decide who
+signs in to it, choose who else stewards it, or see any application they were
+not given. The listing, the pages and the section rail all show only what they
+may open.
+
+Two boundaries are worth stating because they are not obvious. The **Restrict
+access** and consent switches sit on the edit form but are not a steward's to
+change — either would let them decide who reaches the application, which is the
+access decision the Access page withholds. And the audit trail they read names
+what happened to their application but not which administrator did it or from
+where.
 
 ## Application roles and permissions
 

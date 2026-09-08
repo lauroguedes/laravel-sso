@@ -98,6 +98,18 @@ describe('pages that cannot be opened', function () {
         );
     });
 
+    test('a stranger is told the same thing on the page they land on', function () {
+        /*
+         * Flash data survives exactly one request, so the destination has to
+         * be where they actually end up. Sending them via a route that itself
+         * redirects would spend the explanation on the hop.
+         */
+        $this->get('/no-such-page')->assertRedirect(route('login'));
+
+        expect(session(SessionKey::FLASH_DATA)['toast']['message'])
+            ->toContain('does not exist');
+    });
+
     test('the protocol endpoints keep their status codes', function () {
         /*
          * A relying party is written against the status code, so the interface

@@ -4,16 +4,18 @@ use App\Http\Controllers\DashboardController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
-use Laravel\Fortify\Features;
 
 /*
- * Registration is a deployment switch, so its route only exists when the
- * feature is enabled. The landing page receives the URL rather than resolving
- * it client side, and hides the call to action when it is null.
+ * The root of an Identity Provider is the way in, not a page about itself.
+ * Somebody arriving here either has a session, in which case they want the
+ * dashboard, or they do not, in which case the only thing on offer is signing
+ * in. There is nothing else this server could usefully say to a stranger.
+ *
+ * Still named "home": it is where signing out returns to, and where a wrong
+ * address sends an anonymous reader.
  */
-Route::get('/', fn () => Inertia::render('Welcome', [
-    'registerUrl' => Features::enabled(Features::registration()) ? route('register') : null,
-]))->name('home');
+Route::get('/', fn () => redirect()->route(auth()->check() ? 'dashboard' : 'login'))
+    ->name('home');
 
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('dashboard', [DashboardController::class, 'index'])->name('dashboard');
@@ -46,5 +48,10 @@ Route::fallback(function (Request $request) {
         'message' => __('That page does not exist.'),
     ]);
 
-    return redirect()->route(auth()->check() ? 'dashboard' : 'home');
+    /*
+     * Straight to where the reader ends up, not via "home". Flash data
+     * survives exactly one request, and "home" is itself a redirect — the
+     * explanation would be spent on the hop and the page would arrive silent.
+     */
+    return redirect()->route(auth()->check() ? 'dashboard' : 'login');
 });

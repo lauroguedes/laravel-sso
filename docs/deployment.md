@@ -15,11 +15,16 @@ npm ci && npm run build
 
 php artisan migrate --force
 php artisan sso:install --skip-migrations
+php artisan storage:link
 
 php artisan config:cache
 php artisan route:cache
 php artisan event:cache
 ```
+
+`storage:link` is what makes an uploaded logo or sign-in background reachable;
+without it they resolve to nothing. `sso:install` deliberately does not do it
+for you, since it writes outside the application's own directories.
 
 Check the installer's output. It ends with warnings for the mistakes that are
 easy to make and expensive to discover later.
@@ -99,10 +104,10 @@ workers hold the old code in memory.
 * * * * * cd /path/to/app && php artisan schedule:run >> /dev/null 2>&1
 ```
 
-It runs `activitylog:clean` daily, which enforces
-`SSO_AUDIT_RETENTION_DAYS`. Without it the audit table grows forever — it is
-the fastest-growing table in the schema, gaining a row on every sign-in and
-every failed sign-in.
+It runs `activitylog:clean` daily, which enforces the audit retention setting
+— `SSO_AUDIT_RETENTION_DAYS` is only its default. Without the scheduler the
+audit table grows forever, and it is the fastest-growing table in the schema,
+gaining a row on every sign-in and every failed sign-in.
 
 Add `passport:purge` to remove revoked and expired tokens if you want that
 table bounded too.

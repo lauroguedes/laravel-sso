@@ -22,6 +22,11 @@ to be written in Laravel, or in PHP.
 - **Sessions** — every browser session and issued token, revocable one at a
   time or all at once.
 - **Audit log** — who did what, from where, and when.
+- **Delegation** — a Developer role that lets an integrator look after the
+  applications you assign them, and nothing else.
+- **Settings** — the brand, the palette, the layout, token lifetimes and
+  retention, all changed from the interface, or pinned through the environment
+  by a deployment that manages its own configuration.
 
 ## What it is not
 
@@ -52,7 +57,8 @@ OAuth signing keys, seeds the platform roles, offers to create your first
 administrator, and prints the issuer and endpoints your applications will need.
 It is safe to run again.
 
-Then sign in at `/login` and register an application.
+Then open the server and sign in — the root is the sign-in page — and register
+an application.
 
 For something to look at while exploring:
 
