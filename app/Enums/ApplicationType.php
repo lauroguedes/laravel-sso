@@ -24,14 +24,18 @@ enum ApplicationType: string
     case Machine = 'machine';
 
     /**
-     * A human readable label for the administration interface.
+     * A short label for the administration interface.
+     *
+     * Kept to two words at most: the type appears in a badge in every listing
+     * row, where a full sentence pushes the columns that identify the
+     * application off the screen. The sentence is description()'s job.
      */
     public function label(): string
     {
         return match ($this) {
-            self::Confidential => 'Web application',
-            self::Public => 'Single page or native application',
-            self::Machine => 'Machine to machine',
+            self::Confidential => 'Web App',
+            self::Public => 'SPA / Mobile',
+            self::Machine => 'Service',
         };
     }
 

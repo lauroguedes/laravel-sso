@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import AppearanceToggle from '@/components/AppearanceToggle.vue';
 import Breadcrumbs from '@/components/Breadcrumbs.vue';
 import { SidebarTrigger } from '@/components/ui/sidebar';
 import type { BreadcrumbItem } from '@/types';
@@ -22,6 +23,11 @@ withDefaults(
             <template v-if="breadcrumbs && breadcrumbs.length > 0">
                 <Breadcrumbs :breadcrumbs="breadcrumbs" />
             </template>
+        </div>
+
+        <!-- Pinned right, so it is in the same place on every page. -->
+        <div class="ml-auto flex items-center gap-2">
+            <AppearanceToggle />
         </div>
     </header>
 </template>

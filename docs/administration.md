@@ -18,9 +18,13 @@ Everyone else sees a note saying so, rather than an empty panel.
 Accounts that can authenticate through this server. Search matches names and
 addresses.
 
-Every listing sorts by clicking a column heading, and hides columns it does not
-need through the **Columns** menu. Sorting is applied by the database, so it
-orders the whole table rather than the page on screen.
+Every listing sorts by clicking a column heading, narrows through the
+**Filters** menu, hides columns it does not need through **Columns**, and shows
+15 rows at a time unless you choose otherwise at the foot of the table. Sorting
+and filtering are applied by the database, so they cover the whole table rather
+than the page on screen.
+
+Times are shown as `d/m/Y H:i:s` throughout, in the reader's own timezone.
 
 ### Creating one
 
@@ -125,6 +129,17 @@ Retention is the scheduled `activitylog:clean` command's job — see
 Anyone with database access can still edit it directly, so ship it elsewhere if
 you need it to be evidence against someone who owns the server.
 
+## What a member sees
+
+Someone with no platform permission sees only a dashboard describing their own
+account: the applications they may sign in to, the role and permissions they
+hold in each, and when they last signed in. Nothing on it describes anybody
+else, and the sections they cannot open are not offered in the menu.
+
+A page they may not open, or one that does not exist, sends them back to that
+dashboard with an explanation rather than replacing the interface with an error
+page. A problem with the request is amber; a fault on this server is red.
+
 ## Your own account
 
 Under **Settings**, and available to every signed-in user, not only
@@ -138,7 +153,8 @@ it again when verification is enabled.
 compulsory; both are strongly worth enabling on any account that can administer
 this server.
 
-**Appearance** — light, dark or follow the system.
+Light, dark and follow-the-system are not here: they are a per-device
+preference, so the switch lives in the top right of every page instead.
 
 There is deliberately no way to delete your own account. Deleting a user would
 leave their audit entries with no causer and drop their access grants without

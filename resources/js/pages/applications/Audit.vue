@@ -3,7 +3,6 @@ import { Head } from '@inertiajs/vue3';
 import ApplicationLayout from '@/layouts/applications/Layout.vue';
 import AuditTable from '@/components/audit/AuditTable.vue';
 import Pagination from '@/components/Pagination.vue';
-import type { PaginationLink } from '@/components/Pagination.vue';
 import SearchInput from '@/components/SearchInput.vue';
 import { useListingFilters } from '@/composables/useListingFilters';
 import { index } from '@/routes/applications';
@@ -22,13 +21,18 @@ const { application, filters } = defineProps<{
     filters: { search: string | null };
     entries: {
         data: AuditEntry[];
-        links: PaginationLink[];
         from: number | null;
         to: number | null;
+        prev_page_url: string | null;
+        next_page_url: string | null;
+        per_page: number;
     };
 }>();
 
-const { search } = useListingFilters(audit(application.id).url, filters);
+const { search, sort, applySort, setFilter } = useListingFilters(
+    audit(application.id).url,
+    filters,
+);
 </script>
 
 <template>
@@ -39,7 +43,11 @@ const { search } = useListingFilters(audit(application.id).url, filters);
         description="What has been done to this application, and by whom"
         :can-manage="canManageApplication"
     >
-        <AuditTable :entries="entries.data">
+        <AuditTable
+            :entries="entries.data"
+            :sort="sort"
+            @update:sort="applySort"
+        >
             <template #toolbar>
                 <SearchInput
                     v-model="search"
@@ -47,12 +55,17 @@ const { search } = useListingFilters(audit(application.id).url, filters);
                     label="Search this application's audit trail"
                 />
             </template>
-        </AuditTable>
 
-        <Pagination
-            :links="entries.links"
-            :from="entries.from"
-            :to="entries.to"
-        />
+            <template #footer>
+                <Pagination
+                    :from="entries.from"
+                    :to="entries.to"
+                    :prev-page-url="entries.prev_page_url"
+                    :next-page-url="entries.next_page_url"
+                    :per-page="entries.per_page"
+                    @update:per-page="(size) => setFilter('per_page', size)"
+                />
+            </template>
+        </AuditTable>
     </ApplicationLayout>
 </template>

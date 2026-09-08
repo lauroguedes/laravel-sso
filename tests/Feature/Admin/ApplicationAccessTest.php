@@ -288,8 +288,8 @@ describe('permission isolation', function () {
     });
 
     test('a user without any platform permission cannot see the access page', function () {
-        $this->actingAs(User::factory()->create())
-            ->get(route('applications.grants.index', $this->application))
-            ->assertForbidden();
+        assertPageRefused(
+            $this->actingAs(User::factory()->create())->get(route('applications.grants.index', $this->application))
+        );
     });
 });

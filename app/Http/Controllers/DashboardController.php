@@ -6,6 +6,7 @@ namespace App\Http\Controllers;
 
 use App\Enums\AuditLog;
 use App\Models\Application;
+use App\Models\ApplicationUser;
 use App\Models\AuditRecord;
 use App\Models\User;
 use App\Services\SessionManager;
@@ -29,7 +30,20 @@ class DashboardController extends Controller
      */
     public function index(Request $request): Response
     {
-        $canViewAudit = $request->user()->can('viewAudit', AuditRecord::class);
+        $user = $request->user();
+
+        /*
+         * Someone with no administrative permission sees their own account
+         * instead of the server's. The operator view counts every user and
+         * lists recent security events, neither of which is theirs to read,
+         * and withholding the panels one by one would leave a page that is
+         * mostly absence.
+         */
+        if (! $user->can('viewAny', User::class) && ! $user->can('viewAny', Application::class)) {
+            return $this->personal($user);
+        }
+
+        $canViewAudit = $user->can('viewAudit', AuditRecord::class);
 
         return Inertia::render('Dashboard', [
             'counts' => [
@@ -48,6 +62,52 @@ class DashboardController extends Controller
                 'security' => $this->recent(AuditLog::Security),
                 'administration' => $this->recent(AuditLog::Administration),
             ] : null,
+        ]);
+    }
+
+    /**
+     * What one user can see about their own account.
+     *
+     * Read only, and scoped to them: the applications they may sign in to,
+     * what they hold in each, and when they last signed in. Nothing here
+     * describes anybody else.
+     */
+    private function personal(User $user): Response
+    {
+        return Inertia::render('dashboard/Personal', [
+            'user' => [
+                'name' => $user->name,
+                'email' => $user->email,
+                'email_verified' => $user->email_verified_at !== null,
+                'last_login_at' => $user->last_login_at?->toIso8601String(),
+                'two_factor_enabled' => $user->two_factor_confirmed_at !== null,
+            ],
+            'access' => $user->applicationGrants()
+                ->with([
+                    'application:id,name,description,revoked,grant_types,secret',
+                    'role:id,name',
+                    'role.permissions:id,name',
+                ])
+                ->get()
+                ->sortBy(fn (ApplicationUser $grant): string => $grant->application->name)
+                ->values()
+                ->map(fn (ApplicationUser $grant): array => [
+                    'application' => $grant->application->name,
+                    'description' => $grant->application->description,
+                    'enabled' => $grant->application->isEnabled(),
+                    'role' => $grant->role?->name,
+                    'permissions' => $grant->role
+                        ?->permissions
+                        ->pluck('name')
+                        ->all() ?? [],
+                ])
+                ->all(),
+            /*
+             * Platform roles govern this administration interface. Someone
+             * reaching this page holds none that open a section, but naming
+             * what they do hold is more useful than an empty panel.
+             */
+            'platformRoles' => $user->getRoleNames()->all(),
         ]);
     }
 

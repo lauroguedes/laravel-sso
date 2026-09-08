@@ -5,6 +5,7 @@ import {
     ChevronsUpDown,
     SlidersHorizontal,
 } from '@lucide/vue';
+import IconButton from '@/components/IconButton.vue';
 import {
     getCoreRowModel,
     useVueTable,
@@ -15,7 +16,6 @@ import {
 } from '@tanstack/vue-table';
 import { computed, ref } from 'vue';
 import type { DataTableColumn, DataTableSort } from '@/types/administration';
-import { Button } from '@/components/ui/button';
 import {
     DropdownMenu,
     DropdownMenuCheckboxItem,
@@ -153,32 +153,42 @@ function sortIcon(column: Column<TRow, unknown>) {
             filter, not a table one.
         -->
         <div class="flex flex-wrap items-center justify-between gap-3">
-            <slot name="toolbar" />
+            <div class="flex flex-wrap items-center gap-2">
+                <slot name="toolbar" />
+            </div>
 
-            <DropdownMenu v-if="hideableColumns.length > 0">
-                <DropdownMenuTrigger as-child>
-                    <Button variant="outline" size="sm">
-                        <SlidersHorizontal class="size-4" />
-                        Columns
-                    </Button>
-                </DropdownMenuTrigger>
+            <div class="flex items-center gap-2">
+                <slot name="filters" />
 
-                <DropdownMenuContent align="end">
-                    <DropdownMenuLabel>Shown columns</DropdownMenuLabel>
-                    <DropdownMenuSeparator />
+                <DropdownMenu v-if="hideableColumns.length > 0">
+                    <DropdownMenuTrigger as-child>
+                        <span>
+                            <IconButton
+                                label="Columns"
+                                :icon="SlidersHorizontal"
+                                variant="outline"
+                            />
+                        </span>
+                    </DropdownMenuTrigger>
 
-                    <DropdownMenuCheckboxItem
-                        v-for="column in hideableColumns"
-                        :key="column.id"
-                        :model-value="column.getIsVisible()"
-                        @update:model-value="
-                            (value: boolean) => column.toggleVisibility(value)
-                        "
-                    >
-                        {{ column.columnDef.header }}
-                    </DropdownMenuCheckboxItem>
-                </DropdownMenuContent>
-            </DropdownMenu>
+                    <DropdownMenuContent align="end">
+                        <DropdownMenuLabel>Shown columns</DropdownMenuLabel>
+                        <DropdownMenuSeparator />
+
+                        <DropdownMenuCheckboxItem
+                            v-for="column in hideableColumns"
+                            :key="column.id"
+                            :model-value="column.getIsVisible()"
+                            @update:model-value="
+                                (value: boolean) =>
+                                    column.toggleVisibility(value)
+                            "
+                        >
+                            {{ column.columnDef.header }}
+                        </DropdownMenuCheckboxItem>
+                    </DropdownMenuContent>
+                </DropdownMenu>
+            </div>
         </div>
 
         <div class="overflow-x-auto rounded-lg border">
@@ -244,5 +254,12 @@ function sortIcon(column: Column<TRow, unknown>) {
                 </TableBody>
             </Table>
         </div>
+
+        <!--
+            The pager renders here rather than as a sibling of this component,
+            so it sits against the table it pages instead of a page-level gap
+            away from it.
+        -->
+        <slot name="footer" />
     </div>
 </template>

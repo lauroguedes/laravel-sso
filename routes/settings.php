@@ -28,7 +28,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
         ->middleware('throttle:6,1')
         ->name('user-password.update');
 
-    Route::inertia('settings/appearance', 'settings/Appearance')->name('appearance.edit');
+    /*
+     * No appearance route: light, dark and system live in the application
+     * header, where they are reachable from every page rather than from one
+     * settings tab.
+     */
 });
 
 Route::get('.well-known/passkey-endpoints', function () {

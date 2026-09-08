@@ -38,11 +38,12 @@ export type ApplicationHeader = {
     name: string;
     description: string | null;
     enabled: boolean;
+    type: 'confidential' | 'public' | 'machine';
+    type_label: string;
+    type_description: string;
 };
 
 export type ApplicationSummary = ApplicationHeader & {
-    type: 'confidential' | 'public' | 'machine';
-    type_label: string;
     created_at: string | null;
 };
 

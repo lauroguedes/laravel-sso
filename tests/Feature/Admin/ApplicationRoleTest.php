@@ -228,8 +228,8 @@ describe('permission isolation', function () {
     });
 
     test('a user without any platform permission cannot see the roles page', function () {
-        $this->actingAs(User::factory()->create())
-            ->get(route('applications.roles.index', $this->application))
-            ->assertForbidden();
+        assertPageRefused(
+            $this->actingAs(User::factory()->create())->get(route('applications.roles.index', $this->application))
+        );
     });
 });

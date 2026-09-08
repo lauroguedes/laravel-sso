@@ -1,6 +1,7 @@
 <?php
 
 use App\Enums\PlatformPermission;
+use App\Enums\PlatformRole;
 use App\Events\UserCreated;
 use App\Events\UserDisabled;
 use App\Events\UserEnabled;
@@ -75,16 +76,34 @@ describe('sorting', function () {
         User::factory()->create(['name' => 'Zoe Zeta']);
         User::factory()->create(['name' => 'Amy Alpha']);
 
+        /*
+         * Relative order, not absolute position: the administrator this suite
+         * signs in as gets a faker name, so asserting on row zero passes or
+         * fails depending on what faker produced that run.
+         */
+        $position = function (array $rows, string $name): int {
+            return array_search($name, array_column($rows, 'name'), true);
+        };
+
         $this->actingAs($this->admin)
             ->get(route('users.index', ['sort' => 'name', 'direction' => 'asc']))
             ->assertInertia(fn ($page) => $page
-                ->where('users.data.0.name', 'Amy Alpha')
                 ->where('filters.sort', 'name')
-                ->where('filters.direction', 'asc'));
+                ->where('filters.direction', 'asc')
+                ->has('users.data'));
 
-        $this->actingAs($this->admin)
+        $ascending = $this->actingAs($this->admin)
+            ->get(route('users.index', ['sort' => 'name', 'direction' => 'asc']))
+            ->viewData('page')['props']['users']['data'];
+
+        $descending = $this->actingAs($this->admin)
             ->get(route('users.index', ['sort' => 'name', 'direction' => 'desc']))
-            ->assertInertia(fn ($page) => $page->where('users.data.0.name', 'Zoe Zeta'));
+            ->viewData('page')['props']['users']['data'];
+
+        expect($position($ascending, 'Amy Alpha'))
+            ->toBeLessThan($position($ascending, 'Zoe Zeta'))
+            ->and($position($descending, 'Zoe Zeta'))
+            ->toBeLessThan($position($descending, 'Amy Alpha'));
     });
 
     test('a column the listing does not offer is ignored', function () {
@@ -121,6 +140,46 @@ test('the listing says whether its row actions may be used', function () {
 
     $this->actingAs($viewer)->get(route('users.index'))
         ->assertInertia(fn ($page) => $page->where('canManage', false));
+});
+
+describe('filtering', function () {
+    test('the listing narrows by status', function () {
+        User::factory()->create(['name' => 'Active One']);
+        User::factory()->disabled()->create(['name' => 'Disabled One']);
+
+        $this->actingAs($this->admin)
+            ->get(route('users.index', ['status' => 'disabled']))
+            ->assertInertia(fn ($page) => $page
+                ->has('users.data', 1)
+                ->where('users.data.0.name', 'Disabled One')
+                ->where('filters.status', 'disabled'));
+    });
+
+    test('the listing narrows by platform role', function () {
+        User::factory()->create(['name' => 'Nobody Special']);
+
+        $this->actingAs($this->admin)
+            ->get(route('users.index', ['role' => PlatformRole::SuperAdmin->value]))
+            ->assertInertia(fn ($page) => $page
+                ->has('users.data', 1)
+                ->where('users.data.0.roles.0', PlatformRole::SuperAdmin->value));
+    });
+
+    test('the page size is chosen from what the listing offers', function () {
+        User::factory()->count(20)->create();
+
+        $this->actingAs($this->admin)->get(route('users.index', ['per_page' => 50]))
+            ->assertInertia(fn ($page) => $page->where('filters.per_page', 50));
+
+        /*
+         * The value reaches a LIMIT clause, so anything not offered falls back
+         * to the default rather than being honoured.
+         */
+        $this->actingAs($this->admin)->get(route('users.index', ['per_page' => 5000]))
+            ->assertInertia(fn ($page) => $page
+                ->where('filters.per_page', 15)
+                ->has('users.data', 15));
+    });
 });
 
 test('a surname matches without a leading wildcard', function () {
@@ -323,9 +382,9 @@ test('an administrator cannot disable their own account', function () {
 
 describe('permission isolation', function () {
     test('a user without any platform permission cannot reach the user list', function () {
-        $response = $this->actingAs(User::factory()->create())->get(route('users.index'));
-
-        $response->assertForbidden();
+        assertPageRefused(
+            $this->actingAs(User::factory()->create())->get(route('users.index'))
+        );
     });
 
     test('view permission alone does not allow creating a user', function () {
@@ -348,7 +407,7 @@ describe('permission isolation', function () {
         Permission::findOrCreate(PlatformPermission::ApplicationsManage->value, 'web');
         $operator->givePermissionTo(PlatformPermission::ApplicationsManage->value);
 
-        $this->actingAs($operator)->get(route('users.index'))->assertForbidden();
+        assertPageRefused($this->actingAs($operator)->get(route('users.index')));
     });
 
     test('a guest is redirected to the login screen', function () {

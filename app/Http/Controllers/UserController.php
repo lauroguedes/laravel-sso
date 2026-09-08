@@ -29,19 +29,27 @@ class UserController extends Controller
     {
         $this->authorize('viewAny', User::class);
 
+        $status = $request->string('status')->toString() ?: null;
+        $role = $request->string('role')->toString() ?: null;
+
         $listing = User::query()
             /*
              * summarize() reads the role names, which spatie resolves per
              * model. Without this the listing issues one extra query per row.
              */
             ->with('roles:id,name')
-            ->search($request->string('search')->toString() ?: null);
+            ->search($request->string('search')->toString() ?: null)
+            ->withStatus($status)
+            ->withRole($role);
 
         return Inertia::render('users/Index', [
             'filters' => [
                 'search' => $request->string('search')->toString() ?: null,
+                'status' => $status,
+                'role' => $role,
                 ...$this->sortFilters($request, User::sortableColumns()),
             ],
+            'availableRoles' => $this->availableRoles(),
             /*
              * Creating and editing a user are the same permission, and
              * UserPolicy::update() does not look at the target, so one
@@ -54,7 +62,7 @@ class UserController extends Controller
                  * same order between pages rather than drifting.
                  */
                 ->orderBy('name')
-                ->paginate(15)
+                ->paginate($this->perPage($request))
                 ->withQueryString()
                 ->through(fn (User $user): array => $this->summarize($user)),
         ]);

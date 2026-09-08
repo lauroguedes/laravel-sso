@@ -32,14 +32,25 @@ class ApplicationController extends Controller
     {
         $this->authorize('viewAny', Application::class);
 
+        $status = $request->string('status')->toString() ?: null;
+        $type = $request->string('type')->toString() ?: null;
+
         $listing = Application::query()
-            ->search($request->string('search')->toString() ?: null);
+            ->search($request->string('search')->toString() ?: null)
+            ->withStatus($status)
+            ->ofType($type);
 
         return Inertia::render('applications/Index', [
             'filters' => [
                 'search' => $request->string('search')->toString() ?: null,
+                'status' => $status,
+                'type' => $type,
                 ...$this->sortFilters($request, Application::sortableColumns()),
             ],
+            'applicationTypes' => array_map(fn (ApplicationType $type): array => [
+                'value' => $type->value,
+                'label' => $type->label(),
+            ], ApplicationType::cases()),
             /*
              * Registering and editing an application are the same permission,
              * and ApplicationPolicy::update() does not look at the instance,
@@ -52,7 +63,7 @@ class ApplicationController extends Controller
                  * between pages rather than drifting.
                  */
                 ->orderBy('name')
-                ->paginate(15)
+                ->paginate($this->perPage($request))
                 ->withQueryString()
                 ->through(fn (Application $application): array => $this->summarize($application)),
         ]);
@@ -159,12 +170,8 @@ class ApplicationController extends Controller
      */
     private function summarize(Application $application): array
     {
-        $type = $application->type();
-
         return [
             ...$application->toHeader(),
-            'type' => $type->value,
-            'type_label' => $type->label(),
             'created_at' => $application->created_at?->toIso8601String(),
         ];
     }

@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import { FolderGit2 } from '@lucide/vue';
+import { ExternalLink, FolderGit2 } from '@lucide/vue';
 import { computed, ref, watch } from 'vue';
 import CopyButton from '@/components/CopyButton.vue';
-import { Button } from '@/components/ui/button';
+import IconButton from '@/components/IconButton.vue';
 import {
     Dialog,
     DialogContent,
@@ -115,6 +115,10 @@ async function load() {
     }
 }
 
+function openRaw() {
+    window.open(url, '_blank', 'noopener,noreferrer');
+}
+
 watch(open, (isOpen) => {
     if (isOpen) {
         void load();
@@ -151,13 +155,14 @@ watch(open, (isOpen) => {
                     {{ url }}
                 </code>
 
-                <CopyButton :value="url" label="Copy URL" />
+                <CopyButton :value="url" label="Copy discovery URL" />
 
-                <Button variant="outline" size="sm" as-child>
-                    <a :href="url" target="_blank" rel="noopener noreferrer">
-                        Open raw
-                    </a>
-                </Button>
+                <IconButton
+                    label="Open the raw document"
+                    :icon="ExternalLink"
+                    variant="outline"
+                    @click="openRaw"
+                />
             </div>
 
             <div
@@ -172,10 +177,16 @@ watch(open, (isOpen) => {
                 {{ failure }}
             </p>
 
-            <pre
-                v-else
-                class="bg-muted max-h-[50vh] overflow-auto rounded-lg p-4 font-mono text-xs leading-relaxed"
-            ><code v-html="highlighted" /></pre>
+            <div v-else class="relative">
+                <!-- Over the panel it copies, rather than in the row above. -->
+                <div class="absolute top-2 right-2 z-10">
+                    <CopyButton :value="raw ?? ''" label="Copy the document" />
+                </div>
+
+                <pre
+                    class="bg-muted max-h-[50vh] overflow-auto rounded-lg p-4 pr-14 font-mono text-xs leading-relaxed"
+                ><code v-html="highlighted" /></pre>
+            </div>
         </DialogContent>
     </Dialog>
 </template>

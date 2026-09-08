@@ -1,11 +1,12 @@
 <script setup lang="ts">
 import { Head } from '@inertiajs/vue3';
+import { computed } from 'vue';
 import AuditTable from '@/components/audit/AuditTable.vue';
+import FilterMenu from '@/components/FilterMenu.vue';
+import type { FilterGroup } from '@/components/FilterMenu.vue';
 import Heading from '@/components/Heading.vue';
 import Pagination from '@/components/Pagination.vue';
-import type { PaginationLink } from '@/components/Pagination.vue';
 import SearchInput from '@/components/SearchInput.vue';
-import { Button } from '@/components/ui/button';
 import { useListingFilters } from '@/composables/useListingFilters';
 import { index } from '@/routes/audit';
 import type { AuditEntry } from '@/types/administration';
@@ -16,18 +17,27 @@ defineOptions({
     },
 });
 
-const { filters } = defineProps<{
+const { filters, streams } = defineProps<{
     filters: { search: string | null; stream: string | null };
     streams: { value: string; label: string }[];
     entries: {
         data: AuditEntry[];
-        links: PaginationLink[];
         from: number | null;
         to: number | null;
+        prev_page_url: string | null;
+        next_page_url: string | null;
+        per_page: number;
     };
 }>();
 
-const { search, setFilter } = useListingFilters(index().url, filters);
+const { search, sort, applySort, setFilter } = useListingFilters(
+    index().url,
+    filters,
+);
+
+const filterGroups = computed<FilterGroup[]>(() => [
+    { key: 'stream', label: 'Stream', options: streams },
+]);
 </script>
 
 <template>
@@ -39,47 +49,38 @@ const { search, setFilter } = useListingFilters(index().url, filters);
             description="What has been done on this server, and by whom"
         />
 
-        <AuditTable :entries="entries.data" show-application>
+        <AuditTable
+            :entries="entries.data"
+            :sort="sort"
+            show-application
+            @update:sort="applySort"
+        >
             <template #toolbar>
-                <div class="flex flex-wrap items-center gap-3">
-                    <SearchInput
-                        v-model="search"
-                        placeholder="Search by event, description or address"
-                        label="Search the audit trail"
-                    />
+                <SearchInput
+                    v-model="search"
+                    placeholder="Search by event, description or address"
+                    label="Search the audit trail"
+                />
+            </template>
 
-                    <div class="flex flex-wrap gap-1">
-                        <Button
-                            :variant="
-                                filters.stream === null ? 'secondary' : 'ghost'
-                            "
-                            size="sm"
-                            @click="setFilter('stream', null)"
-                        >
-                            All
-                        </Button>
-                        <Button
-                            v-for="stream in streams"
-                            :key="stream.value"
-                            :variant="
-                                filters.stream === stream.value
-                                    ? 'secondary'
-                                    : 'ghost'
-                            "
-                            size="sm"
-                            @click="setFilter('stream', stream.value)"
-                        >
-                            {{ stream.label }}
-                        </Button>
-                    </div>
-                </div>
+            <template #filters>
+                <FilterMenu
+                    :groups="filterGroups"
+                    :active="filters"
+                    @change="setFilter"
+                />
+            </template>
+
+            <template #footer>
+                <Pagination
+                    :from="entries.from"
+                    :to="entries.to"
+                    :prev-page-url="entries.prev_page_url"
+                    :next-page-url="entries.next_page_url"
+                    :per-page="entries.per_page"
+                    @update:per-page="(size) => setFilter('per_page', size)"
+                />
             </template>
         </AuditTable>
-
-        <Pagination
-            :links="entries.links"
-            :from="entries.from"
-            :to="entries.to"
-        />
     </div>
 </template>

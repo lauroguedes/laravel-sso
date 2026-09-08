@@ -7,8 +7,9 @@ export type ListingFilters = {
     search: string | null;
     sort?: string | null;
     direction?: 'asc' | 'desc' | null;
+    per_page?: number | null;
     /** Anything else the listing narrows by, such as the audit stream. */
-    [key: string]: string | null | undefined;
+    [key: string]: string | number | null | undefined;
 };
 
 /**
@@ -39,7 +40,7 @@ export function useListingFilters(
     );
 
     /* Every filter this page has beyond the three handled above. */
-    const extra = reactive<Record<string, string | undefined>>(
+    const extra = reactive<Record<string, string | number | undefined>>(
         Object.fromEntries(
             Object.entries(initial)
                 .filter(
@@ -88,11 +89,16 @@ export function useListingFilters(
     /**
      * Narrow by one of the page's own filters, keeping the rest.
      */
-    function setFilter(key: string, value: string | null) {
+    function setFilter(key: string, value: string | number | null) {
         extra[key] = value ?? undefined;
+
+        /* A narrower list starts again from its first page. */
+        if (key !== 'page') {
+            extra.page = undefined;
+        }
 
         visit();
     }
 
-    return { search, sort, applySort, setFilter };
+    return { search, sort, applySort, setFilter, filters: extra };
 }

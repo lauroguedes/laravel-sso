@@ -3,6 +3,8 @@ import { Head, Link, router, usePage } from '@inertiajs/vue3';
 import { computed, ref } from 'vue';
 import { Ban, Eye, LogOut, MoreHorizontal, Pencil, Plus } from '@lucide/vue';
 import DangerousAction from '@/components/DangerousAction.vue';
+import FilterMenu from '@/components/FilterMenu.vue';
+import type { FilterGroup } from '@/components/FilterMenu.vue';
 import DataTable from '@/components/DataTable.vue';
 import StatusIndicator from '@/components/StatusIndicator.vue';
 import Heading from '@/components/Heading.vue';
@@ -20,7 +22,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { useListingFilters } from '@/composables/useListingFilters';
 import type { ListingFilters } from '@/composables/useListingFilters';
-import { formatDate } from '@/lib/datetime';
+import { formatDateTime } from '@/lib/datetime';
 import { create, edit, index } from '@/routes/users';
 import { destroy as revokeSessions } from '@/routes/users/sessions';
 import { update as updateStatus } from '@/routes/users/status';
@@ -32,17 +34,36 @@ defineOptions({
     },
 });
 
-const { users, filters } = defineProps<{
+const { users, filters, availableRoles } = defineProps<{
     users: {
         data: UserSummary[];
         links: PaginationLink[];
         from: number | null;
         to: number | null;
         total: number;
+        per_page: number;
     };
     filters: ListingFilters;
+    availableRoles: string[];
     canManage: boolean;
 }>();
+
+const filterGroups = computed<FilterGroup[]>(() => [
+    {
+        key: 'status',
+        label: 'Status',
+        options: [
+            { value: 'active', label: 'Active' },
+            { value: 'disabled', label: 'Disabled' },
+            { value: 'unverified', label: 'Unverified' },
+        ],
+    },
+    {
+        key: 'role',
+        label: 'Platform role',
+        options: availableRoles.map((role) => ({ value: role, label: role })),
+    },
+]);
 
 /* Administrators may not disable themselves, so that row omits the action. */
 const currentUserId = computed(() => usePage().props.auth.user.id);
@@ -113,7 +134,10 @@ function confirm() {
     pending.value = null;
 }
 
-const { search, sort, applySort } = useListingFilters(index().url, filters);
+const { search, sort, applySort, setFilter } = useListingFilters(
+    index().url,
+    filters,
+);
 </script>
 
 <template>
@@ -147,6 +171,14 @@ const { search, sort, applySort } = useListingFilters(index().url, filters);
                     v-model="search"
                     placeholder="Search by name or email"
                     label="Search users"
+                />
+            </template>
+
+            <template #filters>
+                <FilterMenu
+                    :groups="filterGroups"
+                    :active="filters"
+                    @change="setFilter"
                 />
             </template>
 
@@ -243,14 +275,25 @@ const { search, sort, applySort } = useListingFilters(index().url, filters);
 
             <template #cell-last_login_at="{ row }">
                 <span class="text-muted-foreground text-sm">
-                    {{ formatDate(row.last_login_at) }}
+                    {{ formatDateTime(row.last_login_at) }}
                 </span>
             </template>
 
             <template #cell-created_at="{ row }">
                 <span class="text-muted-foreground text-sm">
-                    {{ formatDate(row.created_at) }}
+                    {{ formatDateTime(row.created_at) }}
                 </span>
+            </template>
+
+            <template #footer>
+                <Pagination
+                    :links="users.links"
+                    :from="users.from"
+                    :to="users.to"
+                    :total="users.total"
+                    :per-page="users.per_page"
+                    @update:per-page="(size) => setFilter('per_page', size)"
+                />
             </template>
         </DataTable>
 
@@ -262,13 +305,6 @@ const { search, sort, applySort } = useListingFilters(index().url, filters);
             :confirm-label="confirmation.label"
             @update:open="(value) => !value && dismiss()"
             @confirm="confirm"
-        />
-
-        <Pagination
-            :links="users.links"
-            :from="users.from"
-            :to="users.to"
-            :total="users.total"
         />
     </div>
 </template>

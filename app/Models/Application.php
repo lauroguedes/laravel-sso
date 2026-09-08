@@ -213,16 +213,67 @@ class Application extends OidcClient
      * audit — cannot describe the same application differently, which is how
      * the audit page ended up without a status badge or an Edit button.
      *
-     * @return array{id: string, name: string, description: string|null, enabled: bool}
+     * @return array{id: string, name: string, description: string|null, enabled: bool, type: string, type_label: string, type_description: string}
      */
     public function toHeader(): array
     {
+        $type = $this->type();
+
         return [
             'id' => $this->id,
             'name' => $this->name,
             'description' => $this->description,
             'enabled' => $this->isEnabled(),
+            'type' => $type->value,
+            'type_label' => $type->label(),
+            /*
+             * Carried alongside the label so the badge can explain what a
+             * type means without the interface restating the enum's words.
+             */
+            'type_description' => $type->description(),
         ];
+    }
+
+    /**
+     * Scope the query to enabled or disabled applications.
+     *
+     * @param  Builder<Application>  $query
+     * @return Builder<Application>
+     */
+    public function scopeWithStatus(Builder $query, ?string $status): Builder
+    {
+        return match ($status) {
+            'enabled' => $query->where('revoked', false),
+            'disabled' => $query->where('revoked', true),
+            default => $query,
+        };
+    }
+
+    /**
+     * Scope the query to one kind of client.
+     *
+     * The type is derived from the grant types rather than stored, so this
+     * filters on what the type is derived from. Machine clients are the ones
+     * holding the client credentials grant; the rest are told apart by whether
+     * they have a secret, which is what "confidential" means to Passport.
+     *
+     * @param  Builder<Application>  $query
+     * @return Builder<Application>
+     */
+    public function scopeOfType(Builder $query, ?string $type): Builder
+    {
+        $machine = fn (Builder $query) => $query->whereJsonContains('grant_types', 'client_credentials');
+
+        return match ($type) {
+            ApplicationType::Machine->value => $query->where($machine),
+            ApplicationType::Confidential->value => $query
+                ->whereNot($machine)
+                ->whereNotNull('secret'),
+            ApplicationType::Public->value => $query
+                ->whereNot($machine)
+                ->whereNull('secret'),
+            default => $query,
+        };
     }
 
     /**

@@ -2,7 +2,11 @@
 import { Head, Link, router } from '@inertiajs/vue3';
 import { computed, ref } from 'vue';
 import { Ban, Eye, KeyRound, MoreHorizontal, Pencil, Plus } from '@lucide/vue';
+import ApplicationTypeBadge from '@/components/applications/ApplicationTypeBadge.vue';
+import CopyButton from '@/components/CopyButton.vue';
 import DangerousAction from '@/components/DangerousAction.vue';
+import FilterMenu from '@/components/FilterMenu.vue';
+import type { FilterGroup } from '@/components/FilterMenu.vue';
 import DataTable from '@/components/DataTable.vue';
 import StatusIndicator from '@/components/StatusIndicator.vue';
 import Heading from '@/components/Heading.vue';
@@ -34,17 +38,31 @@ defineOptions({
     },
 });
 
-const { applications, filters } = defineProps<{
+const { applications, filters, applicationTypes } = defineProps<{
     applications: {
         data: ApplicationSummary[];
         links: PaginationLink[];
         from: number | null;
         to: number | null;
         total: number;
+        per_page: number;
     };
     filters: ListingFilters;
+    applicationTypes: { value: string; label: string }[];
     canManage: boolean;
 }>();
+
+const filterGroups = computed<FilterGroup[]>(() => [
+    {
+        key: 'status',
+        label: 'Status',
+        options: [
+            { value: 'enabled', label: 'Enabled' },
+            { value: 'disabled', label: 'Disabled' },
+        ],
+    },
+    { key: 'type', label: 'Type', options: applicationTypes },
+]);
 
 const columns: DataTableColumn[] = [
     { id: 'revoked', header: 'Status', sortable: true, alwaysVisible: true },
@@ -113,7 +131,10 @@ function confirm() {
     pending.value = null;
 }
 
-const { search, sort, applySort } = useListingFilters(index().url, filters);
+const { search, sort, applySort, setFilter } = useListingFilters(
+    index().url,
+    filters,
+);
 </script>
 
 <template>
@@ -150,6 +171,14 @@ const { search, sort, applySort } = useListingFilters(index().url, filters);
                 />
             </template>
 
+            <template #filters>
+                <FilterMenu
+                    :groups="filterGroups"
+                    :active="filters"
+                    @change="setFilter"
+                />
+            </template>
+
             <template #cell-name="{ row }">
                 <Link :href="show(row.id)" class="font-medium hover:underline">
                     {{ row.name }}
@@ -163,21 +192,28 @@ const { search, sort, applySort } = useListingFilters(index().url, filters);
             </template>
 
             <template #cell-type_label="{ row }">
-                <span class="text-sm">{{ row.type_label }}</span>
+                <ApplicationTypeBadge
+                    :type="row.type"
+                    :label="row.type_label"
+                    :description="row.type_description"
+                />
             </template>
 
             <template #cell-id="{ row }">
                 <!--
-                    Truncated: a client id is a UUID and pushes the table into
-                    a horizontal scroll it does not otherwise need. The whole
-                    value, with a copy button, is on the application's page.
+                    Truncated, because a client id is a UUID and would push the
+                    table into a horizontal scroll. The copy button beside it
+                    is what the value is actually wanted for.
                 -->
-                <code
-                    class="text-muted-foreground block max-w-[18ch] truncate text-xs"
-                    :title="row.id"
-                >
-                    {{ row.id }}
-                </code>
+                <div class="flex items-center gap-1">
+                    <code
+                        class="text-muted-foreground block max-w-[16ch] truncate text-xs"
+                        :title="row.id"
+                    >
+                        {{ row.id }}
+                    </code>
+                    <CopyButton :value="row.id" label="Copy client ID" />
+                </div>
             </template>
 
             <template #cell-revoked="{ row }">
@@ -247,6 +283,17 @@ const { search, sort, applySort } = useListingFilters(index().url, filters);
                     </DropdownMenuContent>
                 </DropdownMenu>
             </template>
+
+            <template #footer>
+                <Pagination
+                    :links="applications.links"
+                    :from="applications.from"
+                    :to="applications.to"
+                    :total="applications.total"
+                    :per-page="applications.per_page"
+                    @update:per-page="(size) => setFilter('per_page', size)"
+                />
+            </template>
         </DataTable>
 
         <DangerousAction
@@ -257,13 +304,6 @@ const { search, sort, applySort } = useListingFilters(index().url, filters);
             :confirm-label="confirmation.label"
             @update:open="(value) => !value && dismiss()"
             @confirm="confirm"
-        />
-
-        <Pagination
-            :links="applications.links"
-            :from="applications.from"
-            :to="applications.to"
-            :total="applications.total"
         />
     </div>
 </template>

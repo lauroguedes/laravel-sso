@@ -170,3 +170,20 @@
         @apply bg-background text-foreground;
     }
 }
+
+/*
+ * A server fault is the one toast that shouts.
+ *
+ * Everything else keeps the native surface and says what it is through the
+ * colour of its icon; a 5xx is this server failing rather than a mistake in
+ * the request, so it takes the destructive variant outright.
+ *
+ * Unlayered, and with the attribute repeated for specificity, because the
+ * toast library ships its own unlayered defaults and anything inside @layer
+ * loses to an unlayered rule however late it appears.
+ */
+[data-sonner-toast][data-sonner-toast][data-type='error'] {
+    background: var(--destructive);
+    border-color: var(--destructive);
+    color: var(--destructive-foreground);
+}

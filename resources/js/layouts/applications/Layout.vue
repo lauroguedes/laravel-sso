@@ -1,8 +1,10 @@
 <script setup lang="ts">
-import { Link } from '@inertiajs/vue3';
+import { Link, router } from '@inertiajs/vue3';
 import { Pencil } from '@lucide/vue';
+import ApplicationTypeBadge from '@/components/applications/ApplicationTypeBadge.vue';
 import Heading from '@/components/Heading.vue';
-import { Badge } from '@/components/ui/badge';
+import IconButton from '@/components/IconButton.vue';
+import StatusIndicator from '@/components/StatusIndicator.vue';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { useCurrentUrl } from '@/composables/useCurrentUrl';
@@ -45,22 +47,38 @@ const { isCurrentUrl } = useCurrentUrl();
 <template>
     <div class="mx-auto w-full max-w-5xl px-4 py-8">
         <div class="mb-6 flex flex-wrap items-start justify-between gap-4">
-            <Heading :title="application.name" :description="description" />
+            <!--
+                The status reads as an icon beside the name rather than a badge
+                across the page: it belongs to the application, so it sits with
+                what it describes.
+            -->
+            <div class="flex items-start gap-2">
+                <span class="mt-1">
+                    <StatusIndicator
+                        :active="application.enabled"
+                        active-label="Enabled"
+                        inactive-label="Disabled"
+                    />
+                </span>
 
-            <div class="flex items-center gap-2">
-                <Badge
-                    :variant="application.enabled ? 'secondary' : 'destructive'"
-                >
-                    {{ application.enabled ? 'Enabled' : 'Disabled' }}
-                </Badge>
-
-                <Button v-if="canManage" variant="outline" as-child>
-                    <Link :href="edit(application.id)">
-                        <Pencil class="size-4" />
-                        Edit
-                    </Link>
-                </Button>
+                <Heading :title="application.name" :description="description">
+                    <template #title-suffix>
+                        <ApplicationTypeBadge
+                            :type="application.type"
+                            :label="application.type_label"
+                            :description="application.type_description"
+                        />
+                    </template>
+                </Heading>
             </div>
+
+            <IconButton
+                v-if="canManage"
+                label="Edit application"
+                :icon="Pencil"
+                variant="outline"
+                @click="router.visit(edit(application.id))"
+            />
         </div>
 
         <div class="flex flex-col lg:flex-row lg:space-x-12">

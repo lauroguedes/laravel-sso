@@ -21,6 +21,9 @@ use Illuminate\Http\Request;
  */
 trait SortsListings
 {
+    /** The page sizes a listing offers. The first is the default. */
+    private const PER_PAGE_OPTIONS = [15, 25, 50, 100];
+
     /**
      * Order the query by the requested column, or leave the default in place.
      *
@@ -64,6 +67,25 @@ trait SortsListings
     }
 
     /**
+     * How many rows a listing should show.
+     *
+     * Chosen in the interface and carried in the URL, so a page size survives
+     * a search, a sort and the back button. Constrained to a short list of
+     * offered sizes because the value reaches a LIMIT clause: an arbitrary
+     * number is an invitation to ask for a million rows.
+     *
+     * @return int<1, max>
+     */
+    protected function perPage(Request $request): int
+    {
+        $requested = $request->integer('per_page');
+
+        return in_array($requested, self::PER_PAGE_OPTIONS, true)
+            ? $requested
+            : self::PER_PAGE_OPTIONS[0];
+    }
+
+    /**
      * The sort to echo back to the interface, so the header shows its arrow.
      *
      * @param  array<int, string>  $sortable
@@ -76,6 +98,7 @@ trait SortsListings
         return [
             'sort' => $column,
             'direction' => $column === null ? null : $this->sortDirection($request),
+            'per_page' => $this->perPage($request),
         ];
     }
 }

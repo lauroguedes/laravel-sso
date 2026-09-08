@@ -1,5 +1,7 @@
 <script setup lang="ts">
 import { Head, router } from '@inertiajs/vue3';
+import { watchDebounced } from '@vueuse/core';
+import { ref } from 'vue';
 import { UserPlus, X } from '@lucide/vue';
 import ApplicationLayout from '@/layouts/applications/Layout.vue';
 import DangerousAction from '@/components/DangerousAction.vue';
@@ -54,7 +56,7 @@ defineOptions({
 const { application, filters, roles } = defineProps<{
     application: ApplicationHeader;
     canManageApplication: boolean;
-    filters: { search: string | null };
+    filters: { search: string | null; granted: string | null };
     grants: {
         data: ApplicationGrantSummary[];
         links: PaginationLink[];
@@ -67,10 +69,27 @@ const { application, filters, roles } = defineProps<{
     canManage: boolean;
 }>();
 
-const { search } = useListingFilters(grantsIndex(application.id).url, filters, [
-    'candidates',
-    'filters',
-]);
+const { search, setFilter } = useListingFilters(
+    grantsIndex(application.id).url,
+    filters,
+    /*
+     * Both lists, because this page has two search boxes: one narrows the
+     * candidates to add, the other the people who already have access. Asking
+     * for only the candidates left the grants table showing a result the URL
+     * said it had filtered.
+     */
+    ['candidates', 'grants', 'filters'],
+);
+
+/*
+ * A second, separately debounced box: this one narrows the list of people who
+ * already have access, while "search" above narrows the candidates to add.
+ */
+const granted = ref(filters.granted ?? '');
+
+watchDebounced(granted, (value) => setFilter('granted', value || null), {
+    debounce: 300,
+});
 
 /** Sentinel for "no role", since a select cannot carry a null value. */
 const NO_ROLE = 'none';
@@ -125,6 +144,14 @@ function revoke(grant: ApplicationGrantSummary) {
                     :row-key="(grant) => grant.id"
                     empty="Nobody has been granted access yet."
                 >
+                    <template #toolbar>
+                        <SearchInput
+                            v-model="granted"
+                            placeholder="Search by name or email"
+                            label="Search users with access"
+                        />
+                    </template>
+
                     <template #cell-user="{ row }">
                         <div class="flex items-center gap-2">
                             <span class="font-medium">{{ row.user.name }}</span>
@@ -192,14 +219,16 @@ function revoke(grant: ApplicationGrantSummary) {
                             </Button>
                         </DangerousAction>
                     </template>
-                </DataTable>
 
-                <Pagination
-                    :links="grants.links"
-                    :from="grants.from"
-                    :to="grants.to"
-                    :total="grants.total"
-                />
+                    <template #footer>
+                        <Pagination
+                            :links="grants.links"
+                            :from="grants.from"
+                            :to="grants.to"
+                            :total="grants.total"
+                        />
+                    </template>
+                </DataTable>
             </CardContent>
         </Card>
 

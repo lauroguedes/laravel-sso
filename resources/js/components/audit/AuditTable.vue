@@ -3,7 +3,11 @@ import { computed } from 'vue';
 import DataTable from '@/components/DataTable.vue';
 import { Badge } from '@/components/ui/badge';
 import { formatDateTime } from '@/lib/datetime';
-import type { DataTableColumn, AuditEntry } from '@/types/administration';
+import type {
+    AuditEntry,
+    DataTableColumn,
+    DataTableSort,
+} from '@/types/administration';
 
 /**
  * The audit trail as a table.
@@ -11,21 +15,24 @@ import type { DataTableColumn, AuditEntry } from '@/types/administration';
  * Shared between the whole-server view and an application's own, which differ
  * only in whether the application column is worth showing.
  *
- * Deliberately not sortable: the trail is a sequence, and reordering it by
- * actor or address would turn "what happened" into "what exists", losing the
- * one property that makes it readable as a history.
+ * Only time and event are sortable. Ordering by actor or address would turn
+ * "what happened" into "what exists", which is a different question from the
+ * one a trail answers, so those columns stay unsorted on purpose.
  */
-const { showApplication = false } = defineProps<{
+const { showApplication = false, sort = null } = defineProps<{
     entries: AuditEntry[];
     showApplication?: boolean;
+    sort?: DataTableSort;
 }>();
 
+defineEmits<{ 'update:sort': [DataTableSort] }>();
+
 const columns = computed<DataTableColumn[]>(() => [
-    { id: 'event', header: 'Event', alwaysVisible: true },
+    { id: 'event', header: 'Event', sortable: true, alwaysVisible: true },
     { id: 'causer', header: 'Actor' },
     ...(showApplication ? [{ id: 'application', header: 'Application' }] : []),
     { id: 'ip_address', header: 'Address' },
-    { id: 'created_at', header: 'When', align: 'right' },
+    { id: 'created_at', header: 'When', sortable: true, align: 'right' },
 ]);
 </script>
 
@@ -34,9 +41,13 @@ const columns = computed<DataTableColumn[]>(() => [
         :columns="columns"
         :rows="entries"
         :row-key="(entry) => entry.id"
+        :sort="sort"
         empty="Nothing recorded yet."
+        @update:sort="(next) => $emit('update:sort', next)"
     >
         <template #toolbar><slot name="toolbar" /></template>
+        <template #filters><slot name="filters" /></template>
+        <template #footer><slot name="footer" /></template>
 
         <template #cell-event="{ row }">
             <div class="flex items-center gap-2">

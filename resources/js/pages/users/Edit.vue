@@ -2,6 +2,7 @@
 import { Form, Head, Link, router } from '@inertiajs/vue3';
 import { computed } from 'vue';
 import Heading from '@/components/Heading.vue';
+import StatusIndicator from '@/components/StatusIndicator.vue';
 import CheckboxFields from '@/components/CheckboxFields.vue';
 import InputError from '@/components/InputError.vue';
 import PasswordInput from '@/components/PasswordInput.vue';
@@ -62,9 +63,21 @@ function signOutEverywhere() {
 
     <div class="mx-auto w-full max-w-5xl px-4 py-6">
         <div class="mb-6 flex flex-wrap items-start justify-between gap-4">
-            <Heading :title="user.name" :description="user.email" />
+            <div class="flex items-start gap-2">
+                <span class="mt-1">
+                    <StatusIndicator
+                        :active="!user.disabled"
+                        :active-label="
+                            user.email_verified
+                                ? 'Active'
+                                : 'Active, unverified'
+                        "
+                        inactive-label="Disabled"
+                    />
+                </span>
 
-            <Badge v-if="user.disabled" variant="destructive">Disabled</Badge>
+                <Heading :title="user.name" :description="user.email" />
+            </div>
         </div>
 
         <div class="grid items-start gap-6 lg:grid-cols-2">

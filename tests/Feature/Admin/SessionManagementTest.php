@@ -252,8 +252,8 @@ describe('permission isolation', function () {
     });
 
     test('a user without any platform permission cannot see sessions', function () {
-        $this->actingAs(User::factory()->create())
-            ->get(route('sessions.index'))
-            ->assertForbidden();
+        assertPageRefused(
+            $this->actingAs(User::factory()->create())->get(route('sessions.index'))
+        );
     });
 });

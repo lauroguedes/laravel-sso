@@ -20,6 +20,11 @@ declare module '@inertiajs/core' {
             auth: Auth;
             sidebarOpen: boolean;
             sso: { discoveryUrl: string };
+            can: {
+                viewApplications: boolean;
+                viewUsers: boolean;
+                viewAudit: boolean;
+            };
             [key: string]: unknown;
         };
     }

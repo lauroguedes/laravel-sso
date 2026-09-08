@@ -1,9 +1,10 @@
 <script setup lang="ts">
 import { Head, Link, router, usePage } from '@inertiajs/vue3';
-import { computed } from 'vue';
-import { TriangleAlert } from '@lucide/vue';
+import { computed, ref } from 'vue';
+import { RefreshCw, TriangleAlert } from '@lucide/vue';
 import ApplicationLayout from '@/layouts/applications/Layout.vue';
 import CopyButton from '@/components/CopyButton.vue';
+import IconButton from '@/components/IconButton.vue';
 import CredentialValue from '@/components/applications/CredentialValue.vue';
 import DangerousAction from '@/components/DangerousAction.vue';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
@@ -45,6 +46,8 @@ const { application } = defineProps<{
 function setEnabled(enabled: boolean) {
     router.put(updateStatus(application.id).url, { enabled });
 }
+
+const regenerating = ref(false);
 
 function regenerateSecret() {
     router.put(updateSecret(application.id).url);
@@ -102,29 +105,40 @@ function revokeAllTokens() {
 
                 <CredentialValue label="Client ID" :value="application.id" />
 
+                <!--
+                    Copyable only while a freshly issued secret is still in
+                    hand. What is stored is a hash, so at any other time there
+                    is nothing to copy and a button offering to would be
+                    copying the mask.
+                -->
                 <CredentialValue
                     v-if="application.confidential"
                     label="Client secret"
-                    value="••••••••••••••••••••••••••••••••"
-                    :copyable="false"
+                    :value="clientSecret ?? '••••••••••••••••••••••••••••••••'"
+                    :copyable="clientSecret !== null"
+                    copy-label="Copy client secret"
                 >
-                    <DangerousAction
+                    <IconButton
                         v-if="canRegenerateSecret"
-                        title="Generate a new client secret?"
-                        description="The current secret stops working immediately. Every integration using it will fail until it is updated."
-                        confirm-label="Generate new secret"
-                        @confirm="regenerateSecret"
-                    >
-                        <Button variant="outline" size="sm">
-                            Regenerate
-                        </Button>
-                    </DangerousAction>
+                        label="Regenerate client secret"
+                        :icon="RefreshCw"
+                        variant="outline"
+                        @click="regenerating = true"
+                    />
                 </CredentialValue>
 
                 <p v-else class="text-muted-foreground text-sm">
                     This is a public client. It has no secret and authenticates
                     with PKCE instead.
                 </p>
+
+                <DangerousAction
+                    v-model:open="regenerating"
+                    title="Generate a new client secret?"
+                    description="The current secret stops working immediately. Every integration using it will fail until it is updated."
+                    confirm-label="Generate new secret"
+                    @confirm="regenerateSecret"
+                />
             </CardContent>
         </Card>
 
@@ -141,9 +155,14 @@ function revokeAllTokens() {
                     <li
                         v-for="uri in application.redirect_uris"
                         :key="uri"
-                        class="bg-muted overflow-x-auto rounded px-3 py-2 font-mono text-sm"
+                        class="flex items-center gap-2"
                     >
-                        {{ uri }}
+                        <code
+                            class="bg-muted min-w-0 flex-1 overflow-x-auto rounded px-3 py-2 font-mono text-sm"
+                        >
+                            {{ uri }}
+                        </code>
+                        <CopyButton :value="uri" label="Copy URI" />
                     </li>
                 </ul>
             </CardContent>
@@ -166,9 +185,14 @@ function revokeAllTokens() {
                     <li
                         v-for="uri in application.post_logout_redirect_uris"
                         :key="uri"
-                        class="bg-muted overflow-x-auto rounded px-3 py-2 font-mono text-sm"
+                        class="flex items-center gap-2"
                     >
-                        {{ uri }}
+                        <code
+                            class="bg-muted min-w-0 flex-1 overflow-x-auto rounded px-3 py-2 font-mono text-sm"
+                        >
+                            {{ uri }}
+                        </code>
+                        <CopyButton :value="uri" label="Copy URI" />
                     </li>
                 </ul>
 

@@ -39,33 +39,35 @@ const page = usePage();
 
 const discoveryUrl = computed(() => page.props.sso.discoveryUrl);
 
-const mainNavItems: NavItem[] = [
-    {
-        title: 'Dashboard',
-        href: dashboard(),
-        icon: LayoutGrid,
-    },
-    {
-        title: 'Applications',
-        href: applications(),
-        icon: AppWindow,
-    },
-    {
-        title: 'Users',
-        href: users(),
-        icon: Users,
-    },
-    {
-        title: 'Sessions',
-        href: sessions(),
-        icon: MonitorSmartphone,
-    },
-    {
-        title: 'Audit',
-        href: audit(),
-        icon: ScrollText,
-    },
-];
+/*
+ * Only what this user can actually open. The abilities come from the server,
+ * which decides them with the same policies that guard the routes.
+ */
+const mainNavItems = computed<NavItem[]>(() => {
+    const can = page.props.can;
+
+    return [
+        { title: 'Dashboard', href: dashboard(), icon: LayoutGrid },
+        ...(can.viewApplications
+            ? [{ title: 'Applications', href: applications(), icon: AppWindow }]
+            : []),
+        ...(can.viewUsers
+            ? [{ title: 'Users', href: users(), icon: Users }]
+            : []),
+        ...(can.viewUsers
+            ? [
+                  {
+                      title: 'Sessions',
+                      href: sessions(),
+                      icon: MonitorSmartphone,
+                  },
+              ]
+            : []),
+        ...(can.viewAudit
+            ? [{ title: 'Audit', href: audit(), icon: ScrollText }]
+            : []),
+    ];
+});
 
 const footerNavItems: NavItem[] = [
     {
@@ -95,11 +97,18 @@ const footerNavItems: NavItem[] = [
         </SidebarContent>
 
         <SidebarFooter>
-            <SidebarMenu class="px-2 group-data-[collapsible=icon]:p-0">
-                <DiscoveryDialog :url="discoveryUrl" />
-            </SidebarMenu>
+            <!--
+                Protocol references, for whoever integrates applications. A
+                member who only signs in through this server has no use for the
+                discovery document and no application to point at it.
+            -->
+            <template v-if="page.props.can.viewApplications">
+                <SidebarMenu class="px-2 group-data-[collapsible=icon]:p-0">
+                    <DiscoveryDialog :url="discoveryUrl" />
+                </SidebarMenu>
 
-            <NavFooter :items="footerNavItems" />
+                <NavFooter :items="footerNavItems" />
+            </template>
             <NavUser />
         </SidebarFooter>
     </Sidebar>

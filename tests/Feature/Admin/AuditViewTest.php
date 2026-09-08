@@ -25,6 +25,25 @@ test('the audit page lists entries newest first', function () {
         ->where('entries.data.0.event', AuditEvent::UserLoginFailed->value));
 });
 
+test('the listing carries what the pager needs', function () {
+    /*
+     * The trail is simple-paginated, to avoid counting the fastest growing
+     * table in the schema on every page view. A simple paginator has no
+     * "links" or "total" — only the neighbouring URLs — and the pager reads
+     * those. Sending the length-aware shape's keys instead left the component
+     * dereferencing undefined and rendering nothing.
+     */
+    $this->audit->record(AuditEvent::UserLoggedIn);
+
+    $this->actingAs($this->admin)->get(route('audit.index'))
+        ->assertInertia(fn ($page) => $page
+            ->has('entries.prev_page_url')
+            ->has('entries.next_page_url')
+            ->has('entries.from')
+            ->has('entries.to')
+            ->missing('entries.links'));
+});
+
 test('entries can be narrowed to one stream', function () {
     $this->audit->record(AuditEvent::ApplicationCreated, $this->application, $this->application);
     $this->audit->record(AuditEvent::UserLoginFailed);
@@ -82,7 +101,7 @@ describe('permission isolation', function () {
         Permission::findOrCreate(PlatformPermission::UsersManage->value, 'web');
         $manager->givePermissionTo(PlatformPermission::UsersManage->value);
 
-        $this->actingAs($manager)->get(route('audit.index'))->assertForbidden();
+        assertPageRefused($this->actingAs($manager)->get(route('audit.index')));
     });
 
     test('the audit permission alone is enough to read it', function () {
@@ -98,9 +117,9 @@ describe('permission isolation', function () {
         Permission::findOrCreate(PlatformPermission::AuditView->value, 'web');
         $auditor->givePermissionTo(PlatformPermission::AuditView->value);
 
-        $this->actingAs($auditor)
-            ->get(route('applications.audit', $this->application))
-            ->assertForbidden();
+        assertPageRefused(
+            $this->actingAs($auditor)->get(route('applications.audit', $this->application))
+        );
     });
 });
 

@@ -1,5 +1,7 @@
 <script setup lang="ts">
 import { Link } from '@inertiajs/vue3';
+import { Rows3 } from '@lucide/vue';
+import { computed } from 'vue';
 import { Button } from '@/components/ui/button';
 
 export type PaginationLink = {
@@ -9,29 +11,100 @@ export type PaginationLink = {
 };
 
 /**
- * "total" is absent under simple pagination, which the audit trail uses to
- * avoid counting a table that grows with every sign-in.
+ * Pages a listing, under either paginator.
+ *
+ * A length-aware paginator supplies "links" and "total"; the simple paginator
+ * supplies neither, only the two neighbouring URLs. The audit trail uses the
+ * simple one deliberately, to avoid counting a table that grows with every
+ * sign-in, so this component has to read both shapes rather than assume the
+ * one that happens to be commoner.
  */
-const { links, from, to, total } = defineProps<{
-    links: PaginationLink[];
-    from: number | null;
-    to: number | null;
-    total?: number;
-}>();
+const { links, from, to, total, prevPageUrl, nextPageUrl, perPage } =
+    defineProps<{
+        links?: PaginationLink[];
+        from: number | null;
+        to: number | null;
+        total?: number;
+        prevPageUrl?: string | null;
+        nextPageUrl?: string | null;
+        /** Omit to hide the size selector, for a list that is never long. */
+        perPage?: number;
+    }>();
+
+const emit = defineEmits<{ 'update:perPage': [number] }>();
+
+/** Matches SortsListings::PER_PAGE_OPTIONS, which validates the request. */
+const sizes = [15, 25, 50, 100];
+
+const hasNeighbours = computed(
+    () => Boolean(prevPageUrl) || Boolean(nextPageUrl),
+);
 </script>
 
 <template>
     <nav
         v-if="(total ?? 0) > 0 || (from ?? 0) > 0"
-        class="flex flex-wrap items-center justify-between gap-3 pt-4"
+        class="flex flex-wrap items-center gap-4"
         aria-label="Pagination"
     >
-        <p class="text-muted-foreground text-sm">
-            Showing {{ from ?? 0 }}–{{ to ?? 0 }}
-            <template v-if="total !== undefined">of {{ total }}</template>
-        </p>
+        <div class="text-muted-foreground flex items-center gap-3 text-sm">
+            <span>
+                Showing {{ from ?? 0 }}–{{ to ?? 0 }}
+                <template v-if="total !== undefined">of {{ total }}</template>
+            </span>
 
-        <div v-if="links.length > 3" class="flex flex-wrap items-center gap-1">
+            <label
+                v-if="perPage !== undefined"
+                class="border-input bg-background flex items-center gap-1 rounded-md border pl-2"
+                title="Rows per page"
+            >
+                <!-- The icon carries the meaning, so the options stay numbers. -->
+                <Rows3 class="text-muted-foreground size-4" />
+                <span class="sr-only">Rows per page</span>
+                <select
+                    class="h-8 rounded-md bg-transparent pr-1 text-sm outline-none"
+                    :value="perPage"
+                    aria-label="Rows per page"
+                    @change="
+                        emit(
+                            'update:perPage',
+                            Number(($event.target as HTMLSelectElement).value),
+                        )
+                    "
+                >
+                    <option v-for="size in sizes" :key="size" :value="size">
+                        {{ size }}
+                    </option>
+                </select>
+            </label>
+        </div>
+
+        <div v-if="hasNeighbours" class="flex flex-wrap items-center gap-1">
+            <Button
+                :variant="'ghost'"
+                size="sm"
+                :disabled="!prevPageUrl"
+                as-child
+            >
+                <Link v-if="prevPageUrl" :href="prevPageUrl">Previous</Link>
+                <span v-else>Previous</span>
+            </Button>
+
+            <Button
+                :variant="'ghost'"
+                size="sm"
+                :disabled="!nextPageUrl"
+                as-child
+            >
+                <Link v-if="nextPageUrl" :href="nextPageUrl">Next</Link>
+                <span v-else>Next</span>
+            </Button>
+        </div>
+
+        <div
+            v-else-if="(links?.length ?? 0) > 3"
+            class="flex flex-wrap items-center gap-1"
+        >
             <template v-for="link in links" :key="link.label">
                 <Button
                     v-if="link.url"

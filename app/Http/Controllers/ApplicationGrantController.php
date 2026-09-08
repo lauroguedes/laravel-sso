@@ -32,11 +32,15 @@ class ApplicationGrantController extends Controller
         $this->authorize('view', $application);
 
         $search = $request->string('search')->toString() ?: null;
+        $granted = $request->string('granted')->toString() ?: null;
 
         return Inertia::render('applications/Access', [
             'application' => $application->toHeader(),
             'canManageApplication' => $request->user()->can('update', $application),
-            'filters' => ['search' => $search],
+            'filters' => [
+                'search' => $search,
+                'granted' => $granted,
+            ],
             /*
              * Sorted and paginated in SQL. The name lives on the joined user,
              * so ordering in PHP would have meant loading every grant.
@@ -44,6 +48,16 @@ class ApplicationGrantController extends Controller
             'grants' => $application->grants()
                 ->with('user:id,name,email,disabled_at')
                 ->join('users', 'users.id', '=', 'application_user.user_id')
+                /*
+                 * Its own parameter, separate from the candidate search above:
+                 * the two boxes narrow different lists on the same page.
+                 */
+                ->when($granted, fn ($query, string $term) => $query->where(
+                    fn ($query) => $query
+                        ->where('users.email', 'like', "{$term}%")
+                        ->orWhere('users.name', 'like', "{$term}%")
+                        ->orWhere('users.name', 'like', "% {$term}%")
+                ))
                 ->orderBy('users.name')
                 ->paginate(15, ['application_user.*'])
                 ->withQueryString()

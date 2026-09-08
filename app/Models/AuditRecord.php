@@ -95,6 +95,20 @@ class AuditRecord extends Activity
     }
 
     /**
+     * The columns a listing of audit entries may be ordered by.
+     *
+     * Only time and the event name. Ordering by actor or address would turn
+     * "what happened" into "what exists", which is a different question and
+     * not the one a trail answers.
+     *
+     * @return array<int, string>
+     */
+    public static function sortableColumns(): array
+    {
+        return ['created_at', 'event'];
+    }
+
+    /**
      * Scope the query to entries concerning one application.
      *
      * @param  Builder<AuditRecord>  $query

@@ -14,11 +14,11 @@ way they would recognise it.
 it cannot be changed afterwards — changing it would silently break every
 integration already using the client.
 
-| Type                  | For                                                       | Flow                         | Secret |
-| --------------------- | --------------------------------------------------------- | ---------------------------- | ------ |
-| Web application       | Server-side applications that can keep a secret           | Authorization code           | Yes    |
-| Single page or native | Browser and mobile applications that cannot keep a secret | Authorization code with PKCE | No     |
-| Machine to machine    | Backend services acting as themselves, no user involved   | Client credentials           | Yes    |
+| Type         | For                                                       | Flow                         | Secret |
+| ------------ | --------------------------------------------------------- | ---------------------------- | ------ |
+| Web App      | Server-side applications that can keep a secret           | Authorization code           | Yes    |
+| SPA / Mobile | Browser and mobile applications that cannot keep a secret | Authorization code with PKCE | No     |
+| Service      | Backend services acting as themselves, no user involved   | Client credentials           | Yes    |
 
 **Redirect URIs.** Where the browser is sent back after signing in. Matched
 exactly — no wildcards, no path prefixes, no trailing-slash forgiveness. Register

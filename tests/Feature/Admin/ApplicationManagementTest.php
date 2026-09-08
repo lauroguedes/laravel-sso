@@ -18,6 +18,46 @@ beforeEach(function () {
     $this->admin = User::factory()->superAdmin()->create();
 });
 
+describe('filtering', function () {
+    test('the listing narrows by status', function () {
+        Application::factory()->create(['name' => 'Live']);
+        Application::factory()->disabled()->create(['name' => 'Retired']);
+
+        $this->actingAs($this->admin)
+            ->get(route('applications.index', ['status' => 'disabled']))
+            ->assertInertia(fn ($page) => $page
+                ->has('applications.data', 1)
+                ->where('applications.data.0.name', 'Retired'));
+    });
+
+    test('the listing narrows by each kind of client', function () {
+        /*
+         * The type is derived from the grant types and the presence of a
+         * secret rather than stored, so the filter has to reproduce that
+         * derivation in SQL. One case per type proves it does.
+         */
+        $manager = app(ApplicationManager::class);
+
+        foreach (ApplicationType::cases() as $type) {
+            $manager->create([
+                'name' => 'A '.$type->value,
+                'type' => $type,
+                'redirect_uris' => $type->usesRedirectUris()
+                    ? ['https://app.example.com/auth/callback']
+                    : [],
+            ]);
+        }
+
+        foreach (ApplicationType::cases() as $type) {
+            $this->actingAs($this->admin)
+                ->get(route('applications.index', ['type' => $type->value]))
+                ->assertInertia(fn ($page) => $page
+                    ->has('applications.data', 1)
+                    ->where('applications.data.0.type', $type->value));
+        }
+    });
+});
+
 test('the listing says whether its row actions may be used', function () {
     $viewer = User::factory()->create();
     Permission::findOrCreate(PlatformPermission::ApplicationsView->value, 'web');
@@ -456,9 +496,9 @@ test('the application type cannot be changed after creation', function () {
 
 describe('permission isolation', function () {
     test('a user without any platform permission cannot list applications', function () {
-        $this->actingAs(User::factory()->create())
-            ->get(route('applications.index'))
-            ->assertForbidden();
+        assertPageRefused(
+            $this->actingAs(User::factory()->create())->get(route('applications.index'))
+        );
     });
 
     test('view permission alone does not allow registering an application', function () {
@@ -480,7 +520,7 @@ describe('permission isolation', function () {
         Permission::findOrCreate(PlatformPermission::UsersManage->value, 'web');
         $operator->givePermissionTo(PlatformPermission::UsersManage->value);
 
-        $this->actingAs($operator)->get(route('applications.index'))->assertForbidden();
+        assertPageRefused($this->actingAs($operator)->get(route('applications.index')));
     });
 
     test('a guest is redirected to the login screen', function () {

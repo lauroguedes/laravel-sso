@@ -131,6 +131,39 @@ class User extends Authenticatable implements MustVerifyEmail, OAuthenticatable,
     }
 
     /**
+     * Scope the query to active or disabled users.
+     *
+     * @param  Builder<User>  $query
+     * @return Builder<User>
+     */
+    public function scopeWithStatus(Builder $query, ?string $status): Builder
+    {
+        return match ($status) {
+            'active' => $query->whereNull('disabled_at'),
+            'disabled' => $query->whereNotNull('disabled_at'),
+            'unverified' => $query->whereNull('email_verified_at'),
+            default => $query,
+        };
+    }
+
+    /**
+     * Scope the query to holders of one platform role.
+     *
+     * @param  Builder<User>  $query
+     * @return Builder<User>
+     */
+    public function scopeWithRole(Builder $query, ?string $role): Builder
+    {
+        return $query->when(
+            $role,
+            fn (Builder $query, string $role) => $query->whereHas(
+                'roles',
+                fn ($roles) => $roles->where('name', $role),
+            ),
+        );
+    }
+
+    /**
      * The columns a listing of users may be ordered by.
      *
      * Lives here beside scopeSearch, because which columns are sortable is a

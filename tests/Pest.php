@@ -5,6 +5,7 @@ use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Str;
 use Illuminate\Testing\TestResponse;
+use Inertia\Support\SessionKey;
 use Lcobucci\JWT\Encoding\JoseEncoder;
 use Lcobucci\JWT\Token\DataSet;
 use Lcobucci\JWT\Token\Parser;
@@ -50,6 +51,26 @@ expect()->extend('toBeOne', function () {
 | global functions to help you to reduce the number of lines of code in your test files.
 |
 */
+
+/**
+ * Assert that a page visit was refused.
+ *
+ * A denied navigation no longer answers 403 or 404: it sends the reader back
+ * to somewhere they can be, with an explanation. Both halves are asserted
+ * here, because the redirect alone would also describe a successful request.
+ */
+function assertPageRefused(
+    TestResponse $response,
+    string $expects = 'permission',
+    string $type = 'warning',
+): void {
+    $response->assertRedirect(route('dashboard'));
+
+    $flash = session(SessionKey::FLASH_DATA, []);
+
+    expect($flash['toast']['type'] ?? null)->toBe($type)
+        ->and($flash['toast']['message'] ?? '')->toContain($expects);
+}
 
 /**
  * Derive the S256 code challenge for a PKCE verifier.

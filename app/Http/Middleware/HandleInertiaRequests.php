@@ -2,6 +2,9 @@
 
 namespace App\Http\Middleware;
 
+use App\Models\Application;
+use App\Models\AuditRecord;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
 
@@ -24,6 +27,26 @@ class HandleInertiaRequests extends Middleware
     public function version(Request $request): ?string
     {
         return parent::version($request);
+    }
+
+    /**
+     * The sections of the interface this user may open.
+     *
+     * @return array<string, bool>
+     */
+    private function abilities(Request $request): array
+    {
+        $user = $request->user();
+
+        if ($user === null) {
+            return [];
+        }
+
+        return [
+            'viewApplications' => $user->can('viewAny', Application::class),
+            'viewUsers' => $user->can('viewAny', User::class),
+            'viewAudit' => $user->can('viewAudit', AuditRecord::class),
+        ];
     }
 
     /**
@@ -50,6 +73,13 @@ class HandleInertiaRequests extends Middleware
             'sso' => [
                 'discoveryUrl' => config('sso.discovery_url'),
             ],
+            /*
+             * What this user may reach, decided by the same policies that
+             * guard the routes. The sidebar renders from this rather than
+             * showing every section and letting the click fail: a menu that
+             * offers a page the reader cannot open is a menu that lies.
+             */
+            'can' => $this->abilities($request),
             'sidebarOpen' => ! $request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',
         ];
     }
