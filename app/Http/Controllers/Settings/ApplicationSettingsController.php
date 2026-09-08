@@ -4,12 +4,14 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Settings;
 
+use App\Enums\SettingsSection;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Settings\ApplicationSettingsRequest;
 use App\Models\Setting;
 use App\Services\InterfaceOptions;
 use App\Services\Settings;
 use App\Services\ThemePalette;
+use Illuminate\Http\Request;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
@@ -50,13 +52,14 @@ class ApplicationSettingsController extends Controller
     /**
      * Show the settings form.
      */
-    public function edit(): Response
+    public function edit(Request $request): Response
     {
         $this->authorize('manage', Setting::class);
 
         return Inertia::render('settings/Application', [
             'settings' => $this->settings->all(),
             'pinned' => $this->settings->pinned(),
+            'tab' => SettingsSection::fromRequest($request->query('tab'))->value,
             'options' => $this->options->all($this->palette),
         ]);
     }
@@ -71,9 +74,11 @@ class ApplicationSettingsController extends Controller
             ...$this->resolveUploads($request),
         ]);
 
+        $section = SettingsSection::from($request->validated('section'));
+
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Settings saved.')]);
 
-        return $this->back($request->validated('section') === 'appearance');
+        return $this->back($section, reload: $section === SettingsSection::Appearance);
     }
 
     /**
@@ -91,20 +96,24 @@ class ApplicationSettingsController extends Controller
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Settings restored to their defaults.')]);
 
-        return $this->back(reload: true);
+        return $this->back(SettingsSection::default(), reload: true);
     }
 
     /**
-     * Return to the settings page.
+     * Return to the tab this request came from.
+     *
+     * Named in the URL rather than left to the page, because a save is a
+     * redirect: without it the answer to "saved" would be the first tab, and a
+     * full reload would have nothing at all to remember by.
      *
      * The palette is a stylesheet in the document head, which only a full page
      * load replaces. Saving a colour therefore has to leave the single-page
      * navigation, or an administrator would be told their choice was saved
      * while still looking at the old one.
      */
-    private function back(bool $reload): HttpResponse
+    private function back(SettingsSection $section, bool $reload): HttpResponse
     {
-        $destination = route('application-settings.edit');
+        $destination = route('application-settings.edit', ['tab' => $section->value]);
 
         return $reload
             ? Inertia::location($destination)

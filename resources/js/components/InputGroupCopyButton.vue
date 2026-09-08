@@ -1,14 +1,11 @@
 <script setup lang="ts">
 import { Check, Copy } from '@lucide/vue';
-import IconButton from '@/components/IconButton.vue';
+import InputGroupIconButton from '@/components/InputGroupIconButton.vue';
 import { useCopyToClipboard } from '@/composables/useCopyToClipboard';
 
 /**
- * Copies a value, and says what it copied on hover.
- *
- * Icon only: these sit beside credentials and URIs where the value beside them
- * is what the reader is looking at, and a repeated "Copy" word competes with
- * it. The label survives as the tooltip and the accessible name.
+ * CopyButton for a value shown in a field, where the control belongs inside
+ * the border rather than trailing after it.
  */
 const { value, label = 'Copy' } = defineProps<{
     value: string;
@@ -24,11 +21,10 @@ const {
 </script>
 
 <template>
-    <IconButton
+    <InputGroupIconButton
         v-if="isSupported"
         :label="tooltip"
         :icon="copied ? Check : Copy"
-        variant="outline"
         @click="copy(value)"
     />
 </template>

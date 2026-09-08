@@ -6,6 +6,7 @@ import BrandMark from '@/components/BrandMark.vue';
 import DangerousAction from '@/components/DangerousAction.vue';
 import Heading from '@/components/Heading.vue';
 import InputError from '@/components/InputError.vue';
+import DurationField from '@/components/settings/DurationField.vue';
 import ImageUploadField from '@/components/settings/ImageUploadField.vue';
 import RadioCards from '@/components/settings/RadioCards.vue';
 import SettingsField from '@/components/settings/SettingsField.vue';
@@ -21,6 +22,7 @@ import {
 } from '@/components/ui/select';
 import { Spinner } from '@/components/ui/spinner';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import type { DurationUnit } from '@/lib/duration';
 import { destroy, edit, update } from '@/routes/application-settings';
 
 /**
@@ -63,19 +65,48 @@ type Settings = {
 type Palette = { value: string; label: string; swatch: string };
 type Variant = { value: string; label: string; description: string };
 
-const { settings, pinned } = defineProps<{
+const { settings, pinned, tab } = defineProps<{
     settings: Settings;
     pinned: string[];
+    /** Which tab to open, so saving one returns to the one that was saved. */
+    tab: string;
     options: {
         baseColors: Palette[];
         accents: Palette[];
         rowsPerPage: number[];
         sidebarVariants: Variant[];
         authLayouts: Variant[];
+        /* Which unit each lifetime counts, and what the server will accept. */
+        durations: {
+            name: keyof Settings;
+            unit: DurationUnit;
+            min: number;
+            max: number;
+        }[];
+        sections: { value: string; label: string }[];
     };
 }>();
 
 const isPinned = (key: string) => pinned.includes(key);
+
+/*
+ * The open tab lives in the address bar. Each section saves with a redirect,
+ * and a redirect that forgot which tab it came from would answer "saved" by
+ * throwing the reader back to the first one — so the server sends them back to
+ * the section they submitted, and the URL keeps up as they browse.
+ *
+ * Rewritten in place rather than visited: switching tab fetches nothing, and
+ * asking the server for a page it already sent would make a free interaction
+ * cost a round trip. Inertia compares paths, not queries, so its own record of
+ * where the reader is stays correct.
+ */
+function rememberTab(value: string | number) {
+    const url = new URL(window.location.href);
+
+    url.searchParams.set('tab', String(value));
+
+    window.history.replaceState(window.history.state, '', url);
+}
 
 /*
  * Held locally because the interface reacts to them before anything is saved:
@@ -136,43 +167,38 @@ const switches = computed(() => [
     },
 ]);
 
-/* Seconds and days, which are all bounded by the server the same way. */
-const durations = computed(() => [
-    {
-        name: 'access_token_ttl',
-        label: 'Access token lifetime',
-        description: 'Seconds. Short by design; a relying party refreshes.',
-        value: settings.access_token_ttl,
-    },
-    {
-        name: 'refresh_token_ttl',
-        label: 'Refresh token lifetime',
+/*
+ * The lifetimes. What each is counted in, and what the server will accept,
+ * come with the setting: the unit is decided by whichever consumer reads it,
+ * and a field that guessed could offer a bound the request refuses.
+ */
+const explanations: Record<string, { label: string; description: string }> = {
+    access_token_ttl: {
+        label: 'Access token',
         description:
-            'Seconds. How long a signed-in application can keep renewing without the person returning.',
-        value: settings.refresh_token_ttl,
+            'How long an issued access token stays valid. Short by design: a relying party refreshes rather than holding one for long.',
     },
-    {
-        name: 'id_token_ttl',
-        label: 'ID token lifetime',
+    refresh_token_ttl: {
+        label: 'Refresh token',
         description:
-            'Seconds. What a relying party will accept as a fresh statement about who signed in.',
-        value: settings.id_token_ttl,
+            'How long a signed-in application can keep renewing its access without the person coming back to this server.',
     },
-    {
-        name: 'session_lifetime',
-        label: 'Session lifetime',
+    id_token_ttl: {
+        label: 'ID token',
         description:
-            'Minutes of inactivity before somebody has to sign in to this server again.',
-        value: settings.session_lifetime,
+            'How long a relying party will accept the token as a fresh statement about who signed in.',
     },
-    {
-        name: 'audit_retention_days',
+    session_lifetime: {
+        label: 'Session',
+        description:
+            'Inactivity before somebody has to sign in to this server again.',
+    },
+    audit_retention_days: {
         label: 'Audit retention',
         description:
-            'Days. Older entries are removed by the scheduled clean-up.',
-        value: settings.audit_retention_days,
+            'How much of the audit trail is kept. Older entries are removed by the scheduled clean-up.',
     },
-]);
+};
 
 function resetToDefaults() {
     router.delete(destroy().url);
@@ -203,13 +229,19 @@ function resetToDefaults() {
             </DangerousAction>
         </div>
 
-        <Tabs default-value="brand" class="gap-6">
+        <Tabs
+            :default-value="tab"
+            class="gap-6"
+            @update:model-value="rememberTab"
+        >
             <TabsList>
-                <TabsTrigger value="brand">Brand</TabsTrigger>
-                <TabsTrigger value="appearance">Appearance</TabsTrigger>
-                <TabsTrigger value="layout">Layout</TabsTrigger>
-                <TabsTrigger value="links">Links</TabsTrigger>
-                <TabsTrigger value="access">Access</TabsTrigger>
+                <TabsTrigger
+                    v-for="section in options.sections"
+                    :key="section.value"
+                    :value="section.value"
+                >
+                    {{ section.label }}
+                </TabsTrigger>
             </TabsList>
 
             <TabsContent value="brand">
@@ -544,23 +576,21 @@ function resetToDefaults() {
                     </div>
 
                     <div class="grid gap-4 sm:grid-cols-2">
-                        <SettingsField
-                            v-for="duration in durations"
+                        <DurationField
+                            v-for="duration in options.durations"
                             :key="duration.name"
-                            :id="duration.name"
-                            :label="duration.label"
-                            :description="duration.description"
+                            :name="duration.name"
+                            :label="explanations[duration.name].label"
+                            :description="
+                                explanations[duration.name].description
+                            "
+                            :default-value="settings[duration.name] as number"
+                            :unit="duration.unit"
+                            :min="duration.min"
+                            :max="duration.max"
                             :error="errors[duration.name]"
                             :pinned="isPinned(duration.name)"
-                        >
-                            <Input
-                                :id="duration.name"
-                                :name="duration.name"
-                                type="number"
-                                :default-value="duration.value"
-                                :disabled="isPinned(duration.name)"
-                            />
-                        </SettingsField>
+                        />
                     </div>
 
                     <Button type="submit" :disabled="processing">

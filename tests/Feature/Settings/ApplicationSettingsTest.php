@@ -4,6 +4,7 @@ use App\Enums\PlatformPermission;
 use App\Models\Setting;
 use App\Models\User;
 use App\Providers\SettingsServiceProvider;
+use App\Services\InterfaceOptions;
 use App\Services\Settings;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
@@ -74,7 +75,7 @@ function storedSettings(): Settings
 
 test('an administrator changes how the server presents itself', function () {
     saveSection('brand', ['brand_name' => 'Acme Identity'])
-        ->assertRedirect(route('application-settings.edit'));
+        ->assertRedirect(route('application-settings.edit', ['tab' => 'brand']));
 
     saveSection('layout', ['rows_per_page' => 50, 'auth_layout' => 'split']);
 
@@ -196,6 +197,29 @@ describe('settings pinned through the environment', function () {
     });
 });
 
+describe('the open tab', function () {
+    test('is the one that was saved, not the first', function () {
+        /*
+         * Each section saves with a redirect. Without the tab in the URL the
+         * answer to "saved" would be the reader thrown back to Brand, and a
+         * full reload would have nothing to remember by at all.
+         */
+        saveSection('layout')->assertRedirect(
+            route('application-settings.edit', ['tab' => 'layout'])
+        );
+
+        $this->actingAs($this->admin)
+            ->get(route('application-settings.edit', ['tab' => 'layout']))
+            ->assertInertia(fn ($page) => $page->where('tab', 'layout'));
+    });
+
+    test('falls back to the first when the URL names one that does not exist', function () {
+        $this->actingAs($this->admin)
+            ->get(route('application-settings.edit', ['tab' => 'nonsense']))
+            ->assertInertia(fn ($page) => $page->where('tab', 'brand'));
+    });
+});
+
 describe('the palette', function () {
     test('reaches the page as custom properties', function () {
         saveSection('appearance', ['base_color' => 'slate', 'accent' => 'blue']);
@@ -230,7 +254,7 @@ describe('the palette', function () {
                 'accent' => 'blue',
             ])
             ->assertStatus(409)
-            ->assertHeader('X-Inertia-Location', route('application-settings.edit'));
+            ->assertHeader('X-Inertia-Location', route('application-settings.edit', ['tab' => 'appearance']));
     });
 
     test('every other section stays within it', function () {
@@ -240,7 +264,7 @@ describe('the palette', function () {
                 'section' => 'brand',
                 'brand_name' => 'Acme Identity',
             ])
-            ->assertRedirect(route('application-settings.edit'));
+            ->assertRedirect(route('application-settings.edit', ['tab' => 'brand']));
     });
 
     test('a palette that does not exist is refused', function () {
@@ -285,8 +309,21 @@ describe('access and security', function () {
     });
 
     test('a token lifetime outside the bounds is refused', function () {
-        saveSection('access', ['access_token_ttl' => 1])
+        /*
+         * The bound is InterfaceOptions', so the field that offers it and the
+         * rule that rejects it cannot disagree about what is acceptable.
+         */
+        $bounds = collect(app(InterfaceOptions::class)->durations())
+            ->firstWhere('name', 'access_token_ttl');
+
+        saveSection('access', ['access_token_ttl' => $bounds['min'] - 1])
             ->assertSessionHasErrors('access_token_ttl');
+
+        saveSection('access', ['access_token_ttl' => $bounds['max'] + 1])
+            ->assertSessionHasErrors('access_token_ttl');
+
+        saveSection('access', ['access_token_ttl' => $bounds['min']])
+            ->assertSessionHasNoErrors();
     });
 
     test('the audit retention an administrator chose is what the clean-up uses', function () {
@@ -360,7 +397,7 @@ describe('restoring the defaults', function () {
         saveSection('layout', ['rows_per_page' => 50]);
 
         $this->actingAs($this->admin)->delete(route('application-settings.destroy'))
-            ->assertRedirect(route('application-settings.edit'));
+            ->assertRedirect(route('application-settings.edit', ['tab' => 'brand']));
 
         expect(Setting::query()->count())->toBe(0)
             ->and(storedSettings()->get('brand_name'))->toBe('Laravel SSO');

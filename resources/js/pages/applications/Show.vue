@@ -3,9 +3,8 @@ import { Head, Link, router, usePage } from '@inertiajs/vue3';
 import { computed, ref } from 'vue';
 import { RefreshCw, TriangleAlert } from '@lucide/vue';
 import ApplicationLayout from '@/layouts/applications/Layout.vue';
-import CopyButton from '@/components/CopyButton.vue';
-import IconButton from '@/components/IconButton.vue';
-import CredentialValue from '@/components/applications/CredentialValue.vue';
+import InputGroupIconButton from '@/components/InputGroupIconButton.vue';
+import ReadOnlyField from '@/components/ReadOnlyField.vue';
 import DangerousAction from '@/components/DangerousAction.vue';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
@@ -75,14 +74,12 @@ function revokeAllTokens() {
                     hash and cannot be recovered — if you lose it you will have
                     to generate a new one.
                 </p>
-                <div class="flex w-full flex-wrap items-center gap-2">
-                    <code
-                        class="bg-muted min-w-0 flex-1 overflow-x-auto rounded px-3 py-2 font-mono text-sm"
-                    >
-                        {{ clientSecret }}
-                    </code>
-                    <CopyButton :value="clientSecret" label="Copy secret" />
-                </div>
+                <ReadOnlyField
+                    label="Client secret"
+                    label-hidden
+                    :value="clientSecret"
+                    copy-label="Copy client secret"
+                />
             </AlertDescription>
         </Alert>
 
@@ -96,14 +93,14 @@ function revokeAllTokens() {
             </CardHeader>
 
             <CardContent class="space-y-4">
-                <CredentialValue label="Issuer" :value="issuer" />
+                <ReadOnlyField label="Issuer" :value="issuer" />
 
-                <CredentialValue
+                <ReadOnlyField
                     label="Discovery document"
                     :value="discoveryUrl"
                 />
 
-                <CredentialValue label="Client ID" :value="application.id" />
+                <ReadOnlyField label="Client ID" :value="application.id" />
 
                 <!--
                     Copyable only while a freshly issued secret is still in
@@ -111,21 +108,34 @@ function revokeAllTokens() {
                     is nothing to copy and a button offering to would be
                     copying the mask.
                 -->
-                <CredentialValue
+                <ReadOnlyField
                     v-if="application.confidential"
                     label="Client secret"
                     :value="clientSecret ?? '••••••••••••••••••••••••••••••••'"
                     :copyable="clientSecret !== null"
                     copy-label="Copy client secret"
                 >
-                    <IconButton
+                    <TooltipProvider
                         v-if="canRegenerateSecret"
-                        label="Regenerate client secret"
-                        :icon="RefreshCw"
-                        variant="outline"
-                        @click="regenerating = true"
-                    />
-                </CredentialValue>
+                        :delay-duration="150"
+                    >
+                        <Tooltip>
+                            <TooltipTrigger as-child>
+                                <InputGroupButton
+                                    size="icon-xs"
+                                    aria-label="Regenerate client secret"
+                                    @click="regenerating = true"
+                                >
+                                    <RefreshCw />
+                                </InputGroupButton>
+                            </TooltipTrigger>
+
+                            <TooltipContent>
+                                Regenerate client secret
+                            </TooltipContent>
+                        </Tooltip>
+                    </TooltipProvider>
+                </ReadOnlyField>
 
                 <p v-else class="text-muted-foreground text-sm">
                     This is a public client. It has no secret and authenticates
@@ -152,17 +162,13 @@ function revokeAllTokens() {
 
             <CardContent>
                 <ul class="space-y-2">
-                    <li
-                        v-for="uri in application.redirect_uris"
-                        :key="uri"
-                        class="flex items-center gap-2"
-                    >
-                        <code
-                            class="bg-muted min-w-0 flex-1 overflow-x-auto rounded px-3 py-2 font-mono text-sm"
-                        >
-                            {{ uri }}
-                        </code>
-                        <CopyButton :value="uri" label="Copy URI" />
+                    <li v-for="uri in application.redirect_uris" :key="uri">
+                        <ReadOnlyField
+                            label="Redirect URI"
+                            label-hidden
+                            :value="uri"
+                            copy-label="Copy URI"
+                        />
                     </li>
                 </ul>
             </CardContent>
@@ -185,14 +191,13 @@ function revokeAllTokens() {
                     <li
                         v-for="uri in application.post_logout_redirect_uris"
                         :key="uri"
-                        class="flex items-center gap-2"
                     >
-                        <code
-                            class="bg-muted min-w-0 flex-1 overflow-x-auto rounded px-3 py-2 font-mono text-sm"
-                        >
-                            {{ uri }}
-                        </code>
-                        <CopyButton :value="uri" label="Copy URI" />
+                        <ReadOnlyField
+                            label="Post-logout redirect URI"
+                            label-hidden
+                            :value="uri"
+                            copy-label="Copy URI"
+                        />
                     </li>
                 </ul>
 

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Requests\Settings;
 
+use App\Enums\SettingsSection;
 use App\Models\Setting;
 use App\Services\InterfaceOptions;
 use App\Services\ThemePalette;
@@ -35,45 +36,53 @@ class ApplicationSettingsRequest extends FormRequest
      */
     public static function sections(): array
     {
+        /*
+         * Built once a request: reading it resolves two services and
+         * constructs every allowlist, and one update asks for it twice — to
+         * validate, and to decide which settings the section owns.
+         */
+        return once(fn (): array => self::build());
+    }
+
+    /**
+     * @return array<string, array<string, ValidationRule|array<mixed>|string>>
+     */
+    private static function build(): array
+    {
         $options = app(InterfaceOptions::class);
         $palette = app(ThemePalette::class);
 
         return [
-            'brand' => [
+            SettingsSection::Brand->value => [
                 'brand_name' => ['required', 'string', 'max:60'],
                 'logo' => ['nullable', 'image', 'mimes:png,jpg,jpeg,svg,webp', 'max:512'],
                 'remove_logo' => ['boolean'],
             ],
-            'appearance' => [
+            SettingsSection::Appearance->value => [
                 'base_color' => ['required', Rule::in($palette->names('base_color'))],
                 'accent' => ['required', Rule::in($palette->names('accent'))],
             ],
-            'layout' => [
+            SettingsSection::Layout->value => [
                 'rows_per_page' => ['required', Rule::in($options->values('rows_per_page'))],
                 'sidebar_variant' => ['required', Rule::in($options->values('sidebar_variant'))],
                 'auth_layout' => ['required', Rule::in($options->values('auth_layout'))],
                 'auth_background' => ['nullable', 'image', 'mimes:png,jpg,jpeg,webp', 'max:2048'],
                 'remove_auth_background' => ['boolean'],
             ],
-            'links' => [
+            SettingsSection::Links->value => [
                 'documentation_links' => ['array', 'max:6'],
                 'documentation_links.*.label' => ['required', 'string', 'max:40'],
                 'documentation_links.*.url' => ['required', 'string', 'max:2000', 'url:http,https'],
             ],
-            'access' => [
+            SettingsSection::Access->value => [
                 'allow_registration' => ['boolean'],
                 'require_email_verification' => ['boolean'],
-                /*
-                 * Bounded at both ends. A one-second access token is a server
-                 * nothing can integrate with, and a year-long one is a
-                 * credential that outlives the reason it was issued.
-                 */
-                'access_token_ttl' => ['required', 'integer', 'min:60', 'max:86400'],
-                'refresh_token_ttl' => ['required', 'integer', 'min:300', 'max:31536000'],
-                'id_token_ttl' => ['required', 'integer', 'min:60', 'max:86400'],
-                'session_lifetime' => ['required', 'integer', 'min:5', 'max:43200'],
                 'logout_other_sessions_on_password_change' => ['boolean'],
-                'audit_retention_days' => ['required', 'integer', 'min:7', 'max:3650'],
+                /* Bounded where the field that offers them is bounded. */
+                ...array_combine(
+                    $options->durationNames(),
+                    array_map($options->durationRules(...), $options->durationNames()),
+                ),
             ],
         ];
     }
@@ -93,9 +102,11 @@ class ApplicationSettingsRequest extends FormRequest
      */
     public function rules(): array
     {
+        $sections = self::sections();
+
         return [
-            'section' => ['required', Rule::in(array_keys(self::sections()))],
-            ...self::sections()[$this->input('section')] ?? [],
+            'section' => ['required', Rule::in(array_keys($sections))],
+            ...$sections[$this->input('section')] ?? [],
         ];
     }
 
@@ -142,7 +153,9 @@ class ApplicationSettingsRequest extends FormRequest
      */
     private function castNumbers(): void
     {
-        foreach (['rows_per_page', 'access_token_ttl', 'refresh_token_ttl', 'id_token_ttl', 'session_lifetime', 'audit_retention_days'] as $key) {
+        $numbers = ['rows_per_page', ...app(InterfaceOptions::class)->durationNames()];
+
+        foreach ($numbers as $key) {
             if ($this->has($key)) {
                 $this->merge([$key => (int) $this->input($key)]);
             }

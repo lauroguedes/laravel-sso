@@ -2,7 +2,8 @@
 import { ExternalLink } from '@lucide/vue';
 import { computed, ref, watch } from 'vue';
 import CopyButton from '@/components/CopyButton.vue';
-import IconButton from '@/components/IconButton.vue';
+import InputGroupIconButton from '@/components/InputGroupIconButton.vue';
+import ReadOnlyField from '@/components/ReadOnlyField.vue';
 import {
     Dialog,
     DialogContent,
@@ -143,22 +144,18 @@ watch(
                 </DialogDescription>
             </DialogHeader>
 
-            <div class="flex flex-wrap items-center gap-2">
-                <code
-                    class="bg-muted min-w-0 flex-1 overflow-x-auto rounded px-3 py-2 font-mono text-xs"
-                >
-                    {{ url }}
-                </code>
-
-                <CopyButton :value="url" label="Copy discovery URL" />
-
-                <IconButton
+            <ReadOnlyField
+                label="Discovery URL"
+                label-hidden
+                :value="url"
+                copy-label="Copy discovery URL"
+            >
+                <InputGroupIconButton
                     label="Open the raw document"
                     :icon="ExternalLink"
-                    variant="outline"
                     @click="openRaw"
                 />
-            </div>
+            </ReadOnlyField>
 
             <div
                 v-if="loading"
