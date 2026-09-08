@@ -19,8 +19,20 @@ declare module '@inertiajs/core' {
             name: string;
             auth: Auth;
             sidebarOpen: boolean;
+            sso: { discoveryUrl: string };
             [key: string]: unknown;
         };
+    }
+}
+
+/*
+ * DataTable carries a column's alignment on the column itself, so a header and
+ * its cells read it from one place. TanStack leaves ColumnMeta empty for
+ * exactly this.
+ */
+declare module '@tanstack/vue-table' {
+    interface ColumnMeta<TData extends RowData, TValue> {
+        align?: 'left' | 'right';
     }
 }
 

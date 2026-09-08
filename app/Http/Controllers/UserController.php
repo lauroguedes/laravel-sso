@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers;
 
+use App\Concerns\SortsListings;
 use App\Http\Requests\Admin\StoreUserRequest;
 use App\Http\Requests\Admin\UpdateUserRequest;
 use App\Models\ApplicationUser;
@@ -17,6 +18,8 @@ use Spatie\Permission\Models\Role;
 
 class UserController extends Controller
 {
+    use SortsListings;
+
     public function __construct(private readonly UserManager $users) {}
 
     /**
@@ -26,16 +29,30 @@ class UserController extends Controller
     {
         $this->authorize('viewAny', User::class);
 
+        $listing = User::query()
+            /*
+             * summarize() reads the role names, which spatie resolves per
+             * model. Without this the listing issues one extra query per row.
+             */
+            ->with('roles:id,name')
+            ->search($request->string('search')->toString() ?: null);
+
         return Inertia::render('users/Index', [
-            'filters' => ['search' => $request->string('search')->toString() ?: null],
-            'users' => User::query()
+            'filters' => [
+                'search' => $request->string('search')->toString() ?: null,
+                ...$this->sortFilters($request, User::sortableColumns()),
+            ],
+            /*
+             * Creating and editing a user are the same permission, and
+             * UserPolicy::update() does not look at the target, so one
+             * page-level answer is accurate for every row's actions.
+             */
+            'canManage' => $request->user()->can('create', User::class),
+            'users' => $this->applySort($listing, $request, User::sortableColumns())
                 /*
-                 * summarize() reads the role names, which spatie resolves per
-                 * model. Without this the listing issues one extra query per
-                 * row.
+                 * A stable tiebreaker, so that rows with equal values keep the
+                 * same order between pages rather than drifting.
                  */
-                ->with('roles:id,name')
-                ->search($request->string('search')->toString() ?: null)
                 ->orderBy('name')
                 ->paginate(15)
                 ->withQueryString()

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Requests\Admin;
 
+use App\Concerns\DiscardsBlankUris;
 use App\Concerns\ResolvesApplicationFromRoute;
 use App\Rules\RedirectUri;
 use App\Services\ScopeRegistry;
@@ -13,6 +14,7 @@ use Illuminate\Validation\Rule;
 
 class UpdateApplicationRequest extends FormRequest
 {
+    use DiscardsBlankUris;
     use ResolvesApplicationFromRoute;
 
     /**

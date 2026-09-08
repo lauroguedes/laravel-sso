@@ -1,25 +1,30 @@
 <script setup lang="ts">
-import { Head, Link, router } from '@inertiajs/vue3';
-import { Plus } from '@lucide/vue';
+import { Head, Link, router, usePage } from '@inertiajs/vue3';
+import { computed, ref } from 'vue';
+import { Ban, Eye, LogOut, MoreHorizontal, Pencil, Plus } from '@lucide/vue';
+import DangerousAction from '@/components/DangerousAction.vue';
+import DataTable from '@/components/DataTable.vue';
+import StatusIndicator from '@/components/StatusIndicator.vue';
 import Heading from '@/components/Heading.vue';
 import Pagination from '@/components/Pagination.vue';
 import type { PaginationLink } from '@/components/Pagination.vue';
+import SearchInput from '@/components/SearchInput.vue';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import SearchInput from '@/components/SearchInput.vue';
 import {
-    Table,
-    TableBody,
-    TableCell,
-    TableEmpty,
-    TableHead,
-    TableHeader,
-    TableRow,
-} from '@/components/ui/table';
-import { useSearchFilter } from '@/composables/useSearchFilter';
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuSeparator,
+    DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { useListingFilters } from '@/composables/useListingFilters';
+import type { ListingFilters } from '@/composables/useListingFilters';
 import { formatDate } from '@/lib/datetime';
 import { create, edit, index } from '@/routes/users';
-import type { UserSummary } from '@/types/administration';
+import { destroy as revokeSessions } from '@/routes/users/sessions';
+import { update as updateStatus } from '@/routes/users/status';
+import type { DataTableColumn, UserSummary } from '@/types/administration';
 
 defineOptions({
     layout: {
@@ -35,17 +40,87 @@ const { users, filters } = defineProps<{
         to: number | null;
         total: number;
     };
-    filters: { search: string | null };
+    filters: ListingFilters;
+    canManage: boolean;
 }>();
 
-const { search } = useSearchFilter(index().url, filters.search);
+/* Administrators may not disable themselves, so that row omits the action. */
+const currentUserId = computed(() => usePage().props.auth.user.id);
+
+const columns: DataTableColumn[] = [
+    { id: 'status', header: 'Status', alwaysVisible: true },
+    { id: 'name', header: 'Name', sortable: true, alwaysVisible: true },
+    { id: 'roles', header: 'Roles' },
+    { id: 'last_login_at', header: 'Last sign-in', sortable: true },
+    { id: 'created_at', header: 'Created', sortable: true },
+    { id: 'actions', header: '', align: 'right', alwaysVisible: true },
+];
+
+/** The user a confirmation is currently open for, and what it will do. */
+const pending = ref<{
+    user: UserSummary;
+    action: 'signOut' | 'disable';
+} | null>(null);
+
+const confirmation = computed(() => {
+    if (pending.value === null) {
+        return null;
+    }
+
+    const { user, action } = pending.value;
+
+    return action === 'signOut'
+        ? {
+              title: 'Sign this user out everywhere?',
+              description: `${user.name} will be signed out of this server and every application that holds a token for them.`,
+              label: 'Sign out everywhere',
+          }
+        : {
+              title: 'Disable this user?',
+              description: `${user.name} will be refused at sign-in, and every session and token they hold will be revoked.`,
+              label: 'Disable user',
+          };
+});
+
+/*
+ * The dialog closes itself when its action is clicked, and that close arrives
+ * in the same tick as the confirm. Clearing on the next microtask instead lets
+ * the handler below still see what it is confirming.
+ */
+function dismiss() {
+    queueMicrotask(() => {
+        pending.value = null;
+    });
+}
+
+function confirm() {
+    if (pending.value === null) {
+        return;
+    }
+
+    const { user, action } = pending.value;
+
+    if (action === 'signOut') {
+        router.delete(revokeSessions(user.id).url, { preserveScroll: true });
+    } else {
+        router.put(
+            updateStatus(user.id).url,
+            { enabled: false },
+            { preserveScroll: true },
+        );
+    }
+
+    pending.value = null;
+}
+
+const { search, sort, applySort } = useListingFilters(index().url, filters);
 </script>
 
 <template>
     <Head title="Users" />
 
-    <div class="px-4 py-6">
-        <div class="mb-6 flex flex-wrap items-start justify-between gap-4">
+    <div class="mx-auto w-full max-w-5xl space-y-6 px-4 py-8">
+        <div class="flex flex-wrap items-start justify-between gap-4">
             <Heading
                 title="Users"
                 description="People who can authenticate through this Identity Provider"
@@ -59,93 +134,135 @@ const { search } = useSearchFilter(index().url, filters.search);
             </Button>
         </div>
 
-        <SearchInput
-            v-model="search"
-            class="mb-4"
-            placeholder="Search by name or email"
-            label="Search users"
-        />
+        <DataTable
+            :columns="columns"
+            :rows="users.data"
+            :sort="sort"
+            :row-key="(user) => user.id"
+            empty="No users match this search."
+            @update:sort="applySort"
+        >
+            <template #toolbar>
+                <SearchInput
+                    v-model="search"
+                    placeholder="Search by name or email"
+                    label="Search users"
+                />
+            </template>
 
-        <div class="overflow-x-auto rounded-lg border">
-            <Table>
-                <TableHeader>
-                    <TableRow>
-                        <TableHead>Name</TableHead>
-                        <TableHead>Roles</TableHead>
-                        <TableHead>Status</TableHead>
-                        <TableHead>Last sign-in</TableHead>
-                        <TableHead class="text-right">Created</TableHead>
-                    </TableRow>
-                </TableHeader>
+            <template #cell-name="{ row }">
+                <Link :href="edit(row.id)" class="font-medium hover:underline">
+                    {{ row.name }}
+                </Link>
+                <div class="text-muted-foreground text-sm">
+                    {{ row.email }}
+                </div>
+            </template>
 
-                <TableBody>
-                    <TableEmpty v-if="users.data.length === 0" :colspan="5">
-                        No users match this search.
-                    </TableEmpty>
-
-                    <TableRow
-                        v-for="user in users.data"
-                        :key="user.id"
-                        class="cursor-pointer"
-                        @click="router.visit(edit(user.id))"
+            <template #cell-roles="{ row }">
+                <div class="flex flex-wrap gap-1">
+                    <Badge
+                        v-for="role in row.roles"
+                        :key="role"
+                        variant="secondary"
                     >
-                        <TableCell>
-                            <Link
-                                :href="edit(user.id)"
-                                class="font-medium hover:underline"
-                                @click.stop
-                            >
-                                {{ user.name }}
-                            </Link>
-                            <div class="text-muted-foreground text-sm">
-                                {{ user.email }}
-                            </div>
-                        </TableCell>
+                        {{ role }}
+                    </Badge>
+                    <span
+                        v-if="row.roles.length === 0"
+                        class="text-muted-foreground text-sm"
+                    >
+                        —
+                    </span>
+                </div>
+            </template>
 
-                        <TableCell>
-                            <div class="flex flex-wrap gap-1">
-                                <Badge
-                                    v-for="role in user.roles"
-                                    :key="role"
-                                    variant="secondary"
-                                >
-                                    {{ role }}
-                                </Badge>
-                                <span
-                                    v-if="user.roles.length === 0"
-                                    class="text-muted-foreground text-sm"
-                                >
-                                    —
-                                </span>
-                            </div>
-                        </TableCell>
+            <template #cell-status="{ row }">
+                <StatusIndicator
+                    :active="!row.disabled"
+                    :active-label="
+                        row.email_verified ? 'Active' : 'Active, unverified'
+                    "
+                    inactive-label="Disabled"
+                />
+            </template>
 
-                        <TableCell>
-                            <Badge v-if="user.disabled" variant="destructive">
-                                Disabled
-                            </Badge>
-                            <Badge
-                                v-else-if="!user.email_verified"
-                                variant="outline"
-                            >
-                                Unverified
-                            </Badge>
-                            <Badge v-else variant="secondary">Active</Badge>
-                        </TableCell>
-
-                        <TableCell class="text-muted-foreground text-sm">
-                            {{ formatDate(user.last_login_at) }}
-                        </TableCell>
-
-                        <TableCell
-                            class="text-muted-foreground text-right text-sm"
+            <template #cell-actions="{ row }">
+                <DropdownMenu>
+                    <DropdownMenuTrigger as-child>
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            :aria-label="`Actions for ${row.name}`"
                         >
-                            {{ formatDate(user.created_at) }}
-                        </TableCell>
-                    </TableRow>
-                </TableBody>
-            </Table>
-        </div>
+                            <MoreHorizontal class="size-4" />
+                        </Button>
+                    </DropdownMenuTrigger>
+
+                    <DropdownMenuContent align="end">
+                        <DropdownMenuItem as-child>
+                            <Link :href="edit(row.id)">
+                                <Eye class="size-4" />
+                                View
+                            </Link>
+                        </DropdownMenuItem>
+
+                        <DropdownMenuItem v-if="canManage" as-child>
+                            <Link :href="edit(row.id)">
+                                <Pencil class="size-4" />
+                                Edit
+                            </Link>
+                        </DropdownMenuItem>
+
+                        <template v-if="canManage">
+                            <DropdownMenuSeparator />
+
+                            <DropdownMenuItem
+                                @select="
+                                    pending = { user: row, action: 'signOut' }
+                                "
+                            >
+                                <LogOut class="size-4" />
+                                Sign out everywhere
+                            </DropdownMenuItem>
+
+                            <DropdownMenuItem
+                                v-if="!row.disabled && row.id !== currentUserId"
+                                variant="destructive"
+                                @select="
+                                    pending = { user: row, action: 'disable' }
+                                "
+                            >
+                                <Ban class="size-4" />
+                                Disable user
+                            </DropdownMenuItem>
+                        </template>
+                    </DropdownMenuContent>
+                </DropdownMenu>
+            </template>
+
+            <template #cell-last_login_at="{ row }">
+                <span class="text-muted-foreground text-sm">
+                    {{ formatDate(row.last_login_at) }}
+                </span>
+            </template>
+
+            <template #cell-created_at="{ row }">
+                <span class="text-muted-foreground text-sm">
+                    {{ formatDate(row.created_at) }}
+                </span>
+            </template>
+        </DataTable>
+
+        <DangerousAction
+            v-if="confirmation"
+            :open="pending !== null"
+            :title="confirmation.title"
+            :description="confirmation.description"
+            :confirm-label="confirmation.label"
+            @update:open="(value) => !value && dismiss()"
+            @confirm="confirm"
+        />
 
         <Pagination
             :links="users.links"

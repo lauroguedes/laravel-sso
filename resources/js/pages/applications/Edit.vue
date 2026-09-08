@@ -44,7 +44,7 @@ const scopeOptions = computed(() =>
 <template>
     <Head :title="`Edit ${application.name}`" />
 
-    <div class="max-w-2xl px-4 py-6">
+    <div class="mx-auto w-full max-w-5xl px-4 py-6">
         <Heading
             :title="`Edit ${application.name}`"
             :description="application.type_label"
@@ -52,7 +52,7 @@ const scopeOptions = computed(() =>
 
         <Form
             v-bind="update.form(application.id)"
-            class="space-y-6"
+            class="grid items-start gap-6 lg:grid-cols-2"
             v-slot="{ errors, processing }"
         >
             <Card>
@@ -176,7 +176,7 @@ const scopeOptions = computed(() =>
                 </CardContent>
             </Card>
 
-            <div class="flex items-center gap-3">
+            <div class="flex items-center gap-3 lg:col-span-2">
                 <Button type="submit" :disabled="processing">
                     <Spinner v-if="processing" />
                     Save changes

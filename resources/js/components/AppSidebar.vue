@@ -1,15 +1,16 @@
 <script setup lang="ts">
-import { Link } from '@inertiajs/vue3';
+import { Link, usePage } from '@inertiajs/vue3';
+import { computed } from 'vue';
 import {
     AppWindow,
     BookOpen,
-    FolderGit2,
     LayoutGrid,
     MonitorSmartphone,
     ScrollText,
     Users,
 } from '@lucide/vue';
 import AppLogo from '@/components/AppLogo.vue';
+import DiscoveryDialog from '@/components/DiscoveryDialog.vue';
 import NavFooter from '@/components/NavFooter.vue';
 import NavMain from '@/components/NavMain.vue';
 import NavUser from '@/components/NavUser.vue';
@@ -23,12 +24,20 @@ import {
     SidebarMenuItem,
 } from '@/components/ui/sidebar';
 import { dashboard } from '@/routes';
-import { discovery } from '@/routes/oidc';
 import { index as applications } from '@/routes/applications';
 import { index as audit } from '@/routes/audit';
 import { index as sessions } from '@/routes/sessions';
 import { index as users } from '@/routes/users';
 import type { NavItem } from '@/types';
+
+/*
+ * Built from the issuer rather than route(), which would use APP_URL: the
+ * discovery URL is the one relying parties fetch, and behind a proxy the two
+ * differ. The server puts the canonical value on every page.
+ */
+const page = usePage();
+
+const discoveryUrl = computed(() => page.props.sso.discoveryUrl);
 
 const mainNavItems: NavItem[] = [
     {
@@ -60,11 +69,6 @@ const mainNavItems: NavItem[] = [
 
 const footerNavItems: NavItem[] = [
     {
-        title: 'Discovery document',
-        href: discovery(),
-        icon: FolderGit2,
-    },
-    {
         title: 'OpenID Connect',
         href: 'https://openid.net/developers/how-connect-works/',
         icon: BookOpen,
@@ -91,6 +95,10 @@ const footerNavItems: NavItem[] = [
         </SidebarContent>
 
         <SidebarFooter>
+            <SidebarMenu class="px-2 group-data-[collapsible=icon]:p-0">
+                <DiscoveryDialog :url="discoveryUrl" />
+            </SidebarMenu>
+
             <NavFooter :items="footerNavItems" />
             <NavUser />
         </SidebarFooter>

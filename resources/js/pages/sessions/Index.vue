@@ -13,20 +13,16 @@ import {
     CardHeader,
     CardTitle,
 } from '@/components/ui/card';
-import {
-    Table,
-    TableBody,
-    TableCell,
-    TableEmpty,
-    TableHead,
-    TableHeader,
-    TableRow,
-} from '@/components/ui/table';
+import DataTable from '@/components/DataTable.vue';
 import { formatDateTime, formatTimestamp } from '@/lib/datetime';
 import { index } from '@/routes/sessions';
 import { destroy as revokeSession } from '@/routes/sessions';
 import { destroy as revokeToken } from '@/routes/tokens';
-import type { BrowserSession, IssuedToken } from '@/types/administration';
+import type {
+    DataTableColumn,
+    BrowserSession,
+    IssuedToken,
+} from '@/types/administration';
 
 defineOptions({
     layout: {
@@ -48,12 +44,27 @@ function endSession(session: BrowserSession) {
 function endToken(token: IssuedToken) {
     router.delete(revokeToken(token.id).url);
 }
+
+const sessionColumns: DataTableColumn[] = [
+    { id: 'user', header: 'User', alwaysVisible: true },
+    { id: 'ip_address', header: 'Address' },
+    { id: 'last_activity', header: 'Last activity' },
+    { id: 'actions', header: '', align: 'right', alwaysVisible: true },
+];
+
+const tokenColumns: DataTableColumn[] = [
+    { id: 'user', header: 'User', alwaysVisible: true },
+    { id: 'application', header: 'Application' },
+    { id: 'scopes', header: 'Scopes' },
+    { id: 'expires_at', header: 'Expires' },
+    { id: 'actions', header: '', align: 'right', alwaysVisible: true },
+];
 </script>
 
 <template>
     <Head title="Sessions" />
 
-    <div class="px-4 py-6">
+    <div class="mx-auto w-full max-w-5xl space-y-6 px-4 py-8">
         <Heading
             title="Sessions"
             description="Who is signed in here, and which applications hold tokens on their behalf"
@@ -82,90 +93,64 @@ function endToken(token: IssuedToken) {
                         </AlertDescription>
                     </Alert>
 
-                    <div v-else class="overflow-x-auto rounded-lg border">
-                        <Table>
-                            <TableHeader>
-                                <TableRow>
-                                    <TableHead>User</TableHead>
-                                    <TableHead>Address</TableHead>
-                                    <TableHead>Last activity</TableHead>
-                                    <TableHead class="w-12" />
-                                </TableRow>
-                            </TableHeader>
+                    <DataTable
+                        v-else
+                        :columns="sessionColumns"
+                        :rows="browserSessions"
+                        :row-key="(session) => session.id"
+                        empty="Nobody is signed in."
+                    >
+                        <template #cell-user="{ row }">
+                            <div class="flex items-center gap-2">
+                                <span class="font-medium">
+                                    {{ row.user.name }}
+                                </span>
+                                <Badge v-if="row.current" variant="secondary">
+                                    This session
+                                </Badge>
+                            </div>
+                            <div class="text-muted-foreground text-sm">
+                                {{ row.user.email }}
+                            </div>
+                        </template>
 
-                            <TableBody>
-                                <TableEmpty
-                                    v-if="browserSessions.length === 0"
-                                    :colspan="4"
+                        <template #cell-ip_address="{ row }">
+                            <div class="text-sm">
+                                {{ row.ip_address ?? '—' }}
+                            </div>
+                            <div
+                                class="text-muted-foreground line-clamp-1 max-w-xs text-xs"
+                            >
+                                {{ row.user_agent }}
+                            </div>
+                        </template>
+
+                        <template #cell-last_activity="{ row }">
+                            <span
+                                class="text-muted-foreground text-sm whitespace-nowrap"
+                            >
+                                {{ formatTimestamp(row.last_activity) }}
+                            </span>
+                        </template>
+
+                        <template #cell-actions="{ row }">
+                            <DangerousAction
+                                v-if="canManage"
+                                title="End this session?"
+                                :description="`${row.user.name} will be signed out of this server. Tokens applications already hold are not affected.`"
+                                confirm-label="End session"
+                                @confirm="endSession(row)"
+                            >
+                                <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    :aria-label="`End session for ${row.user.name}`"
                                 >
-                                    Nobody is signed in.
-                                </TableEmpty>
-
-                                <TableRow
-                                    v-for="session in browserSessions"
-                                    :key="session.id"
-                                >
-                                    <TableCell>
-                                        <div class="flex items-center gap-2">
-                                            <span class="font-medium">
-                                                {{ session.user.name }}
-                                            </span>
-                                            <Badge
-                                                v-if="session.current"
-                                                variant="secondary"
-                                            >
-                                                This session
-                                            </Badge>
-                                        </div>
-                                        <div
-                                            class="text-muted-foreground text-sm"
-                                        >
-                                            {{ session.user.email }}
-                                        </div>
-                                    </TableCell>
-
-                                    <TableCell class="text-sm">
-                                        <div>
-                                            {{ session.ip_address ?? '—' }}
-                                        </div>
-                                        <div
-                                            class="text-muted-foreground line-clamp-1 max-w-xs text-xs"
-                                        >
-                                            {{ session.user_agent }}
-                                        </div>
-                                    </TableCell>
-
-                                    <TableCell
-                                        class="text-muted-foreground text-sm whitespace-nowrap"
-                                    >
-                                        {{
-                                            formatTimestamp(
-                                                session.last_activity,
-                                            )
-                                        }}
-                                    </TableCell>
-
-                                    <TableCell class="text-right">
-                                        <DangerousAction
-                                            v-if="canManage"
-                                            title="End this session?"
-                                            :description="`${session.user.name} will be signed out of this server. Tokens applications already hold are not affected.`"
-                                            confirm-label="End session"
-                                            @confirm="endSession(session)"
-                                        >
-                                            <Button
-                                                variant="ghost"
-                                                size="icon"
-                                                :aria-label="`End session for ${session.user.name}`"
-                                            >
-                                                <X class="size-4" />
-                                            </Button>
-                                        </DangerousAction>
-                                    </TableCell>
-                                </TableRow>
-                            </TableBody>
-                        </Table>
-                    </div>
+                                    <X class="size-4" />
+                                </Button>
+                            </DangerousAction>
+                        </template>
+                    </DataTable>
                 </CardContent>
             </Card>
 
@@ -179,85 +164,64 @@ function endToken(token: IssuedToken) {
                 </CardHeader>
 
                 <CardContent>
-                    <div class="overflow-x-auto rounded-lg border">
-                        <Table>
-                            <TableHeader>
-                                <TableRow>
-                                    <TableHead>User</TableHead>
-                                    <TableHead>Application</TableHead>
-                                    <TableHead>Scopes</TableHead>
-                                    <TableHead>Expires</TableHead>
-                                    <TableHead class="w-12" />
-                                </TableRow>
-                            </TableHeader>
+                    <DataTable
+                        :columns="tokenColumns"
+                        :rows="tokens"
+                        :row-key="(token) => token.id"
+                        empty="No application holds a token."
+                    >
+                        <template #cell-user="{ row }">
+                            <div class="font-medium">{{ row.user.name }}</div>
+                            <div class="text-muted-foreground text-sm">
+                                {{ row.user.email }}
+                            </div>
+                        </template>
 
-                            <TableBody>
-                                <TableEmpty
-                                    v-if="tokens.length === 0"
-                                    :colspan="5"
+                        <template #cell-application="{ row }">
+                            <span class="text-sm">
+                                {{ row.application ?? '—' }}
+                            </span>
+                        </template>
+
+                        <template #cell-scopes="{ row }">
+                            <div class="flex flex-wrap gap-1">
+                                <Badge
+                                    v-for="scope in row.scopes"
+                                    :key="scope"
+                                    variant="outline"
+                                    class="font-mono"
                                 >
-                                    No application holds a token.
-                                </TableEmpty>
+                                    {{ scope }}
+                                </Badge>
+                            </div>
+                        </template>
 
-                                <TableRow
-                                    v-for="token in tokens"
-                                    :key="token.id"
+                        <template #cell-expires_at="{ row }">
+                            <span
+                                class="text-muted-foreground text-sm whitespace-nowrap"
+                            >
+                                {{ formatDateTime(row.expires_at) }}
+                            </span>
+                        </template>
+
+                        <template #cell-actions="{ row }">
+                            <DangerousAction
+                                v-if="canManage"
+                                title="Revoke this token?"
+                                :description="`${row.application} will stop being able to act as ${row.user.name} until they authorize it again.`"
+                                confirm-label="Revoke token"
+                                @confirm="endToken(row)"
+                            >
+                                <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    :aria-label="`Revoke token for ${row.user.name}`"
                                 >
-                                    <TableCell>
-                                        <div class="font-medium">
-                                            {{ token.user.name }}
-                                        </div>
-                                        <div
-                                            class="text-muted-foreground text-sm"
-                                        >
-                                            {{ token.user.email }}
-                                        </div>
-                                    </TableCell>
-
-                                    <TableCell class="text-sm">
-                                        {{ token.application ?? '—' }}
-                                    </TableCell>
-
-                                    <TableCell>
-                                        <div class="flex flex-wrap gap-1">
-                                            <Badge
-                                                v-for="scope in token.scopes"
-                                                :key="scope"
-                                                variant="outline"
-                                                class="font-mono"
-                                            >
-                                                {{ scope }}
-                                            </Badge>
-                                        </div>
-                                    </TableCell>
-
-                                    <TableCell
-                                        class="text-muted-foreground text-sm whitespace-nowrap"
-                                    >
-                                        {{ formatDateTime(token.expires_at) }}
-                                    </TableCell>
-
-                                    <TableCell class="text-right">
-                                        <DangerousAction
-                                            v-if="canManage"
-                                            title="Revoke this token?"
-                                            :description="`${token.application} will stop being able to act as ${token.user.name} until they authorize it again.`"
-                                            confirm-label="Revoke token"
-                                            @confirm="endToken(token)"
-                                        >
-                                            <Button
-                                                variant="ghost"
-                                                size="icon"
-                                                :aria-label="`Revoke token for ${token.user.name}`"
-                                            >
-                                                <X class="size-4" />
-                                            </Button>
-                                        </DangerousAction>
-                                    </TableCell>
-                                </TableRow>
-                            </TableBody>
-                        </Table>
-                    </div>
+                                    <X class="size-4" />
+                                </Button>
+                            </DangerousAction>
+                        </template>
+                    </DataTable>
                 </CardContent>
             </Card>
         </div>

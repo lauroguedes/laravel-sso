@@ -40,7 +40,7 @@ const roleOptions = computed(() =>
 <template>
     <Head title="Add user" />
 
-    <div class="max-w-2xl px-4 py-6">
+    <div class="mx-auto w-full max-w-5xl px-4 py-6">
         <Heading
             title="Add user"
             description="Create an account that can authenticate through this Identity Provider"
@@ -48,7 +48,7 @@ const roleOptions = computed(() =>
 
         <Form
             v-bind="store.form()"
-            class="space-y-6"
+            class="grid items-start gap-6 lg:grid-cols-2"
             v-slot="{ errors, processing }"
         >
             <Card>
@@ -135,7 +135,7 @@ const roleOptions = computed(() =>
                 </CardContent>
             </Card>
 
-            <Card v-if="availableRoles.length > 0">
+            <Card v-if="availableRoles.length > 0" class="lg:col-span-2">
                 <CardHeader>
                     <CardTitle>Platform roles</CardTitle>
                     <CardDescription>
@@ -155,7 +155,7 @@ const roleOptions = computed(() =>
                 </CardContent>
             </Card>
 
-            <div class="flex items-center gap-3">
+            <div class="flex items-center gap-3 lg:col-span-2">
                 <Button type="submit" :disabled="processing">
                     <Spinner v-if="processing" />
                     Create user

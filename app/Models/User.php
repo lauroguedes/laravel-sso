@@ -131,6 +131,21 @@ class User extends Authenticatable implements MustVerifyEmail, OAuthenticatable,
     }
 
     /**
+     * The columns a listing of users may be ordered by.
+     *
+     * Lives here beside scopeSearch, because which columns are sortable is a
+     * fact about the table rather than about one controller. The value arrives
+     * in a query parameter and is spliced into an ORDER BY clause, so anything
+     * absent from this list is ignored.
+     *
+     * @return array<int, string>
+     */
+    public static function sortableColumns(): array
+    {
+        return ['name', 'last_login_at', 'created_at'];
+    }
+
+    /**
      * Scope the query to users matching a search term.
      *
      * @param  Builder<User>  $query

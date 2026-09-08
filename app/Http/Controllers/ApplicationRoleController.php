@@ -9,6 +9,7 @@ use App\Models\Application;
 use App\Models\ApplicationPermission;
 use App\Models\ApplicationRole;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -24,15 +25,13 @@ class ApplicationRoleController extends Controller
     /**
      * Show the roles and permissions an application defines.
      */
-    public function index(Application $application): Response
+    public function index(Request $request, Application $application): Response
     {
         $this->authorize('view', $application);
 
         return Inertia::render('applications/Roles', [
-            'application' => [
-                'id' => $application->id,
-                'name' => $application->name,
-            ],
+            'application' => $application->toHeader(),
+            'canManageApplication' => $request->user()->can('update', $application),
             'roles' => $application->roles()
                 ->with('permissions:id,name')
                 ->withCount('grants')

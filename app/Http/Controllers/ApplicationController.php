@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers;
 
+use App\Concerns\SortsListings;
 use App\Enums\ApplicationType;
 use App\Http\Requests\Admin\StoreApplicationRequest;
 use App\Http\Requests\Admin\UpdateApplicationRequest;
@@ -17,6 +18,8 @@ use Inertia\Response;
 
 class ApplicationController extends Controller
 {
+    use SortsListings;
+
     public function __construct(
         private readonly ApplicationManager $applications,
         private readonly ScopeRegistry $scopes,
@@ -29,10 +32,25 @@ class ApplicationController extends Controller
     {
         $this->authorize('viewAny', Application::class);
 
+        $listing = Application::query()
+            ->search($request->string('search')->toString() ?: null);
+
         return Inertia::render('applications/Index', [
-            'filters' => ['search' => $request->string('search')->toString() ?: null],
-            'applications' => Application::query()
-                ->search($request->string('search')->toString() ?: null)
+            'filters' => [
+                'search' => $request->string('search')->toString() ?: null,
+                ...$this->sortFilters($request, Application::sortableColumns()),
+            ],
+            /*
+             * Registering and editing an application are the same permission,
+             * and ApplicationPolicy::update() does not look at the instance,
+             * so one page-level answer is accurate for every row's actions.
+             */
+            'canManage' => $request->user()->can('create', Application::class),
+            'applications' => $this->applySort($listing, $request, Application::sortableColumns())
+                /*
+                 * A stable tiebreaker, so equal values keep the same order
+                 * between pages rather than drifting.
+                 */
                 ->orderBy('name')
                 ->paginate(15)
                 ->withQueryString()
@@ -87,7 +105,6 @@ class ApplicationController extends Controller
         return Inertia::render('applications/Show', [
             'application' => $this->detail($application),
             'issuer' => config('sso.issuer'),
-            'discoveryUrl' => config('sso.discovery_url'),
             /*
              * Present only on the request immediately after the secret was
              * generated or rotated.
@@ -145,12 +162,9 @@ class ApplicationController extends Controller
         $type = $application->type();
 
         return [
-            'id' => $application->id,
-            'name' => $application->name,
-            'description' => $application->description,
+            ...$application->toHeader(),
             'type' => $type->value,
             'type_label' => $type->label(),
-            'enabled' => $application->isEnabled(),
             'created_at' => $application->created_at?->toIso8601String(),
         ];
     }

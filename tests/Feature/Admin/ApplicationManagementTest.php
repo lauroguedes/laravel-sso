@@ -18,6 +18,40 @@ beforeEach(function () {
     $this->admin = User::factory()->superAdmin()->create();
 });
 
+test('the listing says whether its row actions may be used', function () {
+    $viewer = User::factory()->create();
+    Permission::findOrCreate(PlatformPermission::ApplicationsView->value, 'web');
+    $viewer->givePermissionTo(PlatformPermission::ApplicationsView->value);
+
+    $this->actingAs($this->admin)->get(route('applications.index'))
+        ->assertInertia(fn ($page) => $page->where('canManage', true));
+
+    $this->actingAs($viewer)->get(route('applications.index'))
+        ->assertInertia(fn ($page) => $page->where('canManage', false));
+});
+
+test('an untouched post-logout list is accepted as empty', function () {
+    /*
+     * The URI fields always render one blank input, so an untouched list
+     * arrives as [""]. Registering no post-logout URI is the documented
+     * default, and has to remain possible.
+     */
+    $this->actingAs($this->admin)
+        ->post(route('applications.store'), [
+            'name' => 'Blank Lists',
+            'type' => ApplicationType::Confidential->value,
+            'redirect_uris' => ['https://app.example.com/auth/callback', ''],
+            'post_logout_redirect_uris' => [''],
+            'scopes' => ['openid'],
+        ])
+        ->assertSessionHasNoErrors();
+
+    $application = Application::where('name', 'Blank Lists')->sole();
+
+    expect($application->post_logout_redirect_uris)->toBe([])
+        ->and($application->redirect_uris)->toBe(['https://app.example.com/auth/callback']);
+});
+
 test('applications can be found by name, word or client id', function () {
     $reporting = Application::factory()->create(['name' => 'Quarterly Reporting']);
     Application::factory()->create(['name' => 'Billing']);

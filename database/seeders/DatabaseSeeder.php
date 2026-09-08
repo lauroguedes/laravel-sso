@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 
 /**
@@ -14,11 +13,15 @@ use Illuminate\Database\Seeder;
  * or applications until an operator creates them. Run
  * "php artisan db:seed --class=SsoDemoSeeder" for something to look at in
  * development.
+ *
+ * Deliberately without WithoutModelEvents, which the starter kit ships here.
+ * spatie/laravel-permission invalidates its permission cache from Eloquent
+ * model events; muting them leaves roles being granted against a cache that
+ * predates the permissions, and "migrate:refresh --seed" dies on a permission
+ * it created seconds earlier.
  */
 class DatabaseSeeder extends Seeder
 {
-    use WithoutModelEvents;
-
     /**
      * Seed the application's database.
      */

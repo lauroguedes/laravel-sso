@@ -27,10 +27,29 @@ class PlatformPermissionsSeeder extends Seeder
      */
     public function run(): void
     {
-        DB::transaction(function (): void {
+        $registrar = app(PermissionRegistrar::class);
+
+        /*
+         * The cache outlives the tables: with a redis or file store it
+         * survives "migrate:refresh" entirely, still listing permissions whose
+         * rows have just been dropped.
+         */
+        $registrar->forgetCachedPermissions();
+
+        DB::transaction(function () use ($registrar): void {
             foreach (PlatformPermission::cases() as $permission) {
                 Permission::findOrCreate($permission->value, 'web');
             }
+
+            /*
+             * Flushed again before anything is granted. givePermissionTo()
+             * resolves names through the cache, and the model events that
+             * would normally invalidate it are muted whenever a caller seeds
+             * with WithoutModelEvents. Doing it here rather than relying on
+             * those events means no caller can break this seeder by choosing
+             * how to invoke it.
+             */
+            $registrar->forgetCachedPermissions();
 
             foreach (PlatformRole::cases() as $role) {
                 Role::findOrCreate($role->value, 'web')
@@ -38,6 +57,6 @@ class PlatformPermissionsSeeder extends Seeder
             }
         });
 
-        app(PermissionRegistrar::class)->forgetCachedPermissions();
+        $registrar->forgetCachedPermissions();
     }
 }

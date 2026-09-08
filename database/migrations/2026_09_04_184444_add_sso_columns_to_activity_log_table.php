@@ -38,10 +38,16 @@ return new class extends Migration
 
     /**
      * Reverse the migrations.
+     *
+     * Every index goes before the column it covers, "application_id" included
+     * — its index is implicit in the ->index() above, and it is just as real
+     * as the three declared separately. SQLite refuses to drop a column an
+     * index still references, so leaving one behind breaks "migrate:refresh".
      */
     public function down(): void
     {
         Schema::table('activity_log', function (Blueprint $table) {
+            $table->dropIndex(['application_id']);
             $table->dropIndex(['created_at']);
             $table->dropIndex(['event']);
             $table->dropIndex(['ip_address']);

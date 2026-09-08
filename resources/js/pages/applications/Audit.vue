@@ -1,15 +1,14 @@
 <script setup lang="ts">
 import { Head } from '@inertiajs/vue3';
-import ApplicationNav from '@/components/applications/ApplicationNav.vue';
+import ApplicationLayout from '@/layouts/applications/Layout.vue';
 import AuditTable from '@/components/audit/AuditTable.vue';
-import Heading from '@/components/Heading.vue';
 import Pagination from '@/components/Pagination.vue';
 import type { PaginationLink } from '@/components/Pagination.vue';
 import SearchInput from '@/components/SearchInput.vue';
-import { useSearchFilter } from '@/composables/useSearchFilter';
+import { useListingFilters } from '@/composables/useListingFilters';
 import { index } from '@/routes/applications';
 import { audit } from '@/routes/applications';
-import type { AuditEntry } from '@/types/administration';
+import type { ApplicationHeader, AuditEntry } from '@/types/administration';
 
 defineOptions({
     layout: {
@@ -18,7 +17,8 @@ defineOptions({
 });
 
 const { application, filters } = defineProps<{
-    application: { id: string; name: string };
+    application: ApplicationHeader;
+    canManageApplication: boolean;
     filters: { search: string | null };
     entries: {
         data: AuditEntry[];
@@ -28,33 +28,31 @@ const { application, filters } = defineProps<{
     };
 }>();
 
-const { search } = useSearchFilter(audit(application.id).url, filters.search);
+const { search } = useListingFilters(audit(application.id).url, filters);
 </script>
 
 <template>
     <Head :title="`${application.name} audit`" />
 
-    <div class="max-w-4xl px-4 py-6">
-        <Heading
-            :title="application.name"
-            description="What has been done to this application"
-        />
-
-        <ApplicationNav :application-id="application.id" />
-
-        <SearchInput
-            v-model="search"
-            class="mb-4"
-            placeholder="Search by event or address"
-            label="Search this application's audit trail"
-        />
-
-        <AuditTable :entries="entries.data" />
+    <ApplicationLayout
+        :application="application"
+        description="What has been done to this application, and by whom"
+        :can-manage="canManageApplication"
+    >
+        <AuditTable :entries="entries.data">
+            <template #toolbar>
+                <SearchInput
+                    v-model="search"
+                    placeholder="Search by event or address"
+                    label="Search this application's audit trail"
+                />
+            </template>
+        </AuditTable>
 
         <Pagination
             :links="entries.links"
             :from="entries.from"
             :to="entries.to"
         />
-    </div>
+    </ApplicationLayout>
 </template>

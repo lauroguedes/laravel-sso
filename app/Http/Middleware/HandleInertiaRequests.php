@@ -41,6 +41,15 @@ class HandleInertiaRequests extends Middleware
             'auth' => [
                 'user' => $request->user(),
             ],
+            /*
+             * The discovery URL is derived from the issuer rather than from
+             * route(), because the issuer is the canonical public URL and may
+             * differ from APP_URL behind a proxy. Sharing it keeps every page
+             * showing the URL a relying party would actually fetch.
+             */
+            'sso' => [
+                'discoveryUrl' => config('sso.discovery_url'),
+            ],
             'sidebarOpen' => ! $request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',
         ];
     }

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Requests\Admin;
 
+use App\Concerns\DiscardsBlankUris;
 use App\Enums\ApplicationType;
 use App\Rules\RedirectUri;
 use App\Services\ScopeRegistry;
@@ -13,6 +14,8 @@ use Illuminate\Validation\Rule;
 
 class StoreApplicationRequest extends FormRequest
 {
+    use DiscardsBlankUris;
+
     /**
      * Get the validation rules that apply to the request.
      *

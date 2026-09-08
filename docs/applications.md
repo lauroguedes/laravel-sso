@@ -5,7 +5,7 @@ in, or that calls an API as itself. Registering one is how it gets credentials.
 
 ## Registering one
 
-**Applications → New application.** You are asked for:
+**Applications → Add application.** A short sequence of steps asks for:
 
 **Name and description.** Shown to users on the consent screen, so name it the
 way they would recognise it.
@@ -35,6 +35,9 @@ exactly, like redirect URIs.
 
 Registering none is fine, and is the default. Signing out then ends the session
 here and leaves the user on this server.
+
+The type step decides what follows: a machine-to-machine client has no browser
+to send anywhere, so it is not asked for URIs at all.
 
 **Scopes.** What the application may ask for. See
 [OpenID Connect](openid-connect.md#scopes-and-claims). Interactive applications

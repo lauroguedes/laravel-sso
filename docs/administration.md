@@ -18,6 +18,10 @@ Everyone else sees a note saying so, rather than an empty panel.
 Accounts that can authenticate through this server. Search matches names and
 addresses.
 
+Every listing sorts by clicking a column heading, and hides columns it does not
+need through the **Columns** menu. Sorting is applied by the database, so it
+orders the whole table rather than the page on screen.
+
 ### Creating one
 
 **Users → Add user.** Name, address, password, and optionally the platform
@@ -69,6 +73,10 @@ real. There is no route for deleting an account, including your own.
 Covered in full in [Applications](applications.md): registering clients, their
 credentials, redirect URIs, scopes, consent, access restriction, and each
 application's own roles, permissions, access list and history.
+
+Each application has four sections, listed down the left of its pages:
+**Overview** (credentials and configuration), **Roles**, **Access**, and
+**Audit**.
 
 ## Sessions
 

@@ -17,6 +17,10 @@ import { buttonVariants } from '@/components/ui/button';
  *
  * Actions that revoke access or invalidate credentials are not undoable from
  * the interface, so they always state what will happen before proceeding.
+ *
+ * Usually driven by its own trigger slot. A caller with no button of its own —
+ * an item inside a dropdown, which unmounts the moment it is chosen — binds
+ * v-model:open instead and omits the slot.
  */
 const {
     title,
@@ -30,12 +34,14 @@ const {
     cancelLabel?: string;
 }>();
 
+const open = defineModel<boolean | undefined>('open');
+
 const emit = defineEmits<{ confirm: [] }>();
 </script>
 
 <template>
-    <AlertDialog>
-        <AlertDialogTrigger as-child>
+    <AlertDialog v-model:open="open">
+        <AlertDialogTrigger v-if="$slots.default" as-child>
             <slot />
         </AlertDialogTrigger>
 

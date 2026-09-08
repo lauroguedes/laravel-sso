@@ -1,3 +1,18 @@
+export type DataTableColumn = {
+    /** The cell slot name, and the field the server orders by when sorting. */
+    id: string;
+    header: string;
+    sortable?: boolean;
+    align?: 'left' | 'right';
+    /** Kept out of the column menu when a row would be unreadable without it. */
+    alwaysVisible?: boolean;
+};
+
+export type DataTableSort = {
+    column: string;
+    direction: 'asc' | 'desc';
+} | null;
+
 /**
  * Shapes returned by the administration controllers.
  *
@@ -17,13 +32,17 @@ export type UserSummary = {
     roles: string[];
 };
 
-export type ApplicationSummary = {
+/** Mirrors Application::toHeader(): what every page of one application shows. */
+export type ApplicationHeader = {
     id: string;
     name: string;
     description: string | null;
+    enabled: boolean;
+};
+
+export type ApplicationSummary = ApplicationHeader & {
     type: 'confidential' | 'public' | 'machine';
     type_label: string;
-    enabled: boolean;
     created_at: string | null;
 };
 

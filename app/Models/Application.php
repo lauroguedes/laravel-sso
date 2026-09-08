@@ -207,6 +207,39 @@ class Application extends OidcClient
     }
 
     /**
+     * The identity every page of this application shows in its header.
+     *
+     * Lives on the model so the four sections — overview, roles, access and
+     * audit — cannot describe the same application differently, which is how
+     * the audit page ended up without a status badge or an Edit button.
+     *
+     * @return array{id: string, name: string, description: string|null, enabled: bool}
+     */
+    public function toHeader(): array
+    {
+        return [
+            'id' => $this->id,
+            'name' => $this->name,
+            'description' => $this->description,
+            'enabled' => $this->isEnabled(),
+        ];
+    }
+
+    /**
+     * The columns a listing of applications may be ordered by.
+     *
+     * Beside scopeSearch for the same reason: it describes the table, not the
+     * controller that happens to render it. "revoked" backs the Status column,
+     * an application being enabled when it is not revoked.
+     *
+     * @return array<int, string>
+     */
+    public static function sortableColumns(): array
+    {
+        return ['name', 'revoked'];
+    }
+
+    /**
      * Scope the query to applications matching a search term.
      *
      * @param  Builder<Application>  $query

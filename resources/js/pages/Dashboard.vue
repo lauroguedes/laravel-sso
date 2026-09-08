@@ -34,7 +34,7 @@ const tiles = [
 <template>
     <Head title="Dashboard" />
 
-    <div class="px-4 py-6">
+    <div class="mx-auto w-full max-w-5xl space-y-6 px-4 py-8">
         <Heading
             title="Dashboard"
             description="The current state of this Identity Provider"

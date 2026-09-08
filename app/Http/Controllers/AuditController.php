@@ -57,7 +57,8 @@ class AuditController extends Controller
         $search = $request->string('search')->toString() ?: null;
 
         return Inertia::render('applications/Audit', [
-            'application' => ['id' => $application->id, 'name' => $application->name],
+            'application' => $application->toHeader(),
+            'canManageApplication' => $request->user()->can('update', $application),
             'filters' => ['search' => $search],
             'entries' => $this->entries(
                 AuditRecord::query()->forApplication($application),

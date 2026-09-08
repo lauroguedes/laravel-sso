@@ -60,14 +60,14 @@ function signOutEverywhere() {
 <template>
     <Head :title="user.name" />
 
-    <div class="max-w-2xl px-4 py-6">
+    <div class="mx-auto w-full max-w-5xl px-4 py-6">
         <div class="mb-6 flex flex-wrap items-start justify-between gap-4">
             <Heading :title="user.name" :description="user.email" />
 
             <Badge v-if="user.disabled" variant="destructive">Disabled</Badge>
         </div>
 
-        <div class="space-y-6">
+        <div class="grid items-start gap-6 lg:grid-cols-2">
             <Card>
                 <CardHeader>
                     <CardTitle>Activity</CardTitle>
@@ -138,7 +138,7 @@ function signOutEverywhere() {
 
             <Form
                 v-bind="update.form(user.id)"
-                class="space-y-6"
+                class="grid items-start gap-6 lg:col-span-2 lg:grid-cols-2"
                 v-slot="{ errors, processing }"
             >
                 <Card>
@@ -224,7 +224,7 @@ function signOutEverywhere() {
                     </CardContent>
                 </Card>
 
-                <Card v-if="availableRoles.length > 0">
+                <Card v-if="availableRoles.length > 0" class="lg:col-span-2">
                     <CardHeader>
                         <CardTitle>Platform roles</CardTitle>
                         <CardDescription>
@@ -246,7 +246,12 @@ function signOutEverywhere() {
                     </CardContent>
                 </Card>
 
-                <Button v-if="canManage" type="submit" :disabled="processing">
+                <Button
+                    v-if="canManage"
+                    type="submit"
+                    class="lg:col-span-2 lg:justify-self-start"
+                    :disabled="processing"
+                >
                     <Spinner v-if="processing" />
                     Save changes
                 </Button>

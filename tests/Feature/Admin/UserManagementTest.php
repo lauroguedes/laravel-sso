@@ -70,6 +70,59 @@ test('the user list can be filtered by name or email', function () {
         ->where('users.data.0.email', 'alice@example.com'));
 });
 
+describe('sorting', function () {
+    test('the listing can be ordered by a column, in both directions', function () {
+        User::factory()->create(['name' => 'Zoe Zeta']);
+        User::factory()->create(['name' => 'Amy Alpha']);
+
+        $this->actingAs($this->admin)
+            ->get(route('users.index', ['sort' => 'name', 'direction' => 'asc']))
+            ->assertInertia(fn ($page) => $page
+                ->where('users.data.0.name', 'Amy Alpha')
+                ->where('filters.sort', 'name')
+                ->where('filters.direction', 'asc'));
+
+        $this->actingAs($this->admin)
+            ->get(route('users.index', ['sort' => 'name', 'direction' => 'desc']))
+            ->assertInertia(fn ($page) => $page->where('users.data.0.name', 'Zoe Zeta'));
+    });
+
+    test('a column the listing does not offer is ignored', function () {
+        /*
+         * The value arrives in a query parameter and would otherwise be
+         * spliced into an ORDER BY clause, where an unexpected column leaks
+         * the ordering of data the listing never meant to expose.
+         */
+        $this->actingAs($this->admin)
+            ->get(route('users.index', ['sort' => 'password', 'direction' => 'desc']))
+            ->assertOk()
+            ->assertInertia(fn ($page) => $page
+                ->where('filters.sort', null)
+                ->where('filters.direction', null));
+    });
+
+    test('sorting composes with the search term', function () {
+        User::factory()->create(['name' => 'Zoe Zeta', 'email' => 'zoe@example.com']);
+        User::factory()->create(['name' => 'Amy Alpha', 'email' => 'amy@example.com']);
+
+        $this->actingAs($this->admin)
+            ->get(route('users.index', ['search' => 'Zoe', 'sort' => 'name', 'direction' => 'asc']))
+            ->assertInertia(fn ($page) => $page->has('users.data', 1));
+    });
+});
+
+test('the listing says whether its row actions may be used', function () {
+    $viewer = User::factory()->create();
+    Permission::findOrCreate(PlatformPermission::UsersView->value, 'web');
+    $viewer->givePermissionTo(PlatformPermission::UsersView->value);
+
+    $this->actingAs($this->admin)->get(route('users.index'))
+        ->assertInertia(fn ($page) => $page->where('canManage', true));
+
+    $this->actingAs($viewer)->get(route('users.index'))
+        ->assertInertia(fn ($page) => $page->where('canManage', false));
+});
+
 test('a surname matches without a leading wildcard', function () {
     /*
      * Searching anchors on a word boundary rather than "%term%", so an index

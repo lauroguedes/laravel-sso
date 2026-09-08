@@ -34,10 +34,8 @@ class ApplicationGrantController extends Controller
         $search = $request->string('search')->toString() ?: null;
 
         return Inertia::render('applications/Access', [
-            'application' => [
-                'id' => $application->id,
-                'name' => $application->name,
-            ],
+            'application' => $application->toHeader(),
+            'canManageApplication' => $request->user()->can('update', $application),
             'filters' => ['search' => $search],
             /*
              * Sorted and paginated in SQL. The name lives on the joined user,
