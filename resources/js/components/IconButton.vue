@@ -25,7 +25,7 @@ const {
     label: string;
     icon: Component;
     variant?: 'default' | 'ghost' | 'outline' | 'secondary' | 'destructive';
-    size?: 'icon' | 'sm';
+    size?: 'icon' | 'icon-sm' | 'sm';
     disabled?: boolean;
 }>();
 
@@ -44,7 +44,7 @@ defineEmits<{ click: [MouseEvent] }>();
                     :aria-label="label"
                     @click="$emit('click', $event)"
                 >
-                    <component :is="icon" class="size-4" />
+                    <component :is="icon" />
                 </Button>
             </TooltipTrigger>
 

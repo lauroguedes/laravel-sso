@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ExternalLink } from '@lucide/vue';
 import { computed, ref, watch } from 'vue';
-import CopyButton from '@/components/CopyButton.vue';
+import CodeBlock from '@/components/CodeBlock.vue';
 import InputGroupIconButton from '@/components/InputGroupIconButton.vue';
 import ReadOnlyField from '@/components/ReadOnlyField.vue';
 import {
@@ -169,16 +169,12 @@ watch(
                 {{ failure }}
             </p>
 
-            <div v-else class="relative">
-                <!-- Over the panel it copies, rather than in the row above. -->
-                <div class="absolute top-2 right-2 z-10">
-                    <CopyButton :value="raw ?? ''" label="Copy the document" />
-                </div>
-
-                <pre
-                    class="bg-muted max-h-[50vh] overflow-auto rounded-lg p-4 pr-14 font-mono text-xs leading-relaxed"
-                ><code v-html="highlighted" /></pre>
-            </div>
+            <CodeBlock
+                v-else
+                label="openid-configuration.json"
+                :code="raw ?? ''"
+                :highlighted="highlighted"
+            />
         </DialogContent>
     </Dialog>
 </template>
