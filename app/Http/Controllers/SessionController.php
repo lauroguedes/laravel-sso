@@ -89,7 +89,12 @@ class SessionController extends Controller
      */
     public function destroyForApplication(Application $application): RedirectResponse
     {
-        $this->authorize('update', $application);
+        /*
+         * changeStatus and not update: this signs out everybody using the
+         * application, which is the same kind of decision as taking it out of
+         * service, and is deliberately not a steward's to make.
+         */
+        $this->authorize('changeStatus', $application);
 
         $this->sessions->revokeTokensFor($application);
 

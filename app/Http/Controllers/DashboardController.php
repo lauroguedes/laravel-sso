@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Controllers;
 
 use App\Enums\AuditLog;
+use App\Enums\PlatformPermission;
 use App\Models\Application;
 use App\Models\ApplicationUser;
 use App\Models\AuditRecord;
@@ -39,7 +40,13 @@ class DashboardController extends Controller
          * and withholding the panels one by one would leave a page that is
          * mostly absence.
          */
-        if (! $user->can('viewAny', User::class) && ! $user->can('viewAny', Application::class)) {
+        /*
+         * Asked of the platform permission rather than the policy: somebody
+         * who stewards an application can view that application, but the
+         * counts below are of every user and every application on the server,
+         * which is not the same question.
+         */
+        if (! $user->can('viewAny', User::class) && ! $user->can(PlatformPermission::ApplicationsView->value)) {
             return $this->personal($user);
         }
 
@@ -103,9 +110,26 @@ class DashboardController extends Controller
                 ])
                 ->all(),
             /*
+             * The applications this person looks after, as opposed to the ones
+             * they may sign in to above. A developer's own way in to the work
+             * they were assigned.
+             */
+            'stewardship' => $user->can(PlatformPermission::ApplicationsDevelop->value)
+                ? $user->managedApplications()
+                    ->orderBy('name')
+                    ->get(['oauth_clients.id', 'name', 'description', 'revoked'])
+                    ->map(fn (Application $application): array => [
+                        'id' => $application->id,
+                        'name' => $application->name,
+                        'description' => $application->description,
+                        'enabled' => $application->isEnabled(),
+                    ])
+                    ->all()
+                : [],
+            /*
              * Platform roles govern this administration interface. Someone
-             * reaching this page holds none that open a section, but naming
-             * what they do hold is more useful than an empty panel.
+             * reaching this page holds none that open a section on their own,
+             * but naming what they do hold is more useful than an empty panel.
              */
             'platformRoles' => $user->getRoleNames()->all(),
         ]);

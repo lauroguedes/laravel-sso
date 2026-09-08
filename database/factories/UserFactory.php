@@ -71,6 +71,21 @@ class UserFactory extends Factory
     }
 
     /**
+     * Indicate that the user may look after the applications assigned to them.
+     *
+     * The role on its own reaches nothing: an administrator still has to
+     * assign an application before it grants anything.
+     */
+    public function developer(): static
+    {
+        return $this->afterCreating(function (User $user): void {
+            app(PlatformPermissionsSeeder::class)->run();
+
+            $user->assignRole(PlatformRole::Developer->value);
+        });
+    }
+
+    /**
      * Indicate that the model has two-factor authentication configured.
      */
     public function withTwoFactor(): static

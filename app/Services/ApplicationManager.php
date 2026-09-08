@@ -93,8 +93,14 @@ class ApplicationManager
                 'redirect_uris' => $type->usesRedirectUris() ? ($attributes['redirect_uris'] ?? []) : [],
                 'post_logout_redirect_uris' => $type->usesRedirectUris() ? ($attributes['post_logout_redirect_uris'] ?? []) : [],
                 'scopes' => $attributes['scopes'] ?? [],
-                'skips_authorization' => $attributes['skips_authorization'] ?? false,
-                'restricts_access' => $attributes['restricts_access'] ?? false,
+                /*
+                 * Absent means unchanged, not off. These two decide whether
+                 * the consent screen appears and whether the grants list is
+                 * enforced, so defaulting them would let a caller that may not
+                 * set them switch both off by not mentioning them.
+                 */
+                'skips_authorization' => $attributes['skips_authorization'] ?? $application->skips_authorization,
+                'restricts_access' => $attributes['restricts_access'] ?? $application->restricts_access,
             ])->save();
         });
 

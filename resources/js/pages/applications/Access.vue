@@ -2,8 +2,9 @@
 import { Head, router } from '@inertiajs/vue3';
 import { watchDebounced } from '@vueuse/core';
 import { ref } from 'vue';
-import { UserPlus, X } from '@lucide/vue';
+import { X } from '@lucide/vue';
 import ApplicationLayout from '@/layouts/applications/Layout.vue';
+import CandidatePicker from '@/components/applications/CandidatePicker.vue';
 import DangerousAction from '@/components/DangerousAction.vue';
 import DataTable from '@/components/DataTable.vue';
 import Pagination from '@/components/Pagination.vue';
@@ -37,6 +38,7 @@ import type {
     DataTableColumn,
     ApplicationGrantSummary,
     ApplicationHeader,
+    ApplicationSection,
     ApplicationRoleOption,
     UserCandidate,
 } from '@/types/administration';
@@ -55,6 +57,7 @@ defineOptions({
 
 const { application, filters, roles } = defineProps<{
     application: ApplicationHeader;
+    sections: ApplicationSection[];
     canManageApplication: boolean;
     filters: { search: string | null; granted: string | null };
     grants: {
@@ -125,6 +128,7 @@ function revoke(grant: ApplicationGrantSummary) {
 
     <ApplicationLayout
         :application="application"
+        :sections="sections"
         description="Who may sign in to this application, and the role they hold there"
         :can-manage="canManageApplication"
     >
@@ -232,56 +236,16 @@ function revoke(grant: ApplicationGrantSummary) {
             </CardContent>
         </Card>
 
-        <Card v-if="canManage">
-            <CardHeader>
-                <CardTitle>Grant access</CardTitle>
-                <CardDescription>
-                    Search for a user who does not yet have access. Assign a
-                    role once they have been added.
-                </CardDescription>
-            </CardHeader>
-
-            <CardContent class="space-y-4">
-                <SearchInput
-                    v-model="search"
-                    placeholder="Search by name or email"
-                    label="Search users to grant access"
-                />
-
-                <ul
-                    v-if="candidates.length > 0"
-                    class="divide-y rounded-lg border"
-                >
-                    <li
-                        v-for="candidate in candidates"
-                        :key="candidate.id"
-                        class="flex items-center justify-between gap-3 px-3 py-2"
-                    >
-                        <div class="min-w-0">
-                            <div class="font-medium">
-                                {{ candidate.name }}
-                            </div>
-                            <div class="text-muted-foreground truncate text-sm">
-                                {{ candidate.email }}
-                            </div>
-                        </div>
-
-                        <Button
-                            variant="outline"
-                            size="sm"
-                            @click="grantAccess(candidate.id)"
-                        >
-                            <UserPlus class="size-4" />
-                            Grant
-                        </Button>
-                    </li>
-                </ul>
-
-                <p v-else class="text-muted-foreground text-sm">
-                    No users match this search, or everyone matching already has
-                    access.
-                </p>
-            </CardContent>
-        </Card>
+        <CandidatePicker
+            v-if="canManage"
+            v-model:search="search"
+            title="Grant access"
+            description="Search for a user who does not yet have access. Assign a role once they have been added."
+            search-label="Search users to grant access"
+            action="Grant"
+            :candidates="candidates"
+            empty="No users match this search, or everyone matching already has access."
+            @select="grantAccess"
+        />
     </ApplicationLayout>
 </template>

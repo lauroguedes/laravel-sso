@@ -20,7 +20,10 @@ import { index } from '@/routes/applications';
 import { update as updateSecret } from '@/routes/applications/secret';
 import { update as updateStatus } from '@/routes/applications/status';
 import { destroy as revokeTokens } from '@/routes/applications/tokens';
-import type { ApplicationDetail } from '@/types/administration';
+import type {
+    ApplicationDetail,
+    ApplicationSection,
+} from '@/types/administration';
 
 defineOptions({
     layout: {
@@ -36,9 +39,11 @@ const discoveryUrl = computed(() => usePage().props.sso.discoveryUrl);
 
 const { application } = defineProps<{
     application: ApplicationDetail;
+    sections: ApplicationSection[];
     issuer: string;
     clientSecret: string | null;
     canManage: boolean;
+    canChangeStatus: boolean;
     canRegenerateSecret: boolean;
 }>();
 
@@ -62,6 +67,7 @@ function revokeAllTokens() {
 
     <ApplicationLayout
         :application="application"
+        :sections="sections"
         :description="application.description ?? application.type_label"
         :can-manage="canManage"
     >
@@ -296,7 +302,7 @@ function revokeAllTokens() {
             </CardContent>
         </Card>
 
-        <Card v-if="canManage" class="border-destructive/40">
+        <Card v-if="canChangeStatus" class="border-destructive/40">
             <CardHeader>
                 <CardTitle>Revoke issued tokens</CardTitle>
                 <CardDescription>
@@ -323,7 +329,7 @@ function revokeAllTokens() {
             </CardContent>
         </Card>
 
-        <Card v-if="canManage" class="border-destructive/40">
+        <Card v-if="canChangeStatus" class="border-destructive/40">
             <CardHeader>
                 <CardTitle>
                     {{

@@ -32,6 +32,12 @@ export type UserSummary = {
     roles: string[];
 };
 
+/** One entry in an application's section rail, as the server allows it. */
+export type ApplicationSection = {
+    key: string;
+    title: string;
+};
+
 /** Mirrors Application::toHeader(): what every page of one application shows. */
 export type ApplicationHeader = {
     id: string;
@@ -45,6 +51,17 @@ export type ApplicationHeader = {
 
 export type ApplicationSummary = ApplicationHeader & {
     created_at: string | null;
+};
+
+/**
+ * One row of the applications listing.
+ *
+ * Carries its own answer to "may this reader edit it", because a steward may
+ * edit the applications assigned to them and no others — which no page-level
+ * answer can express.
+ */
+export type ApplicationListRow = ApplicationSummary & {
+    can_manage: boolean;
 };
 
 export type ApplicationDetail = ApplicationSummary & {

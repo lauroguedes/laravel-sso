@@ -6,11 +6,13 @@ namespace App\Models;
 
 use Admin9\OidcServer\Models\OidcClient;
 use App\Enums\ApplicationType;
+use App\Enums\PlatformPermission;
 use App\Events\UserApplicationAccessGranted;
 use Database\Factories\ApplicationFactory;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\Factory;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Laravel\Passport\Scope;
 use Stringable;
@@ -157,6 +159,81 @@ class Application extends OidcClient
     public function grants(): HasMany
     {
         return $this->hasMany(ApplicationUser::class);
+    }
+
+    /**
+     * Whether each person stewards this application, once answered.
+     *
+     * @var array<int, bool>
+     */
+    private array $stewardship = [];
+
+    /**
+     * The people who look after this application.
+     *
+     * Separate from grants(): that says who may sign in and what they hold
+     * here, this says who may change what this application is. Somebody
+     * maintains an application they never sign in to.
+     *
+     * @return BelongsToMany<User, $this>
+     */
+    public function managers(): BelongsToMany
+    {
+        return $this->belongsToMany(User::class, 'application_managers')->withTimestamps();
+    }
+
+    /**
+     * Determine whether a user looks after this application.
+     *
+     * The permission is checked alongside the assignment, so withdrawing the
+     * Developer role from somebody makes every application they were given go
+     * quiet at once, rather than leaving assignments to be unpicked one by
+     * one.
+     */
+    public function isManagedBy(User $user): bool
+    {
+        if (! $user->can(PlatformPermission::ApplicationsDevelop->value)) {
+            return false;
+        }
+
+        /*
+         * Memoized per person. One page render asks this six times — the
+         * policy answers view, update, regenerateSecret and three sections
+         * with it — and the answer cannot change within a request.
+         */
+        return $this->stewardship[$user->getKey()] ??= $this->managers()
+            ->whereKey($user->getKey())
+            ->exists();
+    }
+
+    /**
+     * Restrict a listing to the applications this user may see.
+     *
+     * An administrator sees every application; somebody who only stewards
+     * sees the ones assigned to them. Scoped in the query rather than filtered
+     * after it, so paging counts what the reader can actually open.
+     *
+     * @param  Builder<$this>  $query
+     * @return Builder<$this>
+     */
+    public function scopeVisibleTo(Builder $query, User $user): Builder
+    {
+        if ($user->can(PlatformPermission::ApplicationsView->value)) {
+            return $query;
+        }
+
+        /*
+         * The permission is checked here as well as the assignment, for the
+         * same reason isManagedBy() checks it: an assignment left behind after
+         * the Developer role was withdrawn must not still show anything. A
+         * scope that read only the pivot would be correct today only because
+         * of the policy that happens to run before it.
+         */
+        if (! $user->can(PlatformPermission::ApplicationsDevelop->value)) {
+            return $query->whereRaw('1 = 0');
+        }
+
+        return $query->whereHas('managers', fn (Builder $managers): Builder => $managers->whereKey($user->getKey()));
     }
 
     /**

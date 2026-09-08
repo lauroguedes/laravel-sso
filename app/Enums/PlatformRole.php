@@ -13,6 +13,15 @@ enum PlatformRole: string
     case SuperAdmin = 'Super Admin';
 
     /**
+     * Someone who integrates applications rather than running the server.
+     *
+     * The role grants no application by itself: it says this person may
+     * steward the ones an administrator assigns to them, and reaches nothing
+     * else on the platform.
+     */
+    case Developer = 'Developer';
+
+    /**
      * The platform permissions granted to this role.
      *
      * @return array<int, string>
@@ -21,6 +30,7 @@ enum PlatformRole: string
     {
         return match ($this) {
             self::SuperAdmin => PlatformPermission::values(),
+            self::Developer => [PlatformPermission::ApplicationsDevelop->value],
         };
     }
 }

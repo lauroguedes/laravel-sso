@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers;
 
+use App\Concerns\DescribesApplicationSections;
 use App\Http\Requests\Admin\ApplicationRoleRequest;
 use App\Models\Application;
 use App\Models\ApplicationPermission;
@@ -22,6 +23,8 @@ use Inertia\Response;
  */
 class ApplicationRoleController extends Controller
 {
+    use DescribesApplicationSections;
+
     /**
      * Show the roles and permissions an application defines.
      */
@@ -31,6 +34,7 @@ class ApplicationRoleController extends Controller
 
         return Inertia::render('applications/Roles', [
             'application' => $application->toHeader(),
+            'sections' => $this->applicationSections($request->user(), $application),
             'canManageApplication' => $request->user()->can('update', $application),
             'roles' => $application->roles()
                 ->with('permissions:id,name')

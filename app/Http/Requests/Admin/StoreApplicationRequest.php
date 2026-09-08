@@ -6,6 +6,7 @@ namespace App\Http\Requests\Admin;
 
 use App\Concerns\DiscardsBlankUris;
 use App\Enums\ApplicationType;
+use App\Models\Application;
 use App\Rules\RedirectUri;
 use App\Services\ScopeRegistry;
 use Illuminate\Contracts\Validation\ValidationRule;
@@ -15,6 +16,19 @@ use Illuminate\Validation\Rule;
 class StoreApplicationRequest extends FormRequest
 {
     use DiscardsBlankUris;
+
+    /**
+     * Only somebody who may register an application.
+     *
+     * Asked here as well as in the controller because a form request
+     * validates before the action runs: without this, somebody who may not
+     * register anything would be answered with the shape of the form rather
+     * than with a refusal.
+     */
+    public function authorize(): bool
+    {
+        return $this->user()?->can('create', Application::class) === true;
+    }
 
     /**
      * Get the validation rules that apply to the request.

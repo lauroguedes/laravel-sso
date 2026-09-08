@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { Link, router } from '@inertiajs/vue3';
+import { computed } from 'vue';
 import { Pencil } from '@lucide/vue';
 import ApplicationTypeBadge from '@/components/applications/ApplicationTypeBadge.vue';
 import Heading from '@/components/Heading.vue';
@@ -10,8 +11,12 @@ import { Separator } from '@/components/ui/separator';
 import { useCurrentUrl } from '@/composables/useCurrentUrl';
 import { toUrl } from '@/lib/utils';
 import { audit, edit, show } from '@/routes/applications';
-import type { ApplicationHeader } from '@/types/administration';
+import type {
+    ApplicationHeader,
+    ApplicationSection,
+} from '@/types/administration';
 import { index as grants } from '@/routes/applications/grants';
+import { index as managers } from '@/routes/applications/managers';
 import { index as roles } from '@/routes/applications/roles';
 
 /**
@@ -23,23 +28,49 @@ import { index as roles } from '@/routes/applications/roles';
  * to describe the application slightly differently, and the audit page did not
  * describe it at all.
  */
-const { application, canManage = false } = defineProps<{
+const {
+    application,
+    sections,
+    canManage = false,
+} = defineProps<{
     application: ApplicationHeader;
     /** What this section is, shown under the application's name. */
     description: string;
+    /** The sections this reader may open, decided by the server. */
+    sections: ApplicationSection[];
     canManage?: boolean;
 }>();
 
 /*
- * All four are leaf URLs, so they match exactly. Prefix matching would light
- * up Overview on the other three, since they live beneath it.
+ * Which sections exist is the server's answer, because each is guarded by a
+ * policy and a rail offering one the reader cannot open is a rail that lies.
+ * Only the URLs are built here.
  */
-const sections = [
-    { title: 'Overview', href: show(application.id) },
-    { title: 'Roles', href: roles(application.id) },
-    { title: 'Access', href: grants(application.id) },
-    { title: 'Audit', href: audit(application.id) },
-];
+const destinations: Record<string, (id: string) => { url: string }> = {
+    overview: show,
+    roles,
+    access: grants,
+    managers,
+    audit,
+};
+
+/*
+ * All of them are leaf URLs, so they match exactly. Prefix matching would
+ * light up Overview on the rest, since they live beneath it.
+ */
+const rail = computed(() =>
+    sections
+        /*
+         * The server names the sections and this maps them to URLs; nothing
+         * ties the two halves together, so a name with no destination is
+         * skipped rather than rendered as a link to undefined.
+         */
+        .filter((section) => section.key in destinations)
+        .map((section) => ({
+            title: section.title,
+            href: destinations[section.key](application.id).url,
+        })),
+);
 
 const { isCurrentUrl } = useCurrentUrl();
 </script>
@@ -88,7 +119,7 @@ const { isCurrentUrl } = useCurrentUrl();
                     aria-label="Application"
                 >
                     <Button
-                        v-for="section in sections"
+                        v-for="section in rail"
                         :key="toUrl(section.href)"
                         variant="ghost"
                         :class="[

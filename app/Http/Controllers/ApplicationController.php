@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers;
 
+use App\Concerns\DescribesApplicationSections;
 use App\Concerns\SortsListings;
 use App\Enums\ApplicationType;
 use App\Http\Requests\Admin\StoreApplicationRequest;
@@ -18,6 +19,7 @@ use Inertia\Response;
 
 class ApplicationController extends Controller
 {
+    use DescribesApplicationSections;
     use SortsListings;
 
     public function __construct(
@@ -36,6 +38,12 @@ class ApplicationController extends Controller
         $type = $request->string('type')->toString() ?: null;
 
         $listing = Application::query()
+            /*
+             * Scoped before anything else: a steward sees the applications
+             * assigned to them, and the count under the table has to be of
+             * those rather than of every application on the server.
+             */
+            ->visibleTo($request->user())
             ->search($request->string('search')->toString() ?: null)
             ->withStatus($status)
             ->ofType($type);
@@ -52,11 +60,13 @@ class ApplicationController extends Controller
                 'label' => $type->label(),
             ], ApplicationType::cases()),
             /*
-             * Registering and editing an application are the same permission,
-             * and ApplicationPolicy::update() does not look at the instance,
-             * so one page-level answer is accurate for every row's actions.
+             * Registering an application, revoking its tokens and taking it
+             * out of service all need the same platform permission, so one
+             * page-level answer serves all three. Editing does not: a steward
+             * may edit the applications assigned to them and register none, so
+             * each row carries its own answer.
              */
-            'canManage' => $request->user()->can('create', Application::class),
+            'canAdminister' => $request->user()->can('create', Application::class),
             'applications' => $this->applySort($listing, $request, Application::sortableColumns())
                 /*
                  * A stable tiebreaker, so equal values keep the same order
@@ -65,7 +75,10 @@ class ApplicationController extends Controller
                 ->orderBy('name')
                 ->paginate($this->perPage($request))
                 ->withQueryString()
-                ->through(fn (Application $application): array => $this->summarize($application)),
+                ->through(fn (Application $application): array => [
+                    ...$this->summarize($application),
+                    'can_manage' => $request->user()->can('update', $application),
+                ]),
         ]);
     }
 
@@ -115,6 +128,7 @@ class ApplicationController extends Controller
 
         return Inertia::render('applications/Show', [
             'application' => $this->detail($application),
+            'sections' => $this->applicationSections($request->user(), $application),
             'issuer' => config('sso.issuer'),
             /*
              * Present only on the request immediately after the secret was
@@ -122,6 +136,7 @@ class ApplicationController extends Controller
              */
             'clientSecret' => $request->session()->get('clientSecret'),
             'canManage' => $request->user()->can('update', $application),
+            'canChangeStatus' => $request->user()->can('changeStatus', $application),
             'canRegenerateSecret' => $request->user()->can('regenerateSecret', $application),
         ]);
     }
@@ -146,15 +161,7 @@ class ApplicationController extends Controller
     {
         $this->authorize('update', $application);
 
-        $this->applications->update($application, [
-            'name' => $request->validated('name'),
-            'description' => $request->validated('description'),
-            'redirect_uris' => $request->validated('redirect_uris', []),
-            'post_logout_redirect_uris' => $request->validated('post_logout_redirect_uris', []),
-            'scopes' => $request->validated('scopes', []),
-            'skips_authorization' => $request->boolean('skips_authorization'),
-            'restricts_access' => $request->boolean('restricts_access'),
-        ]);
+        $this->applications->update($application, $request->payload());
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Application updated.')]);
 

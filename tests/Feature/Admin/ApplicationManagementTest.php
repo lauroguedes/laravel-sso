@@ -59,15 +59,25 @@ describe('filtering', function () {
 });
 
 test('the listing says whether its row actions may be used', function () {
+    Application::factory()->create();
+
     $viewer = User::factory()->create();
     Permission::findOrCreate(PlatformPermission::ApplicationsView->value, 'web');
     $viewer->givePermissionTo(PlatformPermission::ApplicationsView->value);
 
+    /*
+     * Registering is a page-level answer; editing is answered per row, because
+     * a steward may edit what is assigned to them and register nothing.
+     */
     $this->actingAs($this->admin)->get(route('applications.index'))
-        ->assertInertia(fn ($page) => $page->where('canManage', true));
+        ->assertInertia(fn ($page) => $page
+            ->where('canAdminister', true)
+            ->where('applications.data.0.can_manage', true));
 
     $this->actingAs($viewer)->get(route('applications.index'))
-        ->assertInertia(fn ($page) => $page->where('canManage', false));
+        ->assertInertia(fn ($page) => $page
+            ->where('canAdminister', false)
+            ->where('applications.data.0.can_manage', false));
 });
 
 test('an untouched post-logout list is accepted as empty', function () {

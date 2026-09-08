@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Head } from '@inertiajs/vue3';
+import { Head, Link } from '@inertiajs/vue3';
 import Heading from '@/components/Heading.vue';
 import StatusIndicator from '@/components/StatusIndicator.vue';
 import { Badge } from '@/components/ui/badge';
@@ -12,13 +12,15 @@ import {
 } from '@/components/ui/card';
 import { formatDateTime } from '@/lib/datetime';
 import { dashboard } from '@/routes';
+import { show } from '@/routes/applications';
 
 /**
  * What one person can see about their own account.
  *
- * Read only by design: everything here is a fact about the reader that an
- * administrator maintains elsewhere. There is nothing to act on, so there are
- * no controls to mistake for ones.
+ * Read only, with one exception: a developer's applications are links,
+ * because those are the one thing on this page they are meant to act on.
+ * Everything else is a fact about the reader that an administrator maintains
+ * elsewhere, so there are no controls to mistake for ones.
  */
 defineOptions({
     layout: {
@@ -41,6 +43,12 @@ defineProps<{
         role: string | null;
         permissions: string[];
     }[];
+    stewardship: {
+        id: string;
+        name: string;
+        description: string | null;
+        enabled: boolean;
+    }[];
     platformRoles: string[];
 }>();
 </script>
@@ -53,6 +61,50 @@ defineProps<{
             :title="`Welcome, ${user.name}`"
             description="Your account, and what it can reach through this Identity Provider"
         />
+
+        <!--
+            Above the rest, and full width, because for a developer this is the
+            page: the account details below are reference, this is the work.
+        -->
+        <Card v-if="stewardship.length > 0">
+            <CardHeader>
+                <CardTitle>Applications you look after</CardTitle>
+                <CardDescription>
+                    You can configure these, rotate their client secrets, define
+                    the roles their tokens carry, and read their history. An
+                    administrator decides who may sign in to them.
+                </CardDescription>
+            </CardHeader>
+
+            <CardContent>
+                <ul class="divide-y rounded-lg border">
+                    <li
+                        v-for="application in stewardship"
+                        :key="application.id"
+                        class="px-3 py-3"
+                    >
+                        <Link
+                            :href="show(application.id)"
+                            class="flex items-center gap-2 font-medium hover:underline"
+                        >
+                            <StatusIndicator
+                                :active="application.enabled"
+                                active-label="Enabled"
+                                inactive-label="Disabled"
+                            />
+                            {{ application.name }}
+                        </Link>
+
+                        <p
+                            v-if="application.description"
+                            class="text-muted-foreground mt-1 text-sm"
+                        >
+                            {{ application.description }}
+                        </p>
+                    </li>
+                </ul>
+            </CardContent>
+        </Card>
 
         <div class="grid items-start gap-6 lg:grid-cols-2">
             <Card>

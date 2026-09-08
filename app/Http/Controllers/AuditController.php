@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers;
 
+use App\Concerns\DescribesApplicationSections;
 use App\Concerns\SortsListings;
 use App\Enums\AuditLog;
 use App\Models\Application;
@@ -21,6 +22,7 @@ use Inertia\Response;
  */
 class AuditController extends Controller
 {
+    use DescribesApplicationSections;
     use SortsListings;
 
     /**
@@ -58,13 +60,18 @@ class AuditController extends Controller
      */
     public function forApplication(Request $request, Application $application): Response
     {
+        /*
+         * Both: the page names the application, so the reader has to be
+         * allowed to see it, and separately allowed to read its history.
+         */
         $this->authorize('view', $application);
-        $this->authorize('viewAudit', AuditRecord::class);
+        $this->authorize('viewForApplication', [AuditRecord::class, $application]);
 
         $search = $request->string('search')->toString() ?: null;
 
         return Inertia::render('applications/Audit', [
             'application' => $application->toHeader(),
+            'sections' => $this->applicationSections($request->user(), $application),
             'canManageApplication' => $request->user()->can('update', $application),
             'filters' => [
                 'search' => $search,
@@ -76,6 +83,14 @@ class AuditController extends Controller
                 $this->perPage($request),
                 $this->sortColumn($request, AuditRecord::sortableColumns()),
                 $this->sortDirection($request),
+                /*
+                 * A steward reads this to understand what happened to their
+                 * application. Who did it, from which address, is a roll of
+                 * administrators — the same reason the access list is withheld
+                 * from them — so it is left out unless they may read the trail
+                 * in its own right.
+                 */
+                identified: $request->user()->can('viewAudit', AuditRecord::class),
             ),
         ]);
     }
@@ -83,9 +98,11 @@ class AuditController extends Controller
     /**
      * The shape of a paginated listing.
      *
-     * @param  Builder<AuditRecord>  $query
-     */
-    /**
+     * "identified" carries who acted and from where. Withheld from a reader
+     * who may see one application's history but not the trail itself: what
+     * happened to their application is theirs to know, the administrators who
+     * did it are not.
+     *
      * @param  Builder<AuditRecord>  $query
      * @param  'asc'|'desc'  $direction
      */
@@ -95,6 +112,7 @@ class AuditController extends Controller
         int $perPage,
         ?string $sort = null,
         string $direction = 'desc',
+        bool $identified = true,
     ): mixed {
         return $query
             ->search($search)
@@ -116,6 +134,8 @@ class AuditController extends Controller
              */
             ->simplePaginate($perPage)
             ->withQueryString()
-            ->through(fn (AuditRecord $record): array => $record->toSummary());
+            ->through(fn (AuditRecord $record): array => $identified
+                ? $record->toSummary()
+                : [...$record->toSummary(), 'causer' => null, 'ip_address' => null]);
     }
 }

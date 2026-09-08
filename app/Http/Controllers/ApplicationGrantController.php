@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers;
 
+use App\Concerns\DescribesApplicationSections;
 use App\Http\Requests\Admin\ApplicationGrantRequest;
 use App\Models\Application;
 use App\Models\ApplicationUser;
@@ -24,18 +25,21 @@ use Inertia\Response;
  */
 class ApplicationGrantController extends Controller
 {
+    use DescribesApplicationSections;
+
     /**
      * Show the users with access to an application.
      */
     public function index(Request $request, Application $application): Response
     {
-        $this->authorize('view', $application);
+        $this->authorize('viewAccess', $application);
 
         $search = $request->string('search')->toString() ?: null;
         $granted = $request->string('granted')->toString() ?: null;
 
         return Inertia::render('applications/Access', [
             'application' => $application->toHeader(),
+            'sections' => $this->applicationSections($request->user(), $application),
             'canManageApplication' => $request->user()->can('update', $application),
             'filters' => [
                 'search' => $search,

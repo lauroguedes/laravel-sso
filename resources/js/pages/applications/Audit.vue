@@ -7,7 +7,11 @@ import SearchInput from '@/components/SearchInput.vue';
 import { useListingFilters } from '@/composables/useListingFilters';
 import { index } from '@/routes/applications';
 import { audit } from '@/routes/applications';
-import type { ApplicationHeader, AuditEntry } from '@/types/administration';
+import type {
+    ApplicationHeader,
+    ApplicationSection,
+    AuditEntry,
+} from '@/types/administration';
 
 defineOptions({
     layout: {
@@ -17,6 +21,7 @@ defineOptions({
 
 const { application, filters } = defineProps<{
     application: ApplicationHeader;
+    sections: ApplicationSection[];
     canManageApplication: boolean;
     filters: { search: string | null };
     entries: {
@@ -40,6 +45,7 @@ const { search, sort, applySort, setFilter } = useListingFilters(
 
     <ApplicationLayout
         :application="application"
+        :sections="sections"
         description="What has been done to this application, and by whom"
         :can-manage="canManageApplication"
     >

@@ -140,6 +140,33 @@ A page they may not open, or one that does not exist, sends them back to that
 dashboard with an explanation rather than replacing the interface with an error
 page. A problem with the request is amber; a fault on this server is red.
 
+## Developers
+
+An administrator runs this server; a developer looks after the applications
+assigned to them and reaches nothing else.
+
+Give somebody the **Developer** role under Users, then assign them an
+application under **Applications → (one application) → Managers**. Both are
+needed: the role without an assignment reaches nothing, and an assignment
+without the role is refused rather than stored as a row that grants nothing.
+
+For an application they look after, a developer can:
+
+- edit its name, description, redirect URIs and post-logout URIs
+- rotate its client secret
+- define the roles and permissions its tokens carry
+- read its audit trail
+
+They cannot register an application, enable or disable one, decide who may
+sign in to it, choose who else looks after it, or see any application they
+were not assigned — the listing, the pages and the section rail all show only
+what they may open.
+
+Withdrawing the Developer role silences every assignment they hold at once,
+without unpicking them one by one. Their dashboard lists the applications they
+look after; the access grants beside it are a separate matter, since somebody
+may maintain an application they never sign in to.
+
 ## App settings
 
 One decision for the whole installation, so it needs `sso.settings.manage`

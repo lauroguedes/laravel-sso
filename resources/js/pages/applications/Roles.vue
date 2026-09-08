@@ -30,6 +30,7 @@ import {
 } from '@/routes/applications/roles';
 import type {
     ApplicationHeader,
+    ApplicationSection,
     ApplicationPermissionSummary,
     ApplicationRoleSummary,
 } from '@/types/administration';
@@ -42,6 +43,7 @@ defineOptions({
 
 const { application, roles, permissions } = defineProps<{
     application: ApplicationHeader;
+    sections: ApplicationSection[];
     canManageApplication: boolean;
     roles: ApplicationRoleSummary[];
     permissions: ApplicationPermissionSummary[];
@@ -73,6 +75,7 @@ function removePermission(permission: ApplicationPermissionSummary) {
 
     <ApplicationLayout
         :application="application"
+        :sections="sections"
         description="Roles and permissions this application recognises. They are reported to the application in a token; the application enforces them."
         :can-manage="canManageApplication"
     >

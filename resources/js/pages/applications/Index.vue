@@ -29,7 +29,7 @@ import { update as updateStatus } from '@/routes/applications/status';
 import { destroy as revokeTokens } from '@/routes/applications/tokens';
 import type {
     DataTableColumn,
-    ApplicationSummary,
+    ApplicationListRow,
 } from '@/types/administration';
 
 defineOptions({
@@ -40,7 +40,7 @@ defineOptions({
 
 const { applications, filters, applicationTypes } = defineProps<{
     applications: {
-        data: ApplicationSummary[];
+        data: ApplicationListRow[];
         links: PaginationLink[];
         from: number | null;
         to: number | null;
@@ -49,7 +49,7 @@ const { applications, filters, applicationTypes } = defineProps<{
     };
     filters: ListingFilters;
     applicationTypes: { value: string; label: string }[];
-    canManage: boolean;
+    canAdminister: boolean;
 }>();
 
 const filterGroups = computed<FilterGroup[]>(() => [
@@ -74,7 +74,7 @@ const columns: DataTableColumn[] = [
 
 /** The application a confirmation is currently open for, and what it will do. */
 const pending = ref<{
-    application: ApplicationSummary;
+    application: ApplicationListRow;
     action: 'revokeTokens' | 'disable';
 } | null>(null);
 
@@ -147,7 +147,7 @@ const { search, sort, applySort, setFilter } = useListingFilters(
                 description="OAuth2 and OpenID Connect clients that authenticate through this server"
             />
 
-            <Button as-child>
+            <Button v-if="canAdminister" as-child>
                 <Link :href="create()">
                     <Plus class="size-4" />
                     Add application
@@ -244,14 +244,14 @@ const { search, sort, applySort, setFilter } = useListingFilters(
                             </Link>
                         </DropdownMenuItem>
 
-                        <DropdownMenuItem v-if="canManage" as-child>
+                        <DropdownMenuItem v-if="row.can_manage" as-child>
                             <Link :href="edit(row.id)">
                                 <Pencil class="size-4" />
                                 Edit
                             </Link>
                         </DropdownMenuItem>
 
-                        <template v-if="canManage">
+                        <template v-if="canAdminister">
                             <DropdownMenuSeparator />
 
                             <DropdownMenuItem

@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\ApplicationController;
 use App\Http\Controllers\ApplicationGrantController;
+use App\Http\Controllers\ApplicationManagerController;
 use App\Http\Controllers\ApplicationPermissionController;
 use App\Http\Controllers\ApplicationRoleController;
 use App\Http\Controllers\ApplicationSecretController;
@@ -60,6 +61,18 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::resource('applications.grants', ApplicationGrantController::class)
         ->only(['index', 'store', 'update', 'destroy'])
         ->scoped();
+
+    /*
+     * Who looks after an application, as opposed to who may sign in to it.
+     * Not scoped: the manager is a platform user rather than a child of the
+     * application, so it resolves on its own and the pivot decides the rest.
+     */
+    Route::get('applications/{application}/managers', [ApplicationManagerController::class, 'index'])
+        ->name('applications.managers.index');
+    Route::post('applications/{application}/managers', [ApplicationManagerController::class, 'store'])
+        ->name('applications.managers.store');
+    Route::delete('applications/{application}/managers/{manager}', [ApplicationManagerController::class, 'destroy'])
+        ->name('applications.managers.destroy');
 
     Route::get('applications/{application}/audit', [AuditController::class, 'forApplication'])
         ->name('applications.audit');

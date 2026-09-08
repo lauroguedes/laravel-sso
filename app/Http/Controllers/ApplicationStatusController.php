@@ -26,7 +26,7 @@ class ApplicationStatusController extends Controller
      */
     public function update(Request $request, Application $application): RedirectResponse
     {
-        $this->authorize('update', $application);
+        $this->authorize('changeStatus', $application);
 
         $request->validate(['enabled' => ['required', 'boolean']]);
 

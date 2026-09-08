@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Admin9\OidcServer\Concerns\HasOidcClaims;
 use Admin9\OidcServer\Contracts\OidcUserInterface;
+use App\Enums\PlatformPermission;
 use App\Events\UserDisabled;
 use App\Events\UserEnabled;
 use Database\Factories\UserFactory;
@@ -12,6 +13,7 @@ use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
@@ -118,6 +120,42 @@ class User extends Authenticatable implements MustVerifyEmail, OAuthenticatable,
         $this->forceFill(['disabled_at' => null])->save();
 
         UserEnabled::dispatch($this);
+    }
+
+    /** Whether this user stewards anything at all, once answered. */
+    private ?bool $stewardsAnything = null;
+
+    /**
+     * The applications this user looks after.
+     *
+     * Not the same as the ones they can sign in to: this is stewardship —
+     * changing what an application is — and applicationGrants() is access.
+     *
+     * @return BelongsToMany<Application, $this>
+     */
+    public function managedApplications(): BelongsToMany
+    {
+        return $this->belongsToMany(Application::class, 'application_managers')->withTimestamps();
+    }
+
+    /**
+     * Determine whether this user looks after any application at all.
+     *
+     * What decides whether the applications section exists for them, so a
+     * developer with nothing assigned yet is not offered an empty listing.
+     */
+    public function stewardsApplications(): bool
+    {
+        if (! $this->can(PlatformPermission::ApplicationsDevelop->value)) {
+            return false;
+        }
+
+        /*
+         * Memoized: ApplicationPolicy::viewAny answers with it, and that runs
+         * on every Inertia response — including the partial reload behind each
+         * keystroke in a search box.
+         */
+        return $this->stewardsAnything ??= $this->managedApplications()->exists();
     }
 
     /**
