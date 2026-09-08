@@ -41,6 +41,12 @@
     --color-destructive: var(--destructive);
     --color-destructive-foreground: var(--destructive-foreground);
 
+    --color-success: var(--success);
+    --color-success-foreground: var(--success-foreground);
+
+    --color-auth-panel: var(--auth-panel);
+    --color-auth-panel-foreground: var(--auth-panel-foreground);
+
     --color-border: var(--border);
     --color-input: var(--input);
     --color-ring: var(--ring);
@@ -106,6 +112,13 @@
     --accent-foreground: hsl(0 0% 9%);
     --destructive: hsl(0 84.2% 60.2%);
     --destructive-foreground: hsl(0 0% 98%);
+    /*
+       Success is a fixed green rather than the palette's accent: it says a
+       thing worked, and a reader should not have to learn what this
+       installation's "worked" looks like.
+    */
+    --success: hsl(160.1 84.1% 39.4%);
+    --success-foreground: hsl(0 0% 98%);
     --border: hsl(0 0% 92.8%);
     --input: hsl(0 0% 89.8%);
     --ring: hsl(0 0% 3.9%);
@@ -117,13 +130,25 @@
     --radius: 0.5rem;
     --sidebar-background: hsl(0 0% 98%);
     --sidebar-foreground: hsl(240 5.3% 26.1%);
-    --sidebar-primary: hsl(0 0% 10%);
-    --sidebar-primary-foreground: hsl(0 0% 98%);
+    /*
+       The sidebar's accent follows the interface's, so the mark and the
+       selected item are the colour an administrator chose rather than a second
+       palette that has to be kept in step with the first.
+    */
+    --sidebar-primary: var(--primary);
+    --sidebar-primary-foreground: var(--primary-foreground);
     --sidebar-accent: hsl(0 0% 94%);
     --sidebar-accent-foreground: hsl(0 0% 30%);
     --sidebar-border: hsl(0 0% 91%);
     --sidebar-ring: hsl(217.2 91.2% 59.8%);
-    --sidebar: hsl(0 0% 98%);
+
+    /*
+       The panel beside the split sign-in form: the darker half in both
+       themes, but taken from the palette so a chosen base colour reaches it.
+       In light that is the page inverted; in dark, the sidebar's own ground.
+    */
+    --auth-panel: var(--foreground);
+    --auth-panel-foreground: var(--background);
 }
 
 .dark {
@@ -143,6 +168,8 @@
     --accent-foreground: hsl(0 0% 98%);
     --destructive: hsl(0 84% 60%);
     --destructive-foreground: hsl(0 0% 98%);
+    --success: hsl(158.1 64.4% 51.6%);
+    --success-foreground: hsl(160 84% 10%);
     --border: hsl(0 0% 14.9%);
     --input: hsl(0 0% 14.9%);
     --ring: hsl(0 0% 83.1%);
@@ -153,13 +180,14 @@
     --chart-5: hsl(340 75% 55%);
     --sidebar-background: hsl(0 0% 7%);
     --sidebar-foreground: hsl(0 0% 95.9%);
-    --sidebar-primary: hsl(360, 100%, 100%);
-    --sidebar-primary-foreground: hsl(0 0% 100%);
+    --sidebar-primary: var(--primary);
+    --sidebar-primary-foreground: var(--primary-foreground);
     --sidebar-accent: hsl(0 0% 15.9%);
     --sidebar-accent-foreground: hsl(240 4.8% 95.9%);
     --sidebar-border: hsl(0 0% 15.9%);
     --sidebar-ring: hsl(217.2 91.2% 59.8%);
-    --sidebar: hsl(240 5.9% 10%);
+    --auth-panel: var(--sidebar-background);
+    --auth-panel-foreground: var(--sidebar-foreground);
 }
 
 @layer base {

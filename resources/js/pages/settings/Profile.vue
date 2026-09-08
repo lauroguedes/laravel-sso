@@ -3,6 +3,7 @@ import { Form, Head, usePage } from '@inertiajs/vue3';
 import { Link } from '@inertiajs/vue3';
 import { computed } from 'vue';
 import ProfileController from '@/actions/App/Http/Controllers/Settings/ProfileController';
+import StatusMessage from '@/components/StatusMessage.vue';
 import Heading from '@/components/Heading.vue';
 import InputError from '@/components/InputError.vue';
 import { Button } from '@/components/ui/button';
@@ -84,12 +85,14 @@ const user = computed(() => page.props.auth.user);
                     </Link>
                 </p>
 
-                <div
-                    v-if="page.props.status === 'verification-link-sent'"
-                    class="mt-2 text-sm font-medium text-green-600"
-                >
-                    A new verification link has been sent to your email address.
-                </div>
+                <StatusMessage
+                    align="start"
+                    :message="
+                        page.props.status === 'verification-link-sent'
+                            ? 'A new verification link has been sent to your email address.'
+                            : null
+                    "
+                />
             </div>
 
             <div class="flex items-center gap-4">

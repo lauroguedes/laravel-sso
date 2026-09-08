@@ -18,6 +18,8 @@ import {
 defineProps<{
     label: string;
     icon: Component;
+    /** -1 keeps a convenience out of the tab order of the form it sits in. */
+    tabindex?: number;
 }>();
 
 defineEmits<{ click: [MouseEvent] }>();
@@ -31,6 +33,7 @@ defineEmits<{ click: [MouseEvent] }>();
                     type="button"
                     size="icon-xs"
                     :aria-label="label"
+                    :tabindex="tabindex"
                     @click="$emit('click', $event)"
                 >
                     <component :is="icon" />

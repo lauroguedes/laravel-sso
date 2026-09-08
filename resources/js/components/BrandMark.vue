@@ -33,9 +33,6 @@ const glyph = computed(() => ({ sm: 'size-5', lg: 'size-6' })[size]);
         class="bg-sidebar-primary text-sidebar-primary-foreground flex aspect-square items-center justify-center rounded-md"
         :class="box"
     >
-        <AppLogoIcon
-            class="fill-current text-white dark:text-black"
-            :class="glyph"
-        />
+        <AppLogoIcon class="fill-current" :class="glyph" />
     </div>
 </template>

@@ -72,7 +72,6 @@ class ThemePalette
                 'sidebar-accent' => '240 4.8% 94%',
                 'sidebar-accent-foreground' => '240 5.9% 30%',
                 'sidebar-border' => '240 5.9% 91%',
-                'sidebar' => '240 4.8% 97.9%',
             ],
             'dark' => [
                 'background' => '240 10% 3.9%',
@@ -96,7 +95,6 @@ class ThemePalette
                 'sidebar-accent' => '240 3.7% 15.9%',
                 'sidebar-accent-foreground' => '240 4.8% 95.9%',
                 'sidebar-border' => '240 3.7% 15.9%',
-                'sidebar' => '240 5.9% 10%',
             ],
         ],
         'slate' => [
@@ -125,7 +123,6 @@ class ThemePalette
                 'sidebar-accent' => '210 40% 94.1%',
                 'sidebar-accent-foreground' => '222.2 47.4% 21.2%',
                 'sidebar-border' => '214.3 31.8% 91.4%',
-                'sidebar' => '210 40% 98%',
             ],
             'dark' => [
                 'background' => '222.2 84% 4.9%',
@@ -149,7 +146,6 @@ class ThemePalette
                 'sidebar-accent' => '217.2 32.6% 17.5%',
                 'sidebar-accent-foreground' => '210 40% 98%',
                 'sidebar-border' => '217.2 32.6% 17.5%',
-                'sidebar' => '222.2 47.4% 11.2%',
             ],
         ],
         'stone' => [
@@ -178,7 +174,6 @@ class ThemePalette
                 'sidebar-accent' => '60 4.8% 93.9%',
                 'sidebar-accent-foreground' => '24 9.8% 30%',
                 'sidebar-border' => '20 5.9% 91%',
-                'sidebar' => '60 4.8% 97.9%',
             ],
             'dark' => [
                 'background' => '20 14.3% 4.1%',
@@ -202,7 +197,6 @@ class ThemePalette
                 'sidebar-accent' => '12 6.5% 15.1%',
                 'sidebar-accent-foreground' => '60 9.1% 97.8%',
                 'sidebar-border' => '12 6.5% 15.1%',
-                'sidebar' => '24 9.8% 10%',
             ],
         ],
         'gray' => [
@@ -231,7 +225,6 @@ class ThemePalette
                 'sidebar-accent' => '220 14.3% 93.9%',
                 'sidebar-accent-foreground' => '220.9 39.3% 31%',
                 'sidebar-border' => '220 13% 91%',
-                'sidebar' => '220 14.3% 97.9%',
             ],
             'dark' => [
                 'background' => '224 71.4% 4.1%',
@@ -255,7 +248,6 @@ class ThemePalette
                 'sidebar-accent' => '215 27.9% 16.9%',
                 'sidebar-accent-foreground' => '210 20% 98%',
                 'sidebar-border' => '215 27.9% 16.9%',
-                'sidebar' => '220.9 39.3% 11%',
             ],
         ],
     ];

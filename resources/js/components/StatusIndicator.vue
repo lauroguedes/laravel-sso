@@ -31,10 +31,7 @@ const { active, activeLabel, inactiveLabel } = defineProps<{
                     role="img"
                     :aria-label="active ? activeLabel : inactiveLabel"
                 >
-                    <CircleCheck
-                        v-if="active"
-                        class="size-4 text-emerald-600 dark:text-emerald-400"
-                    />
+                    <CircleCheck v-if="active" class="text-success size-4" />
                     <CircleSlash v-else class="text-destructive size-4" />
                 </span>
             </TooltipTrigger>

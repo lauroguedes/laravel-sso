@@ -18,21 +18,25 @@ defineProps<{
     <div
         class="relative grid h-dvh flex-col items-center justify-center px-8 sm:px-0 lg:max-w-none lg:grid-cols-2 lg:px-0"
     >
+        <!--
+            An uploaded photograph brings its own colours, so the text over one
+            is white rather than the panel's foreground. Chosen rather than
+            layered: two colour utilities of equal specificity are settled by
+            the order Tailwind emits them, not the order they are written.
+        -->
         <div
-            class="bg-muted relative hidden h-full flex-col p-10 text-white lg:flex dark:border-r"
+            class="bg-auth-panel relative hidden h-full flex-col p-10 lg:flex dark:border-r"
+            :class="background ? 'text-white' : 'text-auth-panel-foreground'"
         >
-            <!--
-                The panel keeps its dark ground behind any uploaded image, so
-                the brand stays legible while a large photograph is still
-                loading and if it fails to load at all.
-            -->
-            <div class="absolute inset-0 bg-zinc-900">
-                <img
-                    v-if="background"
-                    :src="background"
-                    alt=""
-                    class="size-full object-cover"
-                />
+            <div v-if="background" class="absolute inset-0">
+                <img :src="background" alt="" class="size-full object-cover" />
+
+                <!--
+                    A photograph is somebody else's choice of colours, so the
+                    brand on top of it needs a ground of its own rather than
+                    trusting the image to be dark where the words fall.
+                -->
+                <div class="absolute inset-0 bg-black/45" />
             </div>
             <Link
                 :href="home()"
