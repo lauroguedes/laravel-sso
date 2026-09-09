@@ -1,4 +1,8 @@
-# Installation
+---
+title: 'Installation'
+description: 'Requirements, the installer, and creating your first administrator.'
+order: 1
+---
 
 ## Requirements
 
@@ -10,7 +14,7 @@
 | Extensions | the usual Laravel set, plus `openssl` for the signing keys                     |
 
 A queue worker and a scheduler are needed in production, but not to try the
-server out. See [Deployment](deployment.md).
+server out. See [Deployment](/docs/getting-started/deployment).
 
 ## Getting a server running
 
@@ -28,7 +32,7 @@ php artisan sso:install
 Set `SSO_ISSUER` in `.env` before you run the installer if you already know the
 public URL. It can be changed later, but every application you have registered
 by then will need to be told about the change, so it is worth getting right
-first. See [Configuration](configuration.md).
+first. See [Configuration](/docs/getting-started/configuration).
 
 ## What `sso:install` does
 

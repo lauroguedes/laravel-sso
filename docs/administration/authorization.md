@@ -1,4 +1,8 @@
-# Authorization
+---
+title: 'Authorization'
+description: 'Platform permissions, application roles, and delegating an application.'
+order: 2
+---
 
 There are two separate systems here, and keeping them separate is the point.
 

@@ -1,4 +1,8 @@
-# Deployment
+---
+title: 'Deployment'
+description: 'Running it in production: the queue, the scheduler and the signing keys.'
+order: 3
+---
 
 This is an ordinary Laravel application. Anything that runs Laravel in
 production runs this — Laravel Cloud, Forge, a container, a plain VPS.

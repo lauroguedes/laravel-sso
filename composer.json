@@ -1,11 +1,16 @@
 {
     "$schema": "https://getcomposer.org/schema.json",
-    "name": "laravel/vue-starter-kit",
+    "name": "lauroguedes/laravel-sso",
     "type": "project",
-    "description": "The skeleton application for the Laravel framework.",
+    "description": "A self-hosted OpenID Connect provider. Register your applications, and sign in to all of them with one account.",
     "keywords": [
         "laravel",
-        "framework"
+        "oauth2",
+        "openid-connect",
+        "oidc",
+        "sso",
+        "identity-provider",
+        "starter-kit"
     ],
     "license": "MIT",
     "require": {
@@ -18,6 +23,7 @@
         "laravel/passport": "^13.0",
         "laravel/tinker": "^3.0",
         "laravel/wayfinder": "^0.1.14",
+        "petebishwhip/laradocs": "^0.1.4",
         "spatie/laravel-activitylog": "^5.1",
         "spatie/laravel-permission": "^8.0"
     },
@@ -94,7 +100,8 @@
         "post-create-project-cmd": [
             "@php artisan key:generate --ansi",
             "@php -r \"file_exists('database/database.sqlite') || touch('database/database.sqlite');\"",
-            "@php artisan migrate --graceful --ansi"
+            "@php artisan migrate --graceful --ansi",
+            "@php artisan sso:install --skip-migrations --ansi"
         ],
         "pre-package-uninstall": [
             "Illuminate\\Foundation\\ComposerScripts::prePackageUninstall"
@@ -118,5 +125,11 @@
         }
     },
     "minimum-stability": "stable",
-    "prefer-stable": true
+    "prefer-stable": true,
+    "homepage": "https://github.com/lauroguedes/laravel-sso",
+    "support": {
+        "issues": "https://github.com/lauroguedes/laravel-sso/issues",
+        "source": "https://github.com/lauroguedes/laravel-sso",
+        "docs": "https://github.com/lauroguedes/laravel-sso#documentation"
+    }
 }

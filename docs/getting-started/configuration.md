@@ -1,4 +1,8 @@
-# Configuration
+---
+title: 'Configuration'
+description: 'Every environment variable, and which settings an administrator owns instead.'
+order: 2
+---
 
 Almost everything is an environment variable. The two configuration files that
 matter are `config/sso.php`, which holds the defaults an operator changes, and
@@ -131,7 +135,7 @@ is not: switching off the audit trail from inside the interface would be the
 first thing worth doing to it.
 
 Retention only happens if the scheduler is running. See
-[Deployment](deployment.md).
+[Deployment](/docs/getting-started/deployment).
 
 `ACTIVITYLOG_BUFFER_ENABLED` is a third, deliberately absent from
 `.env.example`. It holds entries in memory and writes them in one bulk insert

@@ -1,4 +1,8 @@
-# OpenID Connect
+---
+title: 'OpenID Connect'
+description: 'The protocol surface in detail: endpoints, scopes, claims and flows.'
+order: 2
+---
 
 This server implements OpenID Connect Core on top of OAuth 2.0. Any conforming
 client library will work against it; nothing here is Laravel-specific.
@@ -57,7 +61,7 @@ only those the user consented to.
 
 `roles` and `permissions` are scoped to the client asking. Two applications
 sending the same user through the same flow get different values, and neither
-learns anything about the other. See [Authorization](authorization.md).
+learns anything about the other. See [Authorization](/docs/administration/authorization).
 
 ## Authorization code with PKCE
 
@@ -136,7 +140,7 @@ issued tokens** on the application, or by disabling the application. Revoking
 an access token revokes the refresh token issued with it.
 
 Disabling a user revokes their tokens too, in the same action. See
-[Authorization](authorization.md#disabled-users).
+[Authorization](/docs/administration/authorization#disabled-users).
 
 ## Machine to machine
 
@@ -186,7 +190,7 @@ set and still follow a rotation.
 The private key lives at `storage/oauth-private.key`. It is not in version
 control, and `sso:install` never replaces an existing one. Rotating it
 invalidates every ID Token in flight and every cached key set — see
-[Deployment](deployment.md#signing-keys).
+[Deployment](/docs/getting-started/deployment#signing-keys).
 
 ## Logout
 

@@ -1,4 +1,8 @@
-# Security
+---
+title: 'Security'
+description: 'What the server guarantees, what is yours to get right, and the known limits.'
+order: 3
+---
 
 What this server guarantees, what it leaves to you, and what it deliberately
 does not do.
@@ -71,7 +75,7 @@ identifiers, token payloads and authorization request parameters.
 **The signing key.** Anyone holding `storage/oauth-private.key` can mint an ID
 Token that all of your applications will believe. Back it up encrypted,
 separately from the database, and restrict who can read it on the server. See
-[Deployment](deployment.md#signing-keys).
+[Deployment](/docs/getting-started/deployment#signing-keys).
 
 **Who holds Super Admin.** The role carries every platform permission,
 including the ability to register applications and read the audit trail. Grant
@@ -83,7 +87,7 @@ narrower thing to give an integrator, but it is still a delegation: a steward
 chooses their application's redirect URIs, which is where its authorization
 codes are delivered. Assign applications, not the role, to control the reach —
 and withdraw the role to silence every assignment at once. See
-[Authorization](authorization.md#stewarding-an-application).
+[Authorization](/docs/administration/authorization#stewarding-an-application).
 
 **The consent switch.** Turning off the consent screen for an application you
 do not control means its users are never asked before it receives their

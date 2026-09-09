@@ -1,8 +1,12 @@
-# Administration
+---
+title: 'The interface'
+description: 'Users, sessions, the audit trail and the settings that shape the server.'
+order: 1
+---
 
 What an administrator sees, and what each part of the interface does. Who may
 reach any of it is decided by the platform permissions in
-[Authorization](authorization.md).
+[Authorization](/docs/administration/authorization).
 
 ## Dashboard
 
@@ -75,7 +79,7 @@ real. There is no route for deleting an account, including your own.
 
 ## Applications
 
-Covered in full in [Applications](applications.md): registering clients, their
+Covered in full in [Applications](/docs/integrating/applications): registering clients, their
 credentials, redirect URIs, scopes, consent, access restriction, and each
 application's own roles, permissions, access list and history.
 
@@ -127,7 +131,7 @@ Every application also has its own audit page, listing only what concerns it.
 
 **The trail is read only.** There is no route that edits or deletes an entry.
 Retention is the scheduled `activitylog:clean` command's job — see
-`SSO_AUDIT_RETENTION_DAYS` in [Configuration](configuration.md#audit-trail).
+`SSO_AUDIT_RETENTION_DAYS` in [Configuration](/docs/getting-started/configuration#audit-trail).
 Anyone with database access can still edit it directly, so ship it elsewhere if
 you need it to be evidence against someone who owns the server.
 

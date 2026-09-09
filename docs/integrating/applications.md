@@ -1,4 +1,8 @@
-# Applications
+---
+title: 'Applications'
+description: 'Registering a client and handing its developer what they need.'
+order: 1
+---
 
 An application is an OAuth 2.0 client: something that sends users here to sign
 in, or that calls an API as itself. Registering one is how it gets credentials.
@@ -40,7 +44,7 @@ The type step decides what follows: a machine-to-machine client has no browser
 to send anywhere, so it is not asked for URIs at all.
 
 **Scopes.** What the application may ask for. See
-[OpenID Connect](openid-connect.md#scopes-and-claims). Interactive applications
+[OpenID Connect](/docs/integrating/openid-connect#scopes-and-claims). Interactive applications
 are pre-selected with `openid`, `profile` and `email`.
 
 ## Credentials
@@ -70,7 +74,7 @@ answer. Never turn it on for an application somebody else controls.
 
 **Restrict access.** Only users who have been explicitly granted access may
 sign in to this application. Everyone else is refused at the authorization
-endpoint, before a code is issued. See [Authorization](authorization.md).
+endpoint, before a code is issued. See [Authorization](/docs/administration/authorization).
 
 ## Who looks after it
 
@@ -81,7 +85,7 @@ person integrating an application is not the person running this one.
 
 They cannot enable or disable it, revoke its tokens, decide who signs in, or
 change the two switches above. See
-[Authorization](authorization.md#stewarding-an-application).
+[Authorization](/docs/administration/authorization#stewarding-an-application).
 
 ## Disabling
 
@@ -128,7 +132,7 @@ that implements OpenID Connect will work: `openid-client` for Node,
 Security's OAuth2 client, and so on.
 
 For the protocol details, and for what to do without a library, see
-[OpenID Connect](openid-connect.md).
+[OpenID Connect](/docs/integrating/openid-connect).
 
 ## History
 
