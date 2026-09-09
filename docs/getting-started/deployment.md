@@ -139,6 +139,27 @@ grants and your audit trail.
 your relying parties actually depend on, and it is the first thing to break
 when the issuer is misconfigured.
 
+## Hosting a public demo
+
+A demonstration server is signed into by strangers, and everything they can
+reach they can also change. `sso:demo-reset` drops the database and rebuilds
+the sample data, so what a visitor finds is the demo rather than whatever the
+last visitor left behind.
+
+```env
+SSO_DEMO_MODE=true
+SSO_DEMO_RESET_HOURS=6
+```
+
+With `SSO_DEMO_MODE` on, the scheduler runs the reset on that cycle. Run it by
+hand with `php artisan sso:demo-reset`.
+
+> [!WARNING]
+> This deletes every user, application and token. It refuses to run unless
+> `SSO_DEMO_MODE` is on, and refuses in production regardless — the seeder it
+> runs creates accounts with a published password. Never turn it on for an
+> installation holding anything you want to keep.
+
 ## Scaling
 
 The server is stateless apart from the database and the signing keys, so it
