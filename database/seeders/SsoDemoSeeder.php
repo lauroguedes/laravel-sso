@@ -19,9 +19,9 @@ use RuntimeException;
 /**
  * Fills a development install with something to look at.
  *
- * Creates an administrator, a few ordinary users, two applications of
- * different kinds, and the roles and permissions that show how per-application
- * authorization works.
+ * Creates an administrator, a developer, a few ordinary users, two
+ * applications of different kinds, and the roles and permissions that show how
+ * per-application authorization works.
  *
  * Every account here uses a published password, so the seeder refuses to run
  * in production rather than trusting whoever typed the command.
@@ -90,6 +90,12 @@ class SsoDemoSeeder extends Seeder
             $this->singlePageApplication($applications);
 
             /*
+             * The developer looks after one application and not the other, so
+             * the demo shows the scoping rather than just the role.
+             */
+            $reporting->managers()->attach($this->developer());
+
+            /*
              * Only the reporting application restricts access, so the demo
              * shows both halves of the model: an application anyone signed in
              * may reach, and one an administrator admits people to by name.
@@ -105,7 +111,9 @@ class SsoDemoSeeder extends Seeder
         });
 
         $this->console?->newLine();
-        $this->console?->info('Demo data created. Sign in as '.self::email('admin').'.');
+        $this->console?->info('Demo data created.');
+        $this->console?->line('Administrator: '.self::email('admin'));
+        $this->console?->line('Developer:     '.self::email('dev').' (looks after Reporting)');
         $this->console?->line('Every demo account uses the password "'.self::PASSWORD.'".');
     }
 
@@ -133,6 +141,22 @@ class SsoDemoSeeder extends Seeder
         return User::factory()->superAdmin()->create([
             'name' => 'Ada Admin',
             'email' => self::email('admin'),
+            'password' => self::PASSWORD,
+        ]);
+    }
+
+    /**
+     * The demo developer.
+     *
+     * Holds the Developer role and is assigned one application by the caller.
+     * The role alone reaches nothing, which is the point of it — the demo
+     * would not show that if the assignment came with the role.
+     */
+    private function developer(): User
+    {
+        return User::factory()->developer()->create([
+            'name' => 'Dana Dev',
+            'email' => self::email('dev'),
             'password' => self::PASSWORD,
         ]);
     }

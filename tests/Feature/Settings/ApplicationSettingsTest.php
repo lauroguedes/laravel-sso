@@ -42,7 +42,7 @@ function sectionDefaults(): array
         'layout' => [
             'rows_per_page' => 15,
             'sidebar_variant' => 'inset',
-            'auth_layout' => 'simple',
+            'auth_layout' => 'split',
         ],
         'links' => ['documentation_links' => []],
         'access' => [
@@ -77,11 +77,12 @@ test('an administrator changes how the server presents itself', function () {
     saveSection('brand', ['brand_name' => 'Acme Identity'])
         ->assertRedirect(route('application-settings.edit', ['tab' => 'brand']));
 
-    saveSection('layout', ['rows_per_page' => 50, 'auth_layout' => 'split']);
+    /* Both away from their defaults, or the assertion proves nothing. */
+    saveSection('layout', ['rows_per_page' => 50, 'auth_layout' => 'card']);
 
     expect(storedSettings()->get('brand_name'))->toBe('Acme Identity')
         ->and(storedSettings()->get('rows_per_page'))->toBe(50)
-        ->and(storedSettings()->get('auth_layout'))->toBe('split');
+        ->and(storedSettings()->get('auth_layout'))->toBe('card');
 });
 
 test('saving one section leaves the others alone', function () {

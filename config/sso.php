@@ -23,7 +23,7 @@ $pinnable = [
     'accent' => ['SSO_ACCENT', 'default', 'string'],
     'rows_per_page' => ['SSO_ROWS_PER_PAGE', 15, 'int'],
     'sidebar_variant' => ['SSO_SIDEBAR_VARIANT', 'inset', 'string'],
-    'auth_layout' => ['SSO_AUTH_LAYOUT', 'simple', 'string'],
+    'auth_layout' => ['SSO_AUTH_LAYOUT', 'split', 'string'],
     'allow_registration' => ['SSO_ALLOW_REGISTRATION', false, 'bool'],
     'require_email_verification' => ['SSO_REQUIRE_EMAIL_VERIFICATION', true, 'bool'],
     'access_token_ttl' => ['SSO_DEFAULT_ACCESS_TOKEN_TTL', 900, 'int'],
@@ -110,6 +110,27 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Demonstration Mode
+    |--------------------------------------------------------------------------
+    |
+    | A public demo is signed into by strangers, and everything they can reach
+    | they can also change. "sso:demo-reset" drops the database and rebuilds
+    | the sample data, and the scheduler runs it every "reset_hours" while
+    | this is on.
+    |
+    | Off by default, and checked before anything is dropped: turning it on is
+    | the deliberate act of saying this installation holds nothing worth
+    | keeping.
+    |
+    */
+
+    'demo' => [
+        'enabled' => (bool) env('SSO_DEMO_MODE', false),
+        'reset_hours' => (int) env('SSO_DEMO_RESET_HOURS', 6),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | Rate Limits
     |--------------------------------------------------------------------------
     |
@@ -152,11 +173,23 @@ return [
         'auth_background' => null,
 
         /*
-         * The protocol reference starts here rather than being hard-coded in
-         * the sidebar, so an operator can reword it, move it below their own
-         * runbook, or remove it.
+         * The links a fresh install starts with. They are defaults rather than
+         * fixtures: an operator can reword one, move their own runbook above
+         * them, or remove them entirely.
+         *
+         * This server's own documentation is served from it, so the URL is
+         * built from APP_URL rather than written down — an installation on
+         * another domain still points at its own copy.
          */
         'documentation_links' => [
+            [
+                'label' => 'Documentation',
+                'url' => rtrim((string) config('app.url'), '/').'/docs',
+            ],
+            [
+                'label' => 'GitHub',
+                'url' => 'https://github.com/lauroguedes/laravel-sso',
+            ],
             [
                 'label' => 'OpenID Connect',
                 'url' => 'https://openid.net/developers/how-connect-works/',

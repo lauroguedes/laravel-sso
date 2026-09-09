@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { Link, usePage } from '@inertiajs/vue3';
 import { computed } from 'vue';
+import AuthPanelArt from '@/components/AuthPanelArt.vue';
 import BrandMark from '@/components/BrandMark.vue';
 import { home } from '@/routes';
 
@@ -28,15 +29,24 @@ defineProps<{
             class="bg-auth-panel relative hidden h-full flex-col p-10 lg:flex dark:border-r"
             :class="background ? 'text-white' : 'text-auth-panel-foreground'"
         >
-            <div v-if="background" class="absolute inset-0">
-                <img :src="background" alt="" class="size-full object-cover" />
+            <div class="absolute inset-0">
+                <template v-if="background">
+                    <img
+                        :src="background"
+                        alt=""
+                        class="size-full object-cover"
+                    />
 
-                <!--
-                    A photograph is somebody else's choice of colours, so the
-                    brand on top of it needs a ground of its own rather than
-                    trusting the image to be dark where the words fall.
-                -->
-                <div class="absolute inset-0 bg-black/45" />
+                    <!--
+                        A photograph is somebody else's choice of colours, so
+                        the brand on top of it needs a ground of its own rather
+                        than trusting the image to be dark where the words
+                        fall.
+                    -->
+                    <div class="absolute inset-0 bg-black/45" />
+                </template>
+
+                <AuthPanelArt v-else />
             </div>
             <Link
                 :href="home()"

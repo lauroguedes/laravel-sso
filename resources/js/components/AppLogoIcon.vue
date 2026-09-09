@@ -1,6 +1,17 @@
 <script setup lang="ts">
 import type { HTMLAttributes } from 'vue';
 
+/**
+ * The mark for this server: a shield with a keyhole cut out of it.
+ *
+ * One key, many doors, is what single sign-on is, and a shield is what an
+ * Identity Provider is for. Both shapes survive being drawn at sixteen pixels
+ * in a sidebar, which is where this spends most of its life.
+ *
+ * Kept to the proportions of the mark it replaces, so every place that sized
+ * the old one still fits, and to a single path in currentColor, so it takes
+ * the colour of whatever it sits on.
+ */
 defineOptions({
     inheritAttrs: false,
 });
@@ -23,7 +34,7 @@ defineProps<Props>();
             fill="currentColor"
             fill-rule="evenodd"
             clip-rule="evenodd"
-            d="M17.2 5.633 8.6.855 0 5.633v26.51l16.2 9 16.2-9v-8.442l7.6-4.223V9.856l-8.6-4.777-8.6 4.777V18.3l-5.6 3.111V5.633ZM38 18.301l-5.6 3.11v-6.157l5.6-3.11V18.3Zm-1.06-7.856-5.54 3.078-5.54-3.079 5.54-3.078 5.54 3.079ZM24.8 18.3v-6.157l5.6 3.111v6.158L24.8 18.3Zm-1 1.732 5.54 3.078-13.14 7.302-5.54-3.078 13.14-7.3v-.002Zm-16.2 7.89 7.6 4.222V38.3L2 30.966V7.92l5.6 3.111v16.892ZM8.6 9.3 3.06 6.222 8.6 3.143l5.54 3.08L8.6 9.3Zm21.8 15.51-13.2 7.334V38.3l13.2-7.334v-6.156ZM9.6 11.034l5.6-3.11v14.6l-5.6 3.11v-14.6Z"
+            d="M20 1.2 3.6 7.4A2 2 0 0 0 2.3 9.3v11.9c0 8.6 5.2 15.4 17 20.5.4.2.9.2 1.4 0 11.8-5.1 17-11.9 17-20.5V9.3a2 2 0 0 0-1.3-1.9L20 1.2Zm0 4.3 13.7 5.2v10.5c0 6.7-3.9 12-13.7 16.4C10.2 33.2 6.3 27.9 6.3 21.2V10.7L20 5.5Zm0 6.6a5.5 5.5 0 0 0-2.7 10.3l-1.8 8.2a1 1 0 0 0 1 1.2h7a1 1 0 0 0 1-1.2l-1.8-8.2A5.5 5.5 0 0 0 20 12.1Zm0 3.6a1.9 1.9 0 1 1 0 3.8 1.9 1.9 0 0 1 0-3.8Z"
         />
     </svg>
 </template>

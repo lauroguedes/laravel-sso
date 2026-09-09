@@ -10,10 +10,22 @@ describe('with the demo data seeded', function () {
     beforeEach(fn () => $this->seed(SsoDemoSeeder::class));
 
     test('it creates users and applications an operator can explore', function () {
-        expect(User::count())->toBe(4)
+        expect(User::count())->toBe(5)
             ->and(User::role(PlatformRole::SuperAdmin->value)->count())->toBe(1)
+            ->and(User::role(PlatformRole::Developer->value)->count())->toBe(1)
             ->and(User::whereNotNull('disabled_at')->count())->toBe(1)
             ->and(Application::count())->toBe(2);
+    });
+
+    test('it demonstrates a developer who looks after one application', function () {
+        /*
+         * One of the two, not both: the role reaches nothing on its own, and
+         * the demo only shows that if the assignment is narrower than the
+         * role.
+         */
+        $developer = User::role(PlatformRole::Developer->value)->sole();
+
+        expect($developer->managedApplications()->pluck('name')->all())->toBe(['Reporting']);
     });
 
     test('it demonstrates both kinds of interactive client', function () {
