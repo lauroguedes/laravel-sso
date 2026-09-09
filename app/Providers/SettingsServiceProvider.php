@@ -47,9 +47,34 @@ class SettingsServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
-        $this->withSettings($this->applyBrand(...));
+        $this->withSettings(function (array $settings): void {
+            $this->applyBrand($settings);
+            $this->applyDocumentation($settings);
+        });
 
         $this->sharePalette();
+    }
+
+    /**
+     * Dress the documentation in the same colours as the interface.
+     *
+     * It is a separate site with its own stylesheet, so it cannot read the
+     * custom properties the palette writes into the application. One colour is
+     * what it takes, and an accent nobody chose leaves its own default alone.
+     *
+     * @param  array<string, mixed>  $settings
+     */
+    private function applyDocumentation(array $settings): void
+    {
+        $accent = $this->app->make(ThemePalette::class)
+            ->swatch('accent', (string) $settings['accent']);
+
+        config([
+            'laradocs.ui.brand.title' => $settings['brand_name'],
+            ...$accent === null || $settings['accent'] === 'default'
+                ? []
+                : ['laradocs.ui.accent' => $accent],
+        ]);
     }
 
     /**

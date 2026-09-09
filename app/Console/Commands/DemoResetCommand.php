@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Console\Commands;
 
+use App\Services\Settings;
 use Database\Seeders\SsoDemoSeeder;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Artisan;
@@ -59,6 +60,15 @@ class DemoResetCommand extends Command
                 '--class' => SsoDemoSeeder::class,
                 '--force' => true,
             ], $this->output);
+        });
+
+        /*
+         * The settings are read through a cache that outlives the table they
+         * came from: on redis or a file store, dropping the rows leaves the
+         * server still wearing whatever the last visitor set.
+         */
+        $this->components->task('Forgetting the cached settings', function (): void {
+            app(Settings::class)->flush();
         });
 
         $this->newLine();

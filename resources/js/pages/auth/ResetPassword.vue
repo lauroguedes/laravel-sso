@@ -43,7 +43,6 @@ const inputEmail = ref(props.email);
                     name="email"
                     autocomplete="email"
                     v-model="inputEmail"
-                    class="mt-1 block w-full"
                     readonly
                 />
                 <InputError :message="errors.email" class="mt-2" />
@@ -55,7 +54,6 @@ const inputEmail = ref(props.email);
                     id="password"
                     name="password"
                     autocomplete="new-password"
-                    class="mt-1 block w-full"
                     autofocus
                     placeholder="Password"
                     :passwordrules="passwordRules"
@@ -69,7 +67,6 @@ const inputEmail = ref(props.email);
                     id="password_confirmation"
                     name="password_confirmation"
                     autocomplete="new-password"
-                    class="mt-1 block w-full"
                     placeholder="Confirm password"
                     :passwordrules="passwordRules"
                 />

@@ -2,7 +2,6 @@
 import { router } from '@inertiajs/vue3';
 import { KeyRound } from '@lucide/vue';
 import type { Passkey } from '@/types/auth';
-import Heading from '@/components/Heading.vue';
 import PasskeyItem from '@/components/PasskeyItem.vue';
 import PasskeyRegister from '@/components/PasskeyRegister.vue';
 import { destroy } from '@/actions/Laravel/Passkeys/Http/Controllers/PasskeyRegistrationController';
@@ -31,12 +30,6 @@ const handleRegisterSuccess = () => {
 
 <template>
     <div v-if="canManagePasskeys" class="space-y-6">
-        <Heading
-            variant="small"
-            title="Passkeys"
-            description="Manage your passkeys for passwordless sign-in"
-        />
-
         <div class="border-border overflow-hidden rounded-lg border">
             <template v-if="passkeys.length">
                 <PasskeyItem

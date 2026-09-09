@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { Link } from '@inertiajs/vue3';
+import AppCredit from '@/components/AppCredit.vue';
 import BrandMark from '@/components/BrandMark.vue';
 import {
     Card,
@@ -42,5 +43,7 @@ defineProps<{
                 </Card>
             </div>
         </div>
+
+        <AppCredit />
     </div>
 </template>

@@ -20,6 +20,54 @@ An **Application** wraps a Passport client one-to-one. There is deliberately no
 second OAuth client concept: `oauth_clients` already stores the redirect URIs,
 the grant types and the disabled flag.
 
+## How each kind of application signs in
+
+The three types differ in one thing: how the client proves it is itself.
+
+**Web App** — runs on a server, so it can keep a secret.
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant U as User
+    participant A as Web App
+    participant S as Laravel SSO
+    U->>A: Opens the application
+    A->>S: Redirect to /oauth/authorize
+    S->>U: Sign in, then consent
+    S->>A: Redirect back with a code
+    A->>S: POST /oauth/token — code + client secret
+    S->>A: ID Token, access token, refresh token
+```
+
+**SPA / Mobile** — cannot keep a secret, so PKCE takes its place. The client
+proves it is the same one that started the request.
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant U as User
+    participant A as SPA / Mobile
+    participant S as Laravel SSO
+    A->>A: Make a verifier, hash it into a challenge
+    A->>S: Redirect to /oauth/authorize — with the challenge
+    S->>U: Sign in, then consent
+    S->>A: Redirect back with a code
+    A->>S: POST /oauth/token — code + verifier, no secret
+    S->>A: ID Token, access token, refresh token
+```
+
+**Service** — acts as itself. No user, no browser, and no ID Token.
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant A as Service
+    participant S as Laravel SSO
+    A->>S: POST /oauth/token — client id + secret
+    S->>A: Access token
+```
+
 ## Two authorization systems
 
 Kept separate on purpose.

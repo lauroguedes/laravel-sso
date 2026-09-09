@@ -45,6 +45,12 @@ class SecurityController extends Controller
                     ->all()
                 : [],
             'passwordRules' => Password::defaults()->toPasswordRulesString(),
+            /*
+             * Which tab opens. Named in the URL rather than left to the page,
+             * because changing a password is a redirect: without it the answer
+             * to "saved" would be the reader thrown back to the first tab.
+             */
+            'tab' => $this->tab($request->query('tab')),
         ];
 
         if (Features::canManageTwoFactorAuthentication()) {
@@ -55,6 +61,16 @@ class SecurityController extends Controller
         }
 
         return Inertia::render('settings/Security', $props);
+    }
+
+    /**
+     * The tab to open, refusing anything that is not one.
+     */
+    private function tab(mixed $requested): string
+    {
+        $tabs = ['password', 'two-factor', 'passkeys'];
+
+        return in_array($requested, $tabs, true) ? $requested : $tabs[0];
     }
 
     /**

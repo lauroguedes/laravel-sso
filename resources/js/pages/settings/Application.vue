@@ -23,6 +23,7 @@ import {
 import { Spinner } from '@/components/ui/spinner';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import type { DurationUnit } from '@/lib/duration';
+import { useTabInUrl } from '@/composables/useTabInUrl';
 import { destroy, edit, update } from '@/routes/application-settings';
 
 /**
@@ -90,23 +91,10 @@ const { settings, pinned, tab } = defineProps<{
 const isPinned = (key: string) => pinned.includes(key);
 
 /*
- * The open tab lives in the address bar. Each section saves with a redirect,
- * and a redirect that forgot which tab it came from would answer "saved" by
- * throwing the reader back to the first one — so the server sends them back to
- * the section they submitted, and the URL keeps up as they browse.
- *
- * Rewritten in place rather than visited: switching tab fetches nothing, and
- * asking the server for a page it already sent would make a free interaction
- * cost a round trip. Inertia compares paths, not queries, so its own record of
- * where the reader is stays correct.
+ * Each section saves with a redirect, and the server sends the reader back to
+ * the section they submitted; this keeps the URL in step as they browse.
  */
-function rememberTab(value: string | number) {
-    const url = new URL(window.location.href);
-
-    url.searchParams.set('tab', String(value));
-
-    window.history.replaceState(window.history.state, '', url);
-}
+const { rememberTab } = useTabInUrl();
 
 /*
  * Held locally because the interface reacts to them before anything is saved:

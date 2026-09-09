@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\User;
+use App\Services\Settings;
 
 test('it refuses unless the installation says it is a demo', function () {
     /*
@@ -31,6 +32,7 @@ test('it refuses in production, where the demo passwords are published', functio
  * What the command does once past its guards is "migrate:fresh" and a seeder,
  * both of which the framework and SsoDemoSeederTest already cover — and
  * neither can run inside the transaction a test is wrapped in, since sqlite
- * refuses to vacuum from within one. The guards are what belongs to this
- * command, so the guards are what is tested.
+ * refuses to vacuum from within one. That also puts the settings-cache flush
+ * out of reach here — it happens after the rebuild. The guards are what
+ * belongs to this command, so the guards are what is tested.
  */

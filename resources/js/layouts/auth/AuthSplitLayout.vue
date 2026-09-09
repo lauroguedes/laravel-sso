@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { Link, usePage } from '@inertiajs/vue3';
 import { computed } from 'vue';
+import AppCredit from '@/components/AppCredit.vue';
 import AuthPanelArt from '@/components/AuthPanelArt.vue';
 import BrandMark from '@/components/BrandMark.vue';
 import { home } from '@/routes';
@@ -56,9 +57,14 @@ defineProps<{
                 {{ name }}
             </Link>
         </div>
-        <div class="lg:p-8">
+        <!--
+            The credit belongs under the form rather than under the window: it
+            would otherwise sit centred across both halves, which reads as
+            belonging to neither.
+        -->
+        <div class="flex h-full flex-col justify-center lg:p-8">
             <div
-                class="mx-auto flex w-full flex-col justify-center space-y-6 sm:w-[350px]"
+                class="mx-auto flex w-full flex-1 flex-col justify-center space-y-6 sm:w-[350px]"
             >
                 <div class="flex flex-col space-y-2 text-center">
                     <h1 class="text-xl font-medium tracking-tight" v-if="title">
@@ -70,6 +76,8 @@ defineProps<{
                 </div>
                 <slot />
             </div>
+
+            <AppCredit />
         </div>
     </div>
 </template>

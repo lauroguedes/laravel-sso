@@ -332,6 +332,20 @@ class ThemePalette
     }
 
     /**
+     * One palette's colour, as CSS, for somewhere outside the interface.
+     *
+     * The documentation is a separate site with a stylesheet of its own, so it
+     * cannot read the custom properties this class writes into the
+     * application. It can be told one colour, and this is that colour.
+     */
+    public function swatch(string $group, string $name): ?string
+    {
+        $palette = $group === 'accent' ? self::ACCENTS : self::BASE_COLORS;
+
+        return isset($palette[$name]) ? 'hsl('.$palette[$name]['swatch'].')' : null;
+    }
+
+    /**
      * The names a request may use, taken from the tables themselves.
      *
      * stylesheet() writes its values into the document as raw CSS, and what

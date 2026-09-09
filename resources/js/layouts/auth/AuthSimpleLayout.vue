@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { Link } from '@inertiajs/vue3';
+import AppCredit from '@/components/AppCredit.vue';
 import BrandMark from '@/components/BrandMark.vue';
 import { home } from '@/routes';
 
@@ -33,5 +34,7 @@ defineProps<{
                 <slot />
             </div>
         </div>
+
+        <AppCredit />
     </div>
 </template>

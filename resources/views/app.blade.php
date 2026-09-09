@@ -51,20 +51,5 @@
     </head>
     <body class="font-sans antialiased">
         <x-inertia::app />
-
-        {{-- Rendered by the shell rather than by a layout, so it reaches every
-             page there is — the sign-in page, the consent screen and the
-             administration alike — without each of them having to remember. --}}
-        <p
-            class="text-muted-foreground/70 pointer-events-none fixed inset-x-0 bottom-0 z-50 py-2 text-center text-[11px]"
-        >
-            Crafted by an Artisan &hearts;
-            <a
-                href="https://lauroguedes.dev"
-                target="_blank"
-                rel="noopener noreferrer"
-                class="hover:text-foreground pointer-events-auto underline-offset-2 transition-colors hover:underline"
-            >Lauro Guedes</a>
-        </p>
     </body>
 </html>

@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { Eye, EyeOff } from '@lucide/vue';
-import type { HTMLAttributes } from 'vue';
 import { computed, ref } from 'vue';
 import InputGroupIconButton from '@/components/InputGroupIconButton.vue';
 import {
@@ -19,12 +18,13 @@ import {
  * Outside the tab order on purpose. Someone tabbing from the password to the
  * submit button is signing in, not inspecting what they typed, and a stop in
  * between is a stop on every sign-in for a control wanted on almost none.
+ *
+ * Everything a caller passes, "class" included, reaches the input rather than
+ * the group around it. The group is a flex row and full width already; a
+ * layout class landing on it — "block", say — stops the reveal sitting inside
+ * the field at all, which is a way of breaking this that nothing type-checks.
  */
 defineOptions({ inheritAttrs: false });
-
-const props = defineProps<{
-    class?: HTMLAttributes['class'];
-}>();
 
 const showPassword = ref(false);
 
@@ -34,7 +34,7 @@ const label = computed(() =>
 </script>
 
 <template>
-    <InputGroup :class="props.class">
+    <InputGroup>
         <InputGroupInput
             :type="showPassword ? 'text' : 'password'"
             v-bind="$attrs"
