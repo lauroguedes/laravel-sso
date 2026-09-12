@@ -65,10 +65,18 @@ key means every application must re-verify against a new one. Leaking it means
 anyone can mint an ID Token that your applications will believe, the same
 severity as leaking your database and harder to notice.
 
-On a platform with an ephemeral filesystem, generate the keys once and inject
-them as `PASSPORT_PRIVATE_KEY` and `PASSPORT_PUBLIC_KEY` environment variables
-rather than letting each instance generate its own. Instances with different
-keys will sign tokens that the others' published key set cannot verify.
+On a platform with an ephemeral filesystem, every instance must read the same
+key files. Generate the pair once, then put `storage/oauth-private.key` and
+`storage/oauth-public.key` on a shared volume, or write them into `storage/`
+from your secret store before `sso:install` runs. Otherwise the installer
+generates a new pair for that instance, and instances with different keys sign
+tokens that the others' published key set cannot verify.
+
+> [!WARNING]
+> Do not rely on `PASSPORT_PRIVATE_KEY` and `PASSPORT_PUBLIC_KEY` yet. Passport
+> reads them for access tokens, but ID Tokens and the key set at
+> `/.well-known/jwks.json` are only read from the files, so setting the
+> variables alone leaves the two out of step.
 
 ### Rotating
 
