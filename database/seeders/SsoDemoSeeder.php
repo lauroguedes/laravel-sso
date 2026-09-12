@@ -5,12 +5,14 @@ declare(strict_types=1);
 namespace Database\Seeders;
 
 use App\Enums\ApplicationType;
+use App\Enums\PlatformRole;
 use App\Models\Application;
 use App\Models\ApplicationPermission;
 use App\Models\ApplicationRole;
 use App\Models\User;
 use App\Services\ApplicationManager;
 use App\Services\DemoMode;
+use App\Services\UserManager;
 use Illuminate\Console\Command;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Collection;
@@ -152,27 +154,19 @@ class SsoDemoSeeder extends Seeder
      */
     private function administrator(string $password): User
     {
-        return User::factory()->superAdmin()->create([
-            'name' => 'Ada Admin',
-            'email' => self::email('admin'),
-            'password' => $password,
-        ]);
+        return $this->account('Ada Admin', 'admin', $password, PlatformRole::SuperAdmin);
     }
 
     /**
      * The demo developer.
      *
      * Holds the Developer role and is assigned one application by the caller.
-     * The role alone reaches nothing, which is the point of it — the demo
-     * would not show that if the assignment came with the role.
+     * The role alone reaches nothing, which is the point of it: the demo would
+     * not show that if the assignment came with the role.
      */
     private function developer(): User
     {
-        return User::factory()->developer()->create([
-            'name' => 'Dana Dev',
-            'email' => self::email('dev'),
-            'password' => self::PASSWORD,
-        ]);
+        return $this->account('Dana Dev', 'dev', self::PASSWORD, PlatformRole::Developer);
     }
 
     /**
@@ -183,18 +177,40 @@ class SsoDemoSeeder extends Seeder
     private function users(): Collection
     {
         return collect([
-            ['name' => 'Grace Hopper', 'email' => self::email('grace')],
-            ['name' => 'Alan Turing', 'email' => self::email('alan')],
-        ])->map(fn (array $attributes): User => User::factory()->create([
-            ...$attributes,
-            'password' => self::PASSWORD,
-        ]))->push(
-            User::factory()->disabled()->create([
-                'name' => 'Former Employee',
-                'email' => self::email('former'),
-                'password' => self::PASSWORD,
-            ])
-        );
+            $this->account('Grace Hopper', 'grace', self::PASSWORD),
+            $this->account('Alan Turing', 'alan', self::PASSWORD),
+            $this->account('Former Employee', 'former', self::PASSWORD, disabled: true),
+        ]);
+    }
+
+    /**
+     * One verified account at the demo domain.
+     *
+     * Created through UserManager, the way the interface creates users, and
+     * never through UserFactory: a server installs with "composer install
+     * --no-dev", which leaves out Faker, and without Faker Laravel never
+     * defines the fake() helper the factory calls.
+     */
+    private function account(
+        string $name,
+        string $mailbox,
+        string $password,
+        ?PlatformRole $role = null,
+        bool $disabled = false,
+    ): User {
+        $user = app(UserManager::class)->create([
+            'name' => $name,
+            'email' => self::email($mailbox),
+            'password' => $password,
+            'email_verified' => true,
+            'roles' => $role === null ? [] : [$role->value],
+        ]);
+
+        if ($disabled) {
+            $user->disable();
+        }
+
+        return $user;
     }
 
     /**

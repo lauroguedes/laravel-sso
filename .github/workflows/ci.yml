@@ -40,7 +40,7 @@ jobs:
           cache: npm
 
       - name: Cache Composer packages
-        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.0.2
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: vendor
           key: composer-${{ runner.os }}-${{ hashFiles('composer.lock') }}
@@ -53,26 +53,95 @@ jobs:
       - name: Run CI Checks
         run: composer ci:check
 
-  mysql:
-    name: tests on MySQL
+  databases:
+    name: tests on ${{ matrix.database }}
     runs-on: ubuntu-latest
 
-    # The main job runs on SQLite, which never enforces a column's type. The
-    # demo and most production installs run MySQL, where a UUID written to an
-    # integer column is an error, so the suite runs there too.
+    # The main job runs on SQLite, which never enforces a column's type and
+    # ignores letter case in a LIKE. This runs the suite on MySQL and PostgreSQL.
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - database: MySQL
+            connection: mysql
+            image: mysql:8.0
+            port: 3306
+            username: root
+            password: ''
+            health: --health-cmd="mysqladmin ping -h 127.0.0.1" --health-interval=5s --health-timeout=5s --health-retries=20
+          - database: PostgreSQL
+            connection: pgsql
+            image: postgres:17
+            port: 5432
+            username: postgres
+            password: postgres
+            health: --health-cmd="pg_isready -U postgres" --health-interval=2s --health-timeout=5s --health-retries=20
+
+    # One database per run, chosen by the matrix. Each image ignores the
+    # other's variables.
     services:
-      mysql:
-        image: mysql:8.0
+      database:
+        image: ${{ matrix.image }}
         env:
           MYSQL_ALLOW_EMPTY_PASSWORD: 'yes'
           MYSQL_DATABASE: laravel_sso
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: laravel_sso
         ports:
-          - 3306:3306
-        options: >-
-          --health-cmd="mysqladmin ping -h 127.0.0.1"
-          --health-interval=10s
-          --health-timeout=5s
-          --health-retries=10
+          - '${{ matrix.port }}:${{ matrix.port }}'
+        options: ${{ matrix.health }}
+
+    env:
+      DB_CONNECTION: ${{ matrix.connection }}
+      DB_HOST: 127.0.0.1
+      DB_DATABASE: laravel_sso
+      DB_USERNAME: ${{ matrix.username }}
+      DB_PASSWORD: ${{ matrix.password }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240 # v2
+        with:
+          php-version: '8.5'
+          extensions: pdo_pgsql
+          tools: composer:v2
+          coverage: none
+
+      - name: Setup Node
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: '22'
+          cache: npm
+
+      # Restore only: the main job saves this cache.
+      - name: Restore Composer packages
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: vendor
+          key: composer-${{ runner.os }}-${{ hashFiles('composer.lock') }}
+          restore-keys: composer-${{ runner.os }}-
+
+      - name: Setup Application
+        run: composer setup
+
+      - name: Run the test suite
+        run: php artisan test
+
+  server:
+    name: installs without dev packages
+    runs-on: ubuntu-latest
+
+    # A server runs `composer install --no-dev`, which leaves out Faker and so
+    # the fake() helper. The suite always has them, so this runs what a server
+    # runs with production packages only.
+    env:
+      SSO_DEMO_MODE: 'true'
 
     steps:
       - name: Checkout code
@@ -87,35 +156,29 @@ jobs:
           tools: composer:v2
           coverage: none
 
-      - name: Setup Node
-        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
-        with:
-          node-version: '22'
-          cache: npm
-
-      - name: Cache Composer packages
-        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.0.2
+      # Restore only, since what this job leaves in vendor has no dev packages.
+      - name: Restore Composer packages
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: vendor
           key: composer-${{ runner.os }}-${{ hashFiles('composer.lock') }}
           restore-keys: composer-${{ runner.os }}-
 
-      - name: Setup Application
-        run: composer setup
+      - name: Install without dev packages
+        run: composer install --no-dev --no-interaction --prefer-dist --optimize-autoloader
 
-      - name: Run the test suite on MySQL
-        env:
-          DB_CONNECTION: mysql
-          DB_HOST: 127.0.0.1
-          DB_PORT: 3306
-          DB_DATABASE: laravel_sso
-          DB_USERNAME: root
-          DB_PASSWORD: ''
-        run: php artisan test
+      - name: Install, cache and reset the demo
+        run: |
+          cp .env.example .env
+          php artisan key:generate --no-interaction
+          touch database/database.sqlite
+          php artisan sso:install --no-interaction
+          php artisan optimize
+          php artisan sso:demo-reset --force
 
   deploy:
     name: deploy
-    needs: [ci, mysql]
+    needs: [ci, databases, server]
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     runs-on: ubuntu-latest
     # Nothing here is checked out or built: the server pulls and builds for

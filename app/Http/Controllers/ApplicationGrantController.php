@@ -56,13 +56,12 @@ class ApplicationGrantController extends Controller
                  * Its own parameter, separate from the candidate search above:
                  * the two boxes narrow different lists on the same page.
                  */
-                ->when($granted, fn ($query, string $term) => $query->where(
-                    fn ($query) => $query
-                        ->where('users.email', 'like', "{$term}%")
-                        ->orWhere('users.name', 'like', "{$term}%")
-                        ->orWhere('users.name', 'like', "% {$term}%")
+                ->when($granted, fn ($query, string $term) => $query->whereIn(
+                    'application_user.user_id',
+                    User::query()->search($term)->select('id'),
                 ))
                 ->orderBy('users.name')
+                ->orderBy('application_user.id')
                 ->paginate(15, ['application_user.*'])
                 ->withQueryString()
                 ->through(fn (ApplicationUser $grant): array => [

@@ -191,7 +191,7 @@ test('a surname matches without a leading wildcard', function () {
     User::factory()->create(['name' => 'Grace Hopper', 'email' => 'grace@example.com']);
     User::factory()->create(['name' => 'Bob Jones', 'email' => 'bob@example.com']);
 
-    $this->actingAs($this->admin)->get(route('users.index', ['search' => 'Hopper']))
+    $this->actingAs($this->admin)->get(route('users.index', ['search' => 'hopper']))
         ->assertInertia(fn ($page) => $page
             ->has('users.data', 1)
             ->where('users.data.0.email', 'grace@example.com'));

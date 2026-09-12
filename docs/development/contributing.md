@@ -40,6 +40,10 @@ This is what has to pass. It runs, in order:
 | Static analysis  | `phpstan` at level 7                  |
 | Tests            | `php artisan test`                    |
 
+CI also runs the suite on MySQL and PostgreSQL, and installs without dev
+packages to run what a server runs. SQLite and a full development install each
+hide problems a server would show.
+
 Run the narrowest thing while you work:
 
 ```bash

@@ -383,10 +383,10 @@ class Application extends OidcClient
              * anchor in a sentence.
              */
             $query->where(fn (Builder $query) => $query
-                ->where('id', 'like', "{$term}%")
-                ->orWhere('name', 'like', "{$term}%")
-                ->orWhere('name', 'like', "% {$term}%")
-                ->orWhere('description', 'like', "%{$term}%")
+                ->whereLike('id', "{$term}%")
+                ->orWhereLike('name', "{$term}%")
+                ->orWhereLike('name', "% {$term}%")
+                ->orWhereLike('description', "%{$term}%")
             );
         });
     }

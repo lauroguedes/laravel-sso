@@ -226,15 +226,15 @@ class User extends Authenticatable implements MustVerifyEmail, OAuthenticatable,
     {
         return $query->when($term, function (Builder $query, string $term): void {
             /*
-             * An address is matched by prefix, which an index on "email" can
-             * serve, and so is each word of a name: an administrator looking
-             * for "Hopper" should find "Grace Hopper", without the leading
-             * wildcard that forces a scan of the whole table.
+             * An address is matched by prefix, and so is each word of a name,
+             * so "hopper" finds "Grace Hopper". whereLike ignores letter case
+             * on every database, PostgreSQL included. The word match rules out
+             * an index, which is fine at the size of a users table.
              */
             $query->where(fn (Builder $query) => $query
-                ->where('email', 'like', "{$term}%")
-                ->orWhere('name', 'like', "{$term}%")
-                ->orWhere('name', 'like', "% {$term}%")
+                ->whereLike('email', "{$term}%")
+                ->orWhereLike('name', "{$term}%")
+                ->orWhereLike('name', "% {$term}%")
             );
         });
     }

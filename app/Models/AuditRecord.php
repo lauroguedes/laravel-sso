@@ -132,18 +132,17 @@ class AuditRecord extends Activity
         }
 
         /*
-         * An address is matched exactly and an event by prefix, both of which
-         * an index can serve. Only the free-text description falls back to a
-         * leading wildcard, which on the fastest growing table in the schema
-         * is worth confining to the case that needs it.
+         * An address is matched exactly, which the index on "ip_address" serves.
+         * Anything else matches an event by prefix or the description anywhere,
+         * ignoring letter case, and the description match scans the table.
          */
         if (filter_var($term, FILTER_VALIDATE_IP) !== false) {
             return $query->where('ip_address', $term);
         }
 
         return $query->where(fn (Builder $query) => $query
-            ->where('event', 'like', "{$term}%")
-            ->orWhere('description', 'like', "%{$term}%")
+            ->whereLike('event', "{$term}%")
+            ->orWhereLike('description', "%{$term}%")
         );
     }
 }

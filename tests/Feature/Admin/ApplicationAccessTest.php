@@ -70,6 +70,23 @@ test('the candidate list can be searched', function () {
     ));
 });
 
+test('the users with access can be searched, ignoring letter case', function () {
+    /*
+     * A plain LIKE ignores case on SQLite and MySQL but not on PostgreSQL, so
+     * only the PostgreSQL run can fail this.
+     */
+    $alice = User::factory()->create(['name' => 'Alice Smith', 'email' => 'alice@example.com']);
+    $bob = User::factory()->create(['name' => 'Bob Jones', 'email' => 'bob@example.com']);
+    $this->application->grantAccessTo($alice);
+    $this->application->grantAccessTo($bob);
+
+    $this->actingAs($this->admin)
+        ->get(route('applications.grants.index', [$this->application, 'granted' => 'SMITH']))
+        ->assertInertia(fn ($page) => $page
+            ->has('grants.data', 1)
+            ->where('grants.data.0.user.email', 'alice@example.com'));
+});
+
 test('an administrator grants a user access', function () {
     Event::fake([UserApplicationAccessGranted::class]);
 

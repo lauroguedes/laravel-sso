@@ -60,7 +60,7 @@ test('entries can be searched by event', function () {
     $this->audit->record(AuditEvent::UserLoginFailed);
 
     $this->actingAs($this->admin)
-        ->get(route('audit.index', ['search' => 'login']))
+        ->get(route('audit.index', ['search' => 'LOGIN']))
         ->assertInertia(fn ($page) => $page->has('entries.data', 1));
 });
 

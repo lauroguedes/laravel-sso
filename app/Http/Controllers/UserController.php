@@ -58,10 +58,11 @@ class UserController extends Controller
             'canManage' => $request->user()->can('create', User::class),
             'users' => $this->applySort($listing, $request, User::sortableColumns())
                 /*
-                 * A stable tiebreaker, so that rows with equal values keep the
-                 * same order between pages rather than drifting.
+                 * Name, then id, so rows with equal values keep their order
+                 * between pages. Names repeat, and the id never does.
                  */
                 ->orderBy('name')
+                ->orderBy('id')
                 ->paginate($this->perPage($request))
                 ->withQueryString()
                 ->through(fn (User $user): array => $this->summarize($user)),

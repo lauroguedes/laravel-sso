@@ -69,10 +69,11 @@ class ApplicationController extends Controller
             'canAdminister' => $request->user()->can('create', Application::class),
             'applications' => $this->applySort($listing, $request, Application::sortableColumns())
                 /*
-                 * A stable tiebreaker, so equal values keep the same order
-                 * between pages rather than drifting.
+                 * Name, then id, so rows with equal values keep their order
+                 * between pages. Names repeat, and the id never does.
                  */
                 ->orderBy('name')
+                ->orderBy('id')
                 ->paginate($this->perPage($request))
                 ->withQueryString()
                 ->through(fn (Application $application): array => [
