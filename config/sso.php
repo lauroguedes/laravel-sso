@@ -32,6 +32,24 @@ $pinnable = [
     'audit_retention_days' => ['SSO_AUDIT_RETENTION_DAYS', 365, 'int'],
 ];
 
+/*
+ * Read here rather than through config('sso.demo.enabled'), because this file
+ * is what defines that value and is not yet loaded while it runs.
+ */
+$demo = (bool) env('SSO_DEMO_MODE', false);
+
+/*
+ * What a public demonstration fixes, whatever the environment says.
+ *
+ * Declared once for the same reason $pinnable is: the same two facts are read
+ * off it below, and a key spelled out twice would eventually be forced without
+ * being pinned, which fails in the dangerous direction. A demo is signed into
+ * by strangers, so it must never become a way to send mail to an address one
+ * of them chose, and leaving the switch editable would let the first visitor
+ * turn it back on.
+ */
+$forced = $demo ? ['require_email_verification' => false] : [];
+
 $configured = fn (array $setting): mixed => match ($setting[2]) {
     'int' => (int) env($setting[0], $setting[1]),
     'bool' => (bool) env($setting[0], $setting[1]),
@@ -122,10 +140,16 @@ return [
     | the deliberate act of saying this installation holds nothing worth
     | keeping.
     |
+    | Turning it on also closes the two things a stranger could otherwise
+    | abuse. No mail leaves the server, and email verification is forced off
+    | and pinned, so nobody is stranded behind a message that will never
+    | arrive. Each reset gives the administrator a new password, published on
+    | the sign-in page by App\Services\DemoMode.
+    |
     */
 
     'demo' => [
-        'enabled' => (bool) env('SSO_DEMO_MODE', false),
+        'enabled' => $demo,
         'reset_hours' => (int) env('SSO_DEMO_RESET_HOURS', 6),
     ],
 
@@ -167,6 +191,7 @@ return [
 
     'defaults' => [
         ...array_map($configured, $pinnable),
+        ...$forced,
 
         /* Uploaded imagery, which has no sensible default. */
         'brand_logo' => null,
@@ -219,9 +244,12 @@ return [
     |
     */
 
-    'pinned' => array_keys(array_filter(
-        $pinnable,
-        fn (array $setting): bool => env($setting[0]) !== null,
-    )),
+    'pinned' => array_keys([
+        ...array_filter(
+            $pinnable,
+            fn (array $setting): bool => env($setting[0]) !== null,
+        ),
+        ...$forced,
+    ]),
 
 ];

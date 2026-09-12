@@ -15,8 +15,8 @@ in, or that calls an API as itself. Registering one is how it gets credentials.
 way they would recognise it.
 
 **Type.** This decides the grant types and whether a client secret exists, and
-it cannot be changed afterwards — changing it would silently break every
-integration already using the client.
+it cannot be changed afterwards, because changing it would silently break
+every integration already using the client.
 
 | Type         | For                                                       | Flow                         | Secret |
 | ------------ | --------------------------------------------------------- | ---------------------------- | ------ |
@@ -25,11 +25,12 @@ integration already using the client.
 | Service      | Backend services acting as themselves, no user involved   | Client credentials           | Yes    |
 
 **Redirect URIs.** Where the browser is sent back after signing in. Matched
-exactly — no wildcards, no path prefixes, no trailing-slash forgiveness. Register
-every URI the application actually uses, including the development one. Up to 20.
+exactly: no wildcards, no path prefixes, no trailing-slash forgiveness.
+Register every URI the application actually uses, including the development
+one. Up to 20.
 
-Machine-to-machine applications have no redirect URIs; nobody's browser is
-involved.
+Machine-to-machine applications have no redirect URIs, because nobody's
+browser is involved.
 
 **Post-logout redirect URIs.** Where this application may send the browser
 after signing out. A separate list from the redirect URIs, deliberately: those
@@ -52,9 +53,9 @@ are pre-selected with `openid`, `profile` and `email`.
 The client ID is shown on the application's page and is not a secret.
 
 **The client secret is shown once, when the application is created.** It is
-stored only as a hash, so it cannot be shown again — the same reason your own
-password cannot be. Copy it into the consuming application's configuration at
-once.
+stored only as a hash, so it cannot be shown again, for the same reason your
+own password cannot be. Copy it into the consuming application's configuration
+at once.
 
 If it is lost, or leaked, **regenerate** it from the application's page. The
 previous secret stops working immediately, so schedule this: the application
@@ -67,10 +68,11 @@ Two switches on the application's page change how it behaves, and both start
 off. Both decide who reaches the application, so both stay with administrators
 even when somebody else looks after it:
 
-**Skip the consent screen.** Users are not asked to approve this application;
-they are sent straight back to it. Reasonable for an application you operate
-yourself, where "do you allow this?" is a question the user cannot meaningfully
-answer. Never turn it on for an application somebody else controls.
+**Skip the consent screen.** Users are not asked to approve this application,
+and are sent straight back to it. Reasonable for an application you operate
+yourself, where "do you allow this?" is a question the user cannot
+meaningfully answer. Never turn it on for an application somebody else
+controls.
 
 **Restrict access.** Only users who have been explicitly granted access may
 sign in to this application. Everyone else is refused at the authorization
@@ -80,8 +82,8 @@ endpoint, before a code is issued. See [Authorization](/docs/administration/auth
 
 **Managers** on the application's page assigns it to somebody holding the
 Developer role. They can then edit it, rotate its secret, define its roles and
-read its history, without being given the rest of the server — useful when the
-person integrating an application is not the person running this one.
+read its history, without being given the rest of the server. That is useful
+when the person integrating an application is not the person running this one.
 
 They cannot enable or disable it, revoke its tokens, decide who signs in, or
 change the two switches above. See
@@ -94,7 +96,7 @@ refuses new authorization requests. Live tokens are revoked rather than left to
 expire, because otherwise a disabled application would keep calling resource
 servers for up to another fifteen minutes.
 
-Re-enabling it does not restore those tokens; clients obtain new ones through
+Re-enabling it does not restore those tokens. Clients obtain new ones through
 the normal flow.
 
 Applications are disabled rather than deleted so that the audit trail keeps
@@ -122,7 +124,7 @@ Client secret  (shown once at creation)
 Redirect URI   https://app.example.com/auth/callback
 ```
 
-Most libraries need only the issuer and the credentials — they read the
+Most libraries need only the issuer and the credentials, and read the
 endpoints, the supported scopes and the signing keys from the discovery
 document themselves.
 

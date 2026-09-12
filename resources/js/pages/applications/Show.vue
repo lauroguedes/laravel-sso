@@ -77,8 +77,8 @@ function revokeAllTokens() {
             <AlertDescription class="space-y-3">
                 <p>
                     This is the only time it will be shown. It is stored as a
-                    hash and cannot be recovered — if you lose it you will have
-                    to generate a new one.
+                    hash and cannot be recovered, so if you lose it you will
+                    have to generate a new one.
                 </p>
                 <ReadOnlyField
                     label="Client secret"

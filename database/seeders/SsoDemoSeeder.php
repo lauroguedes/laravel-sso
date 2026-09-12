@@ -10,6 +10,7 @@ use App\Models\ApplicationPermission;
 use App\Models\ApplicationRole;
 use App\Models\User;
 use App\Services\ApplicationManager;
+use App\Services\DemoMode;
 use Illuminate\Console\Command;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Collection;
@@ -23,13 +24,16 @@ use RuntimeException;
  * applications of different kinds, and the roles and permissions that show how
  * per-application authorization works.
  *
- * Every account here uses a published password, so the seeder refuses to run
- * in production rather than trusting whoever typed the command.
+ * Every account here uses a password somebody can look up, so the seeder
+ * refuses to run in production rather than trusting whoever typed the command.
  */
 class SsoDemoSeeder extends Seeder
 {
     /**
      * The password shared by every demo account.
+     *
+     * The administrator is the exception on a public demonstration, where it
+     * gets a fresh one on every reset. See DemoMode.
      */
     public const PASSWORD = 'secret';
 
@@ -64,6 +68,8 @@ class SsoDemoSeeder extends Seeder
         return parent::setCommand($command);
     }
 
+    public function __construct(private readonly DemoMode $demo) {}
+
     /**
      * Run the database seeds.
      */
@@ -83,7 +89,15 @@ class SsoDemoSeeder extends Seeder
          */
         $this->call(PlatformPermissionsSeeder::class);
 
-        DB::transaction(function (): void {
+        /*
+         * A rotating password on a public demonstration, so that whatever the
+         * last visitor wrote down stops working at the next reset. Everywhere
+         * else the shared constant, because a local checkout is more useful
+         * with credentials somebody can remember.
+         */
+        $administratorPassword = $this->demo->rotate(self::email('admin')) ?? self::PASSWORD;
+
+        DB::transaction(function () use ($administratorPassword): void {
             $applications = app(ApplicationManager::class);
 
             [$reporting, $roles] = $this->reporting($applications);
@@ -103,7 +117,7 @@ class SsoDemoSeeder extends Seeder
              * The disabled user is left without a grant, so that the demo also
              * shows an account that exists and reaches nothing.
              */
-            $reporting->grantAccessTo($this->administrator(), $roles['Analyst']);
+            $reporting->grantAccessTo($this->administrator($administratorPassword), $roles['Analyst']);
 
             foreach ($this->users()->whereNull('disabled_at') as $user) {
                 $reporting->grantAccessTo($user, $roles['Viewer']);
@@ -112,9 +126,9 @@ class SsoDemoSeeder extends Seeder
 
         $this->console?->newLine();
         $this->console?->info('Demo data created.');
-        $this->console?->line('Administrator: '.self::email('admin'));
+        $this->console?->line('Administrator: '.self::email('admin').'  '.$administratorPassword);
         $this->console?->line('Developer:     '.self::email('dev').' (looks after Reporting)');
-        $this->console?->line('Every demo account uses the password "'.self::PASSWORD.'".');
+        $this->console?->line('Every other demo account uses the password "'.self::PASSWORD.'".');
     }
 
     /**
@@ -136,12 +150,12 @@ class SsoDemoSeeder extends Seeder
     /**
      * The demo administrator.
      */
-    private function administrator(): User
+    private function administrator(string $password): User
     {
         return User::factory()->superAdmin()->create([
             'name' => 'Ada Admin',
             'email' => self::email('admin'),
-            'password' => self::PASSWORD,
+            'password' => $password,
         ]);
     }
 

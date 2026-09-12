@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Console\Commands;
 
+use App\Services\DemoMode;
 use App\Services\Settings;
 use Database\Seeders\SsoDemoSeeder;
 use Illuminate\Console\Command;
@@ -30,7 +31,7 @@ class DemoResetCommand extends Command
 
     public function handle(): int
     {
-        if (! config('sso.demo.enabled')) {
+        if (! app(DemoMode::class)->enabled()) {
             $this->components->error('This installation is not a demo. Set SSO_DEMO_MODE=true to allow it.');
 
             return self::FAILURE;

@@ -10,7 +10,7 @@ order: 2
 | ---------------- | ----------------------------------------------------------- |
 | OAuth 2.0 server | Laravel Passport                                            |
 | OpenID Connect   | `admin9/laravel-oidc-server`, layered on Passport           |
-| Authentication   | Laravel Fortify — reset, verification, two-factor, passkeys |
+| Authentication   | Laravel Fortify: reset, verification, two-factor, passkeys  |
 | Permissions      | `spatie/laravel-permission`                                 |
 | Audit trail      | `spatie/laravel-activitylog`, with three columns of our own |
 | Interface        | Inertia and Vue 3, shadcn-vue components, Tailwind 4        |
@@ -24,7 +24,7 @@ the grant types and the disabled flag.
 
 The three types differ in one thing: how the client proves it is itself.
 
-**Web App** — runs on a server, so it can keep a secret.
+**Web App.** Runs on a server, so it can keep a secret.
 
 ```mermaid
 sequenceDiagram
@@ -36,11 +36,11 @@ sequenceDiagram
     A->>S: Redirect to /oauth/authorize
     S->>U: Sign in, then consent
     S->>A: Redirect back with a code
-    A->>S: POST /oauth/token — code + client secret
+    A->>S: POST /oauth/token with code and client secret
     S->>A: ID Token, access token, refresh token
 ```
 
-**SPA / Mobile** — cannot keep a secret, so PKCE takes its place. The client
+**SPA / Mobile.** Cannot keep a secret, so PKCE takes its place. The client
 proves it is the same one that started the request.
 
 ```mermaid
@@ -50,21 +50,21 @@ sequenceDiagram
     participant A as SPA / Mobile
     participant S as Laravel SSO
     A->>A: Make a verifier, hash it into a challenge
-    A->>S: Redirect to /oauth/authorize — with the challenge
+    A->>S: Redirect to /oauth/authorize with the challenge
     S->>U: Sign in, then consent
     S->>A: Redirect back with a code
-    A->>S: POST /oauth/token — code + verifier, no secret
+    A->>S: POST /oauth/token with code and verifier, no secret
     S->>A: ID Token, access token, refresh token
 ```
 
-**Service** — acts as itself. No user, no browser, and no ID Token.
+**Service.** Acts as itself. No user, no browser, and no ID Token.
 
 ```mermaid
 sequenceDiagram
     autonumber
     participant A as Service
     participant S as Laravel SSO
-    A->>S: POST /oauth/token — client id + secret
+    A->>S: POST /oauth/token with client id and secret
     S->>A: Access token
 ```
 
@@ -82,15 +82,15 @@ See [Authorization](/docs/administration/authorization).
 ## Where decisions live
 
 **`app/Services`** holds the things that own a write or a rule.
-`ApplicationManager` and `UserManager` own their writes and raise the events;
-`AuditLogger` is the only way into the trail; `Settings` merges stored rows
-over the configured defaults; `ScopeRegistry` answers what may be requested,
+`ApplicationManager` and `UserManager` own their writes and raise the events.
+`AuditLogger` is the only way into the trail. `Settings` merges stored rows
+over the configured defaults. `ScopeRegistry` answers what may be requested,
 reading the same config the discovery document does.
 
-**`app/Policies`** answers every authorization question. Controllers ask; they
+**`app/Policies`** answers every authorization question. Controllers ask, and
 never decide.
 
-**`app/Concerns`** holds behaviour shared by several requests or controllers —
+**`app/Concerns`** holds behaviour shared by several requests or controllers:
 sorting a listing, discarding blank URI fields, resolving the application a
 nested route belongs to.
 
@@ -111,7 +111,7 @@ One application never learns what a user may do in another.
 ## Settings reach their consumers by configuration
 
 Nothing else knows the settings table exists. `SettingsServiceProvider` copies
-what an administrator chose into the keys their consumers already read —
+what an administrator chose into the keys their consumers already read:
 `app.name`, `session.lifetime`, `fortify.features`, `oidc-server.tokens`,
 `activitylog.clean_after_days`.
 

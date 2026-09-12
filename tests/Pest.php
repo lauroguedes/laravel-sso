@@ -3,6 +3,7 @@
 use App\Models\Application;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Env;
 use Illuminate\Support\Str;
 use Illuminate\Testing\TestResponse;
 use Inertia\Support\SessionKey;
@@ -70,6 +71,26 @@ function assertPageRefused(
 
     expect($flash['toast']['type'] ?? null)->toBe($type)
         ->and($flash['toast']['message'] ?? '')->toContain($expects);
+}
+
+/**
+ * Load "config/sso.php" with SSO_DEMO_MODE set, and hand back what it returns.
+ *
+ * A demo decides two of its switches while that file is read, so setting the
+ * key afterwards would prove nothing. The variable is cleared either way, so a
+ * failure cannot change the next test's answers.
+ *
+ * @return array<string, mixed>
+ */
+function ssoConfigWithDemoMode(bool $enabled): array
+{
+    Env::getRepository()->set('SSO_DEMO_MODE', $enabled ? 'true' : 'false');
+
+    try {
+        return require config_path('sso.php');
+    } finally {
+        Env::getRepository()->clear('SSO_DEMO_MODE');
+    }
 }
 
 /**

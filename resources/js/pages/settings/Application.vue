@@ -316,7 +316,7 @@ function resetToDefaults() {
 
                     <SettingsField
                         label="Accent"
-                        description="The one colour the interface draws attention with — buttons, links and focus rings."
+                        description="The one colour the interface draws attention with: buttons, links and focus rings."
                         :error="errors.accent"
                         :pinned="isPinned('accent')"
                     >

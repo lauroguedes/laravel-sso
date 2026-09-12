@@ -4,6 +4,7 @@ import StatusMessage from '@/components/StatusMessage.vue';
 import InputError from '@/components/InputError.vue';
 import PasswordInput from '@/components/PasswordInput.vue';
 import TextLink from '@/components/TextLink.vue';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
@@ -24,6 +25,12 @@ defineProps<{
     status?: string;
     canResetPassword: boolean;
     registerUrl?: string | null;
+    /**
+     * Filled in for the visitor on a public demonstration, and null
+     * everywhere else. A demo has to let a stranger in, and its password is
+     * rotated on every reset.
+     */
+    demo?: { email: string; password: string } | null;
 }>();
 </script>
 
@@ -31,6 +38,13 @@ defineProps<{
     <Head title="Log in" />
 
     <StatusMessage :message="status" />
+
+    <Alert v-if="demo">
+        <AlertDescription>
+            Demonstration server. The administrator is filled in below, and
+            everything resets on a schedule.
+        </AlertDescription>
+    </Alert>
 
     <PasskeyVerify />
 
@@ -52,6 +66,7 @@ defineProps<{
                     :tabindex="1"
                     autocomplete="email"
                     placeholder="email@example.com"
+                    :default-value="demo?.email"
                 />
                 <InputError :message="errors.email" />
             </div>
@@ -75,6 +90,7 @@ defineProps<{
                     :tabindex="2"
                     autocomplete="current-password"
                     placeholder="Password"
+                    :default-value="demo?.password"
                 />
                 <InputError :message="errors.password" />
             </div>

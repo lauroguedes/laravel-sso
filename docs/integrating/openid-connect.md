@@ -5,7 +5,7 @@ order: 2
 ---
 
 This server implements OpenID Connect Core on top of OAuth 2.0. Any conforming
-client library will work against it; nothing here is Laravel-specific.
+client library will work against it, and nothing here is Laravel-specific.
 
 ## Discovery
 
@@ -13,9 +13,68 @@ client library will work against it; nothing here is Laravel-specific.
 GET https://auth.example.com/.well-known/openid-configuration
 ```
 
-Point your client library at the issuer and let it read this. Everything below
-is described there, so a change to the server's configuration reaches clients
-without anyone editing them.
+**What it is.** A public JSON document at a fixed path under the issuer,
+defined by OpenID Connect Discovery. It describes this server: every endpoint
+it exposes and every option it supports.
+
+**What it is for.** So a client is configured with one value, the issuer,
+instead of eight separate URLs. When the server's configuration changes,
+clients follow it on their own, without anyone editing them.
+
+**How it works.** The client appends `/.well-known/openid-configuration` to the
+issuer, fetches it once at startup and caches the result. Everything it needs
+to run a sign-in comes out of that response:
+
+```json
+{
+    "issuer": "https://auth.example.com",
+    "authorization_endpoint": "https://auth.example.com/oauth/authorize",
+    "token_endpoint": "https://auth.example.com/oauth/token",
+    "userinfo_endpoint": "https://auth.example.com/oauth/userinfo",
+    "jwks_uri": "https://auth.example.com/.well-known/jwks.json",
+    "end_session_endpoint": "https://auth.example.com/oauth/logout",
+    "introspection_endpoint": "https://auth.example.com/oauth/introspect",
+    "revocation_endpoint": "https://auth.example.com/oauth/revoke",
+    "response_types_supported": ["code"],
+    "grant_types_supported": [
+        "authorization_code",
+        "refresh_token",
+        "client_credentials"
+    ],
+    "scopes_supported": ["openid", "profile", "email", "roles"],
+    "id_token_signing_alg_values_supported": ["RS256"],
+    "code_challenge_methods_supported": ["S256"]
+}
+```
+
+The `issuer` in the document must equal the value you configured the client
+with, character for character. A client that finds anything else should stop:
+that mismatch is how a token minted by one server ends up accepted by a client
+that believes it is talking to another. Good libraries check this for you.
+
+The document needs no credentials and reveals nothing private. It is rate
+limited per IP by `SSO_RATE_LIMIT_DISCOVERY`.
+
+## Client libraries
+
+Point one of these at the issuer and it will read everything above for itself.
+None of them need to know this server is Laravel.
+
+| Language        | Library                                                                                                                                                      |
+| --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Node.js         | [openid-client](https://github.com/panva/openid-client)                                                                                                      |
+| Browser and SPA | [oidc-client-ts](https://github.com/authts/oidc-client-ts)                                                                                                   |
+| PHP             | [jumbojett/OpenID-Connect-PHP](https://github.com/jumbojett/OpenID-Connect-PHP)                                                                              |
+| Laravel         | [Socialite](https://github.com/laravel/socialite) with an OpenID Connect provider                                                                            |
+| Python          | [Authlib](https://authlib.org/)                                                                                                                              |
+| Django          | [mozilla-django-oidc](https://github.com/mozilla/mozilla-django-oidc)                                                                                        |
+| Java and Kotlin | [Spring Security OAuth2 Client](https://docs.spring.io/spring-security/reference/servlet/oauth2/client/index.html)                                           |
+| .NET            | [Microsoft.AspNetCore.Authentication.OpenIdConnect](https://learn.microsoft.com/en-us/aspnet/core/security/authentication/configure-oidc-web-authentication) |
+| Go              | [coreos/go-oidc](https://github.com/coreos/go-oidc)                                                                                                          |
+| Ruby            | [omniauth_openid_connect](https://github.com/omniauth/omniauth_openid_connect)                                                                               |
+| Rust            | [openidconnect](https://github.com/ramosbugs/openidconnect-rs)                                                                                               |
+| iOS             | [AppAuth-iOS](https://github.com/openid/AppAuth-iOS)                                                                                                         |
+| Android         | [AppAuth-Android](https://github.com/openid/AppAuth-Android)                                                                                                 |
 
 ## Endpoints
 
@@ -43,7 +102,7 @@ without anyone editing them.
 
 The implicit grant and the resource owner password credentials grant are **not
 supported and will not be added**. The first returns tokens in a URL fragment,
-where they end up in browser history and referrer headers; the second requires
+where they end up in browser history and referrer headers. The second requires
 the client to handle the user's password, which is the thing this server exists
 to avoid.
 
@@ -110,7 +169,7 @@ curl -X POST https://auth.example.com/oauth/token \
 }
 ```
 
-**3. Validate the ID Token.** Your library does this; if you are doing it by
+**3. Validate the ID Token.** Your library does this. If you are doing it by
 hand, all of it is mandatory:
 
 - The signature, against the key from `/.well-known/jwks.json` whose `kid`
@@ -120,8 +179,8 @@ hand, all of it is mandatory:
 - `exp` is in the future, `iat` is not implausibly old.
 - `nonce` matches the one you sent, if you sent one.
 
-An ID Token says who signed in. It is not an API credential — do not send it to
-your own backend as a bearer token, and do not accept one there.
+An ID Token says who signed in. It is not an API credential, so do not send it
+to your own backend as a bearer token, and do not accept one there.
 
 ## Refreshing
 
@@ -134,7 +193,7 @@ curl -X POST https://auth.example.com/oauth/token \
 ```
 
 Access tokens last 15 minutes by default and refresh tokens 14 days. A refresh
-token stops working the moment an administrator revokes it — from the
+token stops working the moment an administrator revokes it, from the
 **Sessions** page, with **Sign out everywhere** on the user, with **Revoke
 issued tokens** on the application, or by disabling the application. Revoking
 an access token revokes the refresh token issued with it.
@@ -164,33 +223,117 @@ curl https://auth.example.com/oauth/userinfo \
 ```
 
 Returns the claims the token's scopes allow, for the user the token belongs to.
-Use it when you want fresh values; the ID Token is a snapshot from sign-in
+Use it when you want fresh values. The ID Token is a snapshot from sign-in
 time.
 
-## Introspection and revocation
+## The key set (`jwks.json`)
+
+```
+GET https://auth.example.com/.well-known/jwks.json
+```
+
+**What it is.** This server's public signing keys, published as a JSON Web Key
+Set. `jwks_uri` in the discovery document points at it.
+
+**What it is for.** Every ID Token is signed with a private key that never
+leaves this server. Clients verify that signature with the matching public
+half. Publishing the public half is what lets an application prove a token came
+from here without holding any secret of its own and without calling back on
+every request.
+
+**How it works.** Each entry describes one public key: `kty` and `alg` say what
+kind it is, `use` says it is for signatures, `n` and `e` are the RSA modulus and
+exponent, and `kid` names it.
+
+```json
+{
+    "keys": [
+        {
+            "kty": "RSA",
+            "alg": "RS256",
+            "use": "sig",
+            "kid": "ab72ede7c6599d70",
+            "n": "sKWwCflbnN7Dt--lnTzwj_wB3TDU...",
+            "e": "AQAB"
+        }
+    ]
+}
+```
+
+Every ID Token carries the same `kid` in its header, so a client holding
+several cached keys knows which one to verify with. Clients fetch the set once,
+cache it, and fetch it again when a token arrives naming a `kid` they do not
+have. That is what lets a key rotation happen without redeploying anything.
+
+Nothing here is secret. A public key verifies signatures and cannot create
+them, which is why the set is safe to publish and safe to cache anywhere.
+
+The private half lives at `storage/oauth-private.key`. It is not in version
+control, and `sso:install` never replaces an existing one. Rotating it
+invalidates every ID Token in flight and every cached key set. See
+[Deployment](/docs/getting-started/deployment#signing-keys).
+
+## Introspection
 
 ```bash
 curl -X POST https://auth.example.com/oauth/introspect \
-  -u client_id:client_secret -d token=<token>
-
-curl -X POST https://auth.example.com/oauth/revoke \
-  -u client_id:client_secret -d token=<token>
+  -u client_id:client_secret \
+  -d token=<the token> \
+  -d token_type_hint=access_token
 ```
 
-Introspection answers whether a token is still live. A resource server that
-cannot afford to honour a revoked token for the rest of its 15-minute lifetime
-should introspect rather than trust the expiry.
+**What it is.** The endpoint defined by RFC 7662, where a caller presents a
+token and is told whether it is currently usable.
 
-## Signing keys
+**What it is for.** Revocation. A token's expiry is fixed when it is issued, so
+checking a signature and an `exp` locally cannot tell you the token was revoked
+five minutes ago. This server is the only place that knows, so a resource
+server that cannot afford to honour a revoked token for the rest of its
+15-minute life asks here instead of trusting the expiry.
 
-The key set is published at `/.well-known/jwks.json`, and every ID Token
-carries a `kid` header naming the key that signed it, so clients can cache the
-set and still follow a rotation.
+**How it works.** POST the token, authenticating as a registered client with
+`client_secret_basic` or `client_secret_post`. A live token gets its metadata
+back:
 
-The private key lives at `storage/oauth-private.key`. It is not in version
-control, and `sso:install` never replaces an existing one. Rotating it
-invalidates every ID Token in flight and every cached key set — see
-[Deployment](/docs/getting-started/deployment#signing-keys).
+```json
+{
+    "active": true,
+    "scope": "openid profile email",
+    "client_id": "9f3c2b...",
+    "username": "ada@example.com",
+    "token_type": "Bearer",
+    "sub": "42",
+    "aud": "9f3c2b...",
+    "iss": "https://auth.example.com",
+    "iat": 1757462400,
+    "exp": 1757463300
+}
+```
+
+Anything expired, revoked or unrecognised gets `{"active": false}` and nothing
+else, so the endpoint cannot be used to probe for which tokens exist.
+
+Pass `token_type_hint=refresh_token` to introspect a refresh token. The default
+is `access_token`, and the two are looked up separately.
+
+> [!NOTE]
+> Any client registered on this server can authenticate here and introspect
+> any token, including one issued to a different application. Treat the client
+> list as trusted.
+
+## Revocation
+
+```bash
+curl -X POST https://auth.example.com/oauth/revoke \
+  -u client_id:client_secret \
+  -d token=<the token>
+```
+
+RFC 7009. A client retires a token it no longer needs, typically at sign-out.
+Revoking an access token revokes the refresh token issued with it.
+
+This is the client's own housekeeping. An administrator revokes tokens from the
+interface instead, which is described under [Logout](#logout).
 
 ## Logout
 
@@ -201,24 +344,24 @@ GET /oauth/logout
   &state=<echoed back to the landing page>
 ```
 
-This ends the session on **this server**, always — that part does not depend on
+This ends the session on **this server**, always. That part does not depend on
 getting anything else right.
 
 `post_logout_redirect_uri` must be **registered on the application, in its
 post-logout list, and is matched exactly.** That list is separate from the
 redirect URIs, which receive authorization codes. `id_token_hint` is what says
-whose list to consult; without it there is no list, so no redirect. The hint's
-signature is not verified — the specification uses it only to identify the
-client — which is safe because the registered list is the boundary: a forged
-hint can only reach URIs the named client itself registered.
+whose list to consult, and without it there is no list, so no redirect. The
+hint's signature is not verified, because the specification uses it only to
+identify the client. That is safe because the registered list is the boundary:
+a forged hint can only reach URIs the named client itself registered.
 
 An unregistered destination is dropped rather than refused. The user asked to
-be logged out and they are; they simply stay here.
+be logged out and they are. They simply stay here.
 
 Logging out here does not reach into other applications and end their sessions.
 Each keeps its own, and each has to log its own user out. What that costs you
 is that a user who signs out of one application is not signed out of the
-others; they will simply not be asked to authenticate again the next time one
+others, though they will not be asked to authenticate again the next time one
 sends them over. Back-channel logout is not implemented.
 
 Administrators can end sessions and revoke tokens for real: one at a time from

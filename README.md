@@ -20,30 +20,35 @@
 ---
 
 Run your own identity provider. Your people get one account and one sign-in
-page; your applications get standard OpenID Connect and never see a password.
+page. Your applications get standard OpenID Connect and never see a password.
 
-Applications connect with any client library — `openid-client`, `mozilla-django-oidc`,
-Spring Security, ASP.NET. Nothing on the other end has to be Laravel, or PHP.
+Applications connect with any client library: `openid-client`,
+`mozilla-django-oidc`, Spring Security, ASP.NET. Nothing on the other end has
+to be Laravel, or PHP.
 
 It is deliberately smaller and easier to read than Keycloak: a Laravel
 application you can clone, configure, deploy and own completely.
 
 ## Features
 
-- **OAuth 2.0** — authorization code with PKCE, refresh tokens, client credentials.
-- **OpenID Connect** — discovery, published key set, ID Tokens, UserInfo,
+- **OAuth 2.0:** authorization code with PKCE, refresh tokens, client
+  credentials.
+- **OpenID Connect:** discovery, published key set, ID Tokens, UserInfo,
   introspection, revocation, RP-initiated logout.
-- **Applications** — registered in the interface, each with its own credentials,
-  redirect URIs and scopes. Secrets hashed, redirect URIs matched exactly.
-- **Per-application roles** — every application defines its own, and its tokens
-  carry the ones its users hold _there_. One application never learns about another.
-- **Users** — password reset, two-factor authentication, passkeys, email verification.
-- **Delegation** — a Developer role that hands somebody one application without
+- **Applications:** registered in the interface, each with its own
+  credentials, redirect URIs and scopes. Secrets hashed, redirect URIs matched
+  exactly.
+- **Per-application roles:** every application defines its own, and its tokens
+  carry the ones its users hold _there_. One application never learns about
+  another.
+- **Users:** password reset, two-factor authentication, passkeys, email
+  verification.
+- **Delegation:** a Developer role that hands somebody one application without
   handing them the server.
-- **Sessions and audit trail** — every session and token revocable; who did what,
-  from where, and when.
-- **Themeable** — brand, palette and layout changed from the interface, or pinned
-  through the environment.
+- **Sessions and audit trail:** every session and token revocable. Who did
+  what, from where, and when.
+- **Themeable:** brand, palette and layout changed from the interface, or
+  pinned through the environment.
 
 ## Quick start
 
@@ -86,7 +91,7 @@ document.
 
 ## Documentation
 
-Full documentation ships with the server and is served from it at **`/docs`** —
+Full documentation ships with the server and is served from it at **`/docs`**:
 installation, configuration, administration, integration, security and the
 architecture.
 

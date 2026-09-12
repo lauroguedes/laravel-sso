@@ -13,17 +13,17 @@ on the other end has to be Laravel, or PHP.
 
 ## What it does
 
-- **OAuth 2.0** — authorization code with PKCE, refresh tokens, and client
+- **OAuth 2.0:** authorization code with PKCE, refresh tokens, and client
   credentials for machine-to-machine access.
-- **OpenID Connect** — discovery, a published key set, ID Tokens, UserInfo,
+- **OpenID Connect:** discovery, a published key set, ID Tokens, UserInfo,
   introspection, revocation and RP-initiated logout.
-- **Users** — created by administrators, with password reset, two-factor
+- **Users:** created by administrators, with password reset, two-factor
   authentication, passkeys and email verification.
-- **Applications** — each with its own credentials, redirect URIs and scopes.
-- **Per-application roles** — every application defines its own, and receives
+- **Applications:** each with its own credentials, redirect URIs and scopes.
+- **Per-application roles:** every application defines its own, and receives
   the ones its users hold in its tokens.
-- **Sessions and an audit trail** — every session and token, revocable; who
-  did what, from where, and when.
+- **Sessions and an audit trail:** every session and token, revocable. Who did
+  what, from where, and when.
 
 ## What it is not
 

@@ -21,7 +21,7 @@ installation that left that setting alone.
 Setting the variable **pins** it: the interface shows the value as fixed and
 refuses one submitted anyway, so a deployment that manages its own
 configuration cannot have it edited away. Every pinnable variable appears in
-`.env.example`, commented out, beside the settings it belongs to; the
+`.env.example`, commented out, beside the settings it belongs to. The
 authoritative list is `pinned` in `config/sso.php`.
 
 `SSO_ISSUER`, the redirect URI policy and the rate limits are not settings.
@@ -31,9 +31,9 @@ They are protocol and deployment decisions, and stay in the environment.
 
 ### `SSO_ISSUER`
 
-The canonical, publicly reachable URL of this server — the value that appears
-as the `iss` claim in every ID Token, and that every client validates. Defaults
-to `APP_URL`.
+The canonical, publicly reachable URL of this server: the value that appears
+as the `iss` claim in every ID Token, and that every client validates.
+Defaults to `APP_URL`.
 
 Set this explicitly whenever `APP_URL` is not what the outside world sees, such
 as behind a terminating proxy or a load balancer.
@@ -52,10 +52,10 @@ Whether anyone can create their own account at `/register`. An identity
 provider is rarely open to the public, so this is off, and administrators
 create users instead.
 
-Turning it on adds Fortify's registration feature and the route with it — with
-it off the page does not exist rather than being hidden. That is decided before
-Fortify registers its routes, so the switch takes effect on the next request
-rather than needing a redeploy.
+Turning it on adds Fortify's registration feature and the route with it. With
+it off, the page does not exist rather than being hidden. That is decided
+before Fortify registers its routes, so the switch takes effect on the next
+request rather than needing a redeploy.
 
 ### `SSO_REQUIRE_EMAIL_VERIFICATION` (default `true`)
 
@@ -86,7 +86,7 @@ have a legacy confidential client that cannot be changed.
 | `SSO_DEFAULT_ID_TOKEN_TTL`      | `900` (15 minutes)  | How long an ID Token is valid                                         |
 
 All in seconds, and all three are settings on the **Access** tab, where the
-field shows what the number comes to — `1209600` reads as `14 days`.
+field shows what the number comes to, so `1209600` reads as `14 days`.
 
 Short access tokens with longer refresh tokens is the right shape: a leaked
 access token expires quickly, and revoking the session invalidates the refresh
@@ -140,16 +140,30 @@ Retention only happens if the scheduler is running. See
 `ACTIVITYLOG_BUFFER_ENABLED` is a third, deliberately absent from
 `.env.example`. It holds entries in memory and writes them in one bulk insert
 at the end of the request, which trades durability for throughput: a fatal
-error loses whatever had not been flushed, and on this server that could be the
-record of the sign-in that preceded it. The columns this project adds — the
-application, the address and the user agent — do survive the buffer, so
+error loses whatever had not been flushed, and on this server that could be
+the record of the sign-in that preceded it. The columns this project adds (the
+application, the address and the user agent) do survive the buffer, so
 enabling it is safe in that respect if you decide the trade is worth making.
+
+## Demonstration mode
+
+Not settings. A deployment declares itself a demo, or it does not.
+
+| Variable               | Default |                                              |
+| ---------------------- | ------- | -------------------------------------------- |
+| `SSO_DEMO_MODE`        | `false` | Allow `sso:demo-reset`, and schedule it      |
+| `SSO_DEMO_RESET_HOURS` | `6`     | Hours between scheduled resets, from 1 to 23 |
+
+With `SSO_DEMO_MODE` on, no mail leaves the server, email verification is
+forced off and pinned, and every reset gives the administrator a new password
+that the sign-in page fills in. See
+[Deployment](/docs/getting-started/deployment#hosting-a-public-demo).
 
 ## Appearance and layout
 
 Settings, on the **Brand**, **Appearance** and **Layout** tabs. The six below
-are pinnable; the uploaded logo, the sign-in background and the reference links
-on the **Links** tab are not, having no sensible value to express as a
+are pinnable. The uploaded logo, the sign-in background and the reference
+links on the **Links** tab are not, having no sensible value to express as a
 variable.
 
 | Variable              |                                                               |
@@ -167,8 +181,8 @@ step: an administrator picks a colour and the next page is that colour.
 
 The brand name becomes `APP_NAME` at runtime, which is what puts it in the
 greeting and signature of every message. Uploaded imagery lives on the public
-disk, so `php artisan storage:link` must have been run — `sso:install` does not
-do it for you.
+disk, so `php artisan storage:link` must have been run, because `sso:install`
+does not do it for you.
 
 ## Scopes and claims
 
@@ -191,7 +205,7 @@ publish a new claim, add it to a scope here and teach `User::resolveOidcClaim()`
 how to produce it.
 
 Claim resolution is a method rather than a closure in configuration, because
-closures cannot survive `config:cache` — and a production server should always
+closures cannot survive `config:cache`, and a production server should always
 have its configuration cached.
 
 ## Protocol surface
@@ -201,9 +215,9 @@ defaults:
 
 - `response_types_supported` is `['code']` only.
 - The implicit grant and the resource owner password credentials grant are not
-  present and must not be added. Both hand credentials or tokens to places they
-  should never reach.
-- `code_challenge_methods_supported` is `['S256']` — `plain` is not offered.
+  present and must not be added. Both hand credentials or tokens to places
+  they should never reach.
+- `code_challenge_methods_supported` is `['S256']`, never `plain`.
 - `token_endpoint_auth_methods_supported` includes `none`, which is how a
   public client, holding no secret, authenticates.
 

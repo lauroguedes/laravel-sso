@@ -5,6 +5,7 @@ namespace App\Providers;
 use App\Actions\Fortify\CreateNewUser;
 use App\Actions\Fortify\ResetUserPassword;
 use App\Models\User;
+use App\Services\DemoMode;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Http\Request;
@@ -90,6 +91,12 @@ class FortifyServiceProvider extends ServiceProvider
             'canResetPassword' => Features::enabled(Features::resetPasswords()),
             'registerUrl' => Features::enabled(Features::registration()) ? route('register') : null,
             'status' => $request->session()->get('status'),
+            /*
+             * Null on every installation that is not a public demonstration.
+             * A demo has to let a stranger in, so it fills its own credentials
+             * into the form. See App\Services\DemoMode.
+             */
+            'demo' => app(DemoMode::class)->credentials(),
         ]));
 
         Fortify::resetPasswordView(fn (Request $request) => Inertia::render('auth/ResetPassword', [
