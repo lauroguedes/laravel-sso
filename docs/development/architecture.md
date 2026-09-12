@@ -20,6 +20,61 @@ An **Application** wraps a Passport client one-to-one. There is deliberately no
 second OAuth client concept: `oauth_clients` already stores the redirect URIs,
 the grant types and the disabled flag.
 
+## How it fits together
+
+```mermaid
+flowchart TB
+    User(["User"])
+
+    subgraph Apps["Your applications"]
+        direction LR
+        Web["Web App"]
+        SPA["SPA / Mobile"]
+        Service["Service"]
+    end
+
+    subgraph SSO["Laravel SSO"]
+        direction LR
+        Session["Sign-in and session"]
+        Endpoints["OAuth 2.0 and OpenID Connect endpoints"]
+        Keys["Key set: jwks.json"]
+    end
+
+    API["Your API"]
+
+    User -->|"uses"| Apps
+    User -->|"signs in once"| Session
+
+    Web -->|"code and client secret"| Endpoints
+    SPA -->|"code and PKCE verifier"| Endpoints
+    Service -->|"client credentials"| Endpoints
+
+    Apps -.->|"verify ID Tokens"| Keys
+    Apps -->|"access token"| API
+    API -.->|"introspects"| Endpoints
+```
+
+Every application is a client of this server. None of them share a session
+with each other, and none of them see a password.
+
+1. **One sign-in.** The user signs in here, and the session lives here rather
+   than in any application.
+2. **Each application sends the browser here.** With a session already open,
+   the user is not asked to sign in again, only to approve an application the
+   first time it asks. The browser goes back with a short-lived code.
+3. **The application trades the code for tokens.** A Web App proves who it is
+   with its client secret. An SPA or mobile app has no secret, so it proves it
+   started the request with a PKCE verifier. A Service has no user and no
+   browser, and asks for a token with its own credentials.
+4. **The ID Token says who signed in.** The application checks its signature
+   against the published key set, without calling back here.
+5. **The access token opens your API.** The API can trust its expiry, or
+   introspect it when a revoked token has to stop working at once.
+
+Roles and permissions travel inside those tokens, scoped to the application
+that asked. Signing out here ends the session on this server, and each
+application ends its own.
+
 ## How each kind of application signs in
 
 The three types differ in one thing: how the client proves it is itself.

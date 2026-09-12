@@ -74,8 +74,9 @@
             }
         </style>
     @endif
-    {{-- The only reason this layout is overridden: the package sets prose
-         paragraphs to no margin at all, so one runs straight into the next. --}}
+    {{-- Overridden for this block. The package sets prose paragraphs to no
+         margin at all, so one runs straight into the next, and the star count
+         added in the header partial needs a rule of its own. --}}
     <style>
         .laradocs-prose p,
         .laradocs-prose ul,
@@ -91,6 +92,19 @@
 
         .laradocs-prose li > p {
             margin-bottom: 0.35rem;
+        }
+
+        .laradocs-header-nav .laradocs-stars {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.3rem;
+            padding-inline-start: 0.15rem;
+        }
+
+        .laradocs-stars svg {
+            width: 0.95rem;
+            height: 0.95rem;
+            color: #eab308;
         }
     </style>
     @include('laradocs::partials.analytics')

@@ -9,8 +9,14 @@ import AppLogoIcon from '@/components/AppLogoIcon.vue';
  *
  * One component so the sign-in page, the sidebar and the consent screen cannot
  * end up showing different marks after a rebrand.
+ *
+ * "badge" sits the icon on a coloured square at a fixed size. "bare" is the
+ * mark alone, sized by whoever places it.
  */
-const { size = 'sm' } = defineProps<{ size?: 'sm' | 'lg' }>();
+const { size = 'sm', variant = 'badge' } = defineProps<{
+    size?: 'sm' | 'lg';
+    variant?: 'badge' | 'bare';
+}>();
 
 const branding = computed(() => usePage().props.branding);
 
@@ -21,7 +27,15 @@ const glyph = computed(() => ({ sm: 'size-5', lg: 'size-6' })[size]);
 
 <template>
     <img
-        v-if="branding.logo"
+        v-if="variant === 'bare' && branding.logo"
+        :src="branding.logo"
+        alt=""
+    />
+
+    <AppLogoIcon v-else-if="variant === 'bare'" />
+
+    <img
+        v-else-if="branding.logo"
         :src="branding.logo"
         :alt="branding.name"
         class="rounded-md object-contain"

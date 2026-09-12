@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { Form, Head } from '@inertiajs/vue3';
+import { Info } from '@lucide/vue';
 import StatusMessage from '@/components/StatusMessage.vue';
 import InputError from '@/components/InputError.vue';
 import PasswordInput from '@/components/PasswordInput.vue';
@@ -39,7 +40,8 @@ defineProps<{
 
     <StatusMessage :message="status" />
 
-    <Alert v-if="demo">
+    <Alert v-if="demo" variant="info">
+        <Info />
         <AlertDescription>
             Demonstration server. The administrator is filled in below, and
             everything resets on a schedule.

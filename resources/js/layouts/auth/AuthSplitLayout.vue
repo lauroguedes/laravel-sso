@@ -2,7 +2,6 @@
 import { Link, usePage } from '@inertiajs/vue3';
 import { computed } from 'vue';
 import AppCredit from '@/components/AppCredit.vue';
-import AuthPanelArt from '@/components/AuthPanelArt.vue';
 import BrandMark from '@/components/BrandMark.vue';
 import { home } from '@/routes';
 
@@ -47,7 +46,20 @@ defineProps<{
                     <div class="absolute inset-0 bg-black/45" />
                 </template>
 
-                <AuthPanelArt v-else />
+                <div
+                    v-else
+                    class="flex size-full items-center justify-center"
+                    aria-hidden="true"
+                >
+                    <!--
+                        The server's own mark, large and faint, so it never
+                        competes with the brand name on top of it.
+                    -->
+                    <BrandMark
+                        variant="bare"
+                        class="h-auto w-1/2 max-w-sm opacity-10"
+                    />
+                </div>
             </div>
             <Link
                 :href="home()"

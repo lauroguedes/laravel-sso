@@ -508,8 +508,13 @@ return [
         'footer' => [
             'enabled' => (bool) env('LARADOCS_FOOTER', true),
             'text' => env('LARADOCS_FOOTER_TEXT'),
+            /*
+             * The package sets these on the right, muted, with a hover colour,
+             * which is all the credit needs. Labels are escaped, so the heart
+             * is a literal character rather than an entity.
+             */
             'links' => [
-                // ['label' => 'Privacy', 'url' => '/privacy'],
+                ['label' => 'Crafted by an Artisan ♥ Lauro Guedes', 'url' => 'https://lauroguedes.dev', 'external' => true],
             ],
         ],
 
