@@ -1,33 +1,32 @@
-<p align="center">
-  <img src="public/favicon.svg" width="72" alt="Laravel SSO">
-</p>
+<div align="center">
+<img src="public/favicon.svg" width="72" alt="Laravel SSO">
 
-<h1 align="center">Laravel SSO</h1>
+# Laravel SSO
 
-<p align="center">
-  A self-hosted OpenID Connect provider.<br>
-  Register your applications, and sign in to all of them with one account.
-</p>
+A self-hosted OpenID Connect provider.<br>
+Register your applications, and sign in to all of them with one account.
 
-<p align="center">
-  <a href="https://github.com/lauroguedes/laravel-sso/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/lauroguedes/laravel-sso/ci.yml?branch=main&label=ci&style=flat-square" alt="CI"></a>
-  <a href="https://github.com/lauroguedes/laravel-sso/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue?style=flat-square" alt="MIT licence"></a>
-  <img src="https://img.shields.io/badge/php-%5E8.3-777bb4?style=flat-square" alt="PHP ^8.3">
-  <img src="https://img.shields.io/badge/laravel-13-ff2d20?style=flat-square" alt="Laravel 13">
-  <a href="https://github.com/lauroguedes/laravel-sso/stargazers"><img src="https://img.shields.io/github/stars/lauroguedes/laravel-sso?style=flat-square" alt="Stars"></a>
-</p>
+  [![Laravel](https://img.shields.io/badge/Laravel-13.x-red?style=flat&logo=laravel)](https://laravel.com)
+  [![PHP](https://img.shields.io/badge/PHP-8.3+-777bb4?style=flat&logo=php&logoColor=white?style=flat)](https://php.net)
+  [![Inertia.js](https://img.shields.io/badge/Inertia.js-3.x-9553E9?style=flat&logo=inertia&logoColor=white)](https://inertiajs.com/)
+  [![Vue 3](https://img.shields.io/badge/Vue-3.x-4FC08D?style=flat&logo=vue.js&logoColor=white)](https://vuejs.org/)
+  [![Pest](https://img.shields.io/badge/Pest-5.x-8b5cf6?style=flat)](https://pestphp.com)
+<br>
+  [![Packagist Version](https://img.shields.io/packagist/v/lauroguedes/laravel-sso?style=flat)](https://packagist.org/packages/lauroguedes/laravel-sso)
+  [![Packagist Downloads](https://img.shields.io/packagist/dt/lauroguedes/laravel-sso?style=flat)](https://packagist.org/packages/lauroguedes/laravel-sso)
+  [![License](https://img.shields.io/badge/License-MIT-green?style=flat)](LICENSE)
+<br>
+  [![CI](https://img.shields.io/github/actions/workflow/status/lauroguedes/laravel-sso/ci.yml?branch=main&label=ci&style=flat)](https://github.com/lauroguedes/laravel-sso/actions/workflows/ci.yml)
+  [![Laravel Forge Site Deployment Status](https://img.shields.io/endpoint?url=https%3A%2F%2Fforge.laravel.com%2Fsite-badges%2F9657bd09-8c7c-4219-ab01-ba07f6679c8a&style=flat)](https://forge.laravel.com/lauro-guedes-q58/graceful-silence-fzg/3022898)
+
+</div>
 
 ---
+Run your own identity provider. Your people get one account and one sign-in page. Your applications get standard OpenID Connect and never see a password.
 
-Run your own identity provider. Your people get one account and one sign-in
-page. Your applications get standard OpenID Connect and never see a password.
+Applications connect with any [client library](https://laravel-sso.lauroguedes.dev/docs/integrating/openid-connect#client-libraries). Nothing on the other end has to be Laravel, or PHP.
 
-Applications connect with any client library: `openid-client`,
-`mozilla-django-oidc`, Spring Security, ASP.NET. Nothing on the other end has
-to be Laravel, or PHP.
-
-It is deliberately smaller and easier to read than Keycloak: a Laravel
-application you can clone, configure, deploy and own completely.
+It is deliberately smaller and easier to read than Keycloak: a Laravel application you can clone, configure, deploy and own completely.
 
 ## Features
 
