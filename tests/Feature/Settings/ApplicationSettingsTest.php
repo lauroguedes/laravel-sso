@@ -94,9 +94,10 @@ test('saving one section leaves the others alone', function () {
     saveSection('brand', ['brand_name' => 'Acme Identity']);
     saveSection('links', ['documentation_links' => [['label' => 'Runbook', 'url' => 'https://wiki.example.com/sso']]]);
 
+    /* toEqual: MySQL's JSON column reorders an object's keys. */
     expect(storedSettings()->get('brand_name'))->toBe('Acme Identity')
         ->and(storedSettings()->get('documentation_links'))
-        ->toBe([['label' => 'Runbook', 'url' => 'https://wiki.example.com/sso']]);
+        ->toEqual([['label' => 'Runbook', 'url' => 'https://wiki.example.com/sso']]);
 });
 
 test('a field belonging to another section is ignored', function () {

@@ -126,10 +126,10 @@
     },
     "minimum-stability": "stable",
     "prefer-stable": true,
-    "homepage": "https://github.com/lauroguedes/laravel-sso",
+    "homepage": "https://laravel-sso.lauroguedes.dev",
     "support": {
         "issues": "https://github.com/lauroguedes/laravel-sso/issues",
         "source": "https://github.com/lauroguedes/laravel-sso",
-        "docs": "https://github.com/lauroguedes/laravel-sso#documentation"
+        "docs": "https://laravel-sso.lauroguedes.dev/docs"
     }
 }

@@ -155,9 +155,11 @@ Not settings. A deployment declares itself a demo, or it does not.
 | `SSO_DEMO_RESET_HOURS` | `6`     | Hours between scheduled resets, from 1 to 23 |
 
 With `SSO_DEMO_MODE` on, no mail leaves the server, email verification is
-forced off and pinned, and every reset gives the administrator a new password
-that the sign-in page fills in. See
-[Deployment](/docs/getting-started/deployment#hosting-a-public-demo).
+forced off and pinned, the documentation is readable without signing in, and
+every reset gives the administrator a new password that the sign-in page fills
+in. See [Deployment](/docs/getting-started/deployment#hosting-a-public-demo).
+
+Everywhere else, `/docs` is for signed-in users.
 
 ## Appearance and layout
 

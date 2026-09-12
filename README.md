@@ -6,22 +6,23 @@
 A self-hosted OpenID Connect provider.<br>
 Register your applications, and sign in to all of them with one account.
 
-  [![Laravel](https://img.shields.io/badge/Laravel-13.x-red?style=flat&logo=laravel)](https://laravel.com)
-  [![PHP](https://img.shields.io/badge/PHP-8.3+-777bb4?style=flat&logo=php&logoColor=white?style=flat)](https://php.net)
-  [![Inertia.js](https://img.shields.io/badge/Inertia.js-3.x-9553E9?style=flat&logo=inertia&logoColor=white)](https://inertiajs.com/)
-  [![Vue 3](https://img.shields.io/badge/Vue-3.x-4FC08D?style=flat&logo=vue.js&logoColor=white)](https://vuejs.org/)
-  [![Pest](https://img.shields.io/badge/Pest-5.x-8b5cf6?style=flat)](https://pestphp.com)
+[![Laravel](https://img.shields.io/badge/Laravel-13.x-red?style=flat&logo=laravel)](https://laravel.com)
+[![PHP](https://img.shields.io/badge/PHP-8.3+-777bb4?style=flat&logo=php&logoColor=white?style=flat)](https://php.net)
+[![Inertia.js](https://img.shields.io/badge/Inertia.js-3.x-9553E9?style=flat&logo=inertia&logoColor=white)](https://inertiajs.com/)
+[![Vue 3](https://img.shields.io/badge/Vue-3.x-4FC08D?style=flat&logo=vue.js&logoColor=white)](https://vuejs.org/)
+[![Pest](https://img.shields.io/badge/Pest-5.x-8b5cf6?style=flat)](https://pestphp.com)
 <br>
-  [![Packagist Version](https://img.shields.io/packagist/v/lauroguedes/laravel-sso?style=flat)](https://packagist.org/packages/lauroguedes/laravel-sso)
-  [![Packagist Downloads](https://img.shields.io/packagist/dt/lauroguedes/laravel-sso?style=flat)](https://packagist.org/packages/lauroguedes/laravel-sso)
-  [![License](https://img.shields.io/badge/License-MIT-green?style=flat)](LICENSE)
+[![Packagist Version](https://img.shields.io/packagist/v/lauroguedes/laravel-sso?style=flat)](https://packagist.org/packages/lauroguedes/laravel-sso)
+[![Packagist Downloads](https://img.shields.io/packagist/dt/lauroguedes/laravel-sso?style=flat)](https://packagist.org/packages/lauroguedes/laravel-sso)
+[![License](https://img.shields.io/badge/License-MIT-green?style=flat)](LICENSE)
 <br>
-  [![CI](https://img.shields.io/github/actions/workflow/status/lauroguedes/laravel-sso/ci.yml?branch=main&label=ci&style=flat)](https://github.com/lauroguedes/laravel-sso/actions/workflows/ci.yml)
-  [![Laravel Forge Site Deployment Status](https://img.shields.io/endpoint?url=https%3A%2F%2Fforge.laravel.com%2Fsite-badges%2F9657bd09-8c7c-4219-ab01-ba07f6679c8a&style=flat)](https://forge.laravel.com/lauro-guedes-q58/graceful-silence-fzg/3022898)
+[![CI](https://img.shields.io/github/actions/workflow/status/lauroguedes/laravel-sso/ci.yml?branch=main&label=ci&style=flat)](https://github.com/lauroguedes/laravel-sso/actions/workflows/ci.yml)
+[![Laravel Forge Site Deployment Status](https://img.shields.io/endpoint?url=https%3A%2F%2Fforge.laravel.com%2Fsite-badges%2F999174fb-92fc-45df-8b37-a69147b9e906&style=plastic)](https://forge.laravel.com/lauro-guedes-q58/graceful-silence-fzg/3378928)
 
 </div>
 
 ---
+
 Run your own identity provider. Your people get one account and one sign-in page. Your applications get standard OpenID Connect and never see a password.
 
 Applications connect with any [client library](https://laravel-sso.lauroguedes.dev/docs/integrating/openid-connect#client-libraries). Nothing on the other end has to be Laravel, or PHP.
@@ -68,7 +69,9 @@ php artisan sso:install
 create your first administrator, and prints the endpoints your applications
 need. It is safe to run again.
 
-Want something to look at?
+Want something to look at? See it running at
+[laravel-sso.lauroguedes.dev](https://laravel-sso.lauroguedes.dev), or seed
+your own copy:
 
 ```bash
 php artisan db:seed --class=SsoDemoSeeder
@@ -92,7 +95,9 @@ document.
 
 Full documentation ships with the server and is served from it at **`/docs`**:
 installation, configuration, administration, integration, security and the
-architecture.
+architecture. Anyone signed in can read it, and on a public demo so can every
+visitor. Read it online at
+[laravel-sso.lauroguedes.dev/docs](https://laravel-sso.lauroguedes.dev/docs).
 
 ## Tests
 
@@ -109,7 +114,8 @@ PHP 8.3+, Node 20.19+ or 22.12+, and SQLite, MySQL, MariaDB or PostgreSQL.
 ## Contributing
 
 Issues and pull requests are welcome. Every change carries a test, and
-`composer ci:check` has to pass. See `/docs/development/contributing`.
+`composer ci:check` has to pass. See the
+[contributing guide](https://laravel-sso.lauroguedes.dev/docs/development/contributing).
 
 ## Licence
 

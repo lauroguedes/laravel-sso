@@ -170,6 +170,7 @@ The same switch closes what a stranger could otherwise abuse:
 | Email verification           | Forced off and pinned, so nobody is stranded behind a message that will never arrive         |
 | The administrator's password | Regenerated on every reset, so what the last visitor wrote down stops working                |
 | The sign-in page             | Fills that administrator in, since a demo nobody can enter is not a demo                     |
+| The documentation            | Readable without signing in. Everywhere else, `/docs` asks the visitor to sign in first      |
 
 The published credentials live in `storage/app/private/demo-credentials.json`,
 written only while `SSO_DEMO_MODE` is on and read back only while it still is.

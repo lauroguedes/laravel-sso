@@ -1,9 +1,25 @@
 <?php
 
+use App\Models\User;
 use App\Services\GitHubStars;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
+
+test('an ordinary installation sends a signed-out reader to sign in', function () {
+    config()->set('sso.demo.enabled', false);
+
+    $this->get(route('laradocs.index'))->assertRedirect(route('login'));
+    $this->get(route('laradocs.llms'))->assertRedirect(route('login'));
+    $this->getJson(route('laradocs.api.search', ['q' => 'issuer']))->assertUnauthorized();
+});
+
+test('a public demonstration opens the documentation to everyone', function () {
+    Http::fake();
+    config()->set('sso.demo.enabled', true);
+
+    $this->get(route('laradocs.index'))->assertOk();
+});
 
 test('the star count comes from GitHub, asked once and then remembered', function () {
     Http::fake(['api.github.com/repos/lauroguedes/laravel-sso' => Http::response(['stargazers_count' => 42])]);
@@ -73,7 +89,8 @@ test('a link that is not a GitHub repository is never looked up', function () {
 test('the documentation header shows the stars beside the GitHub link', function () {
     Http::fake(['api.github.com/*' => Http::response(['stargazers_count' => 1234])]);
 
-    $this->get(route('laradocs.index'))
+    $this->actingAs(User::factory()->create())
+        ->get(route('laradocs.index'))
         ->assertOk()
         ->assertSee('class="laradocs-stars"', false)
         ->assertSee('aria-label="1234 GitHub stars"', false)
@@ -83,7 +100,8 @@ test('the documentation header shows the stars beside the GitHub link', function
 test('the documentation header shows no count for a repository nobody has starred', function () {
     Http::fake(['api.github.com/*' => Http::response(['stargazers_count' => 0])]);
 
-    $this->get(route('laradocs.index'))
+    $this->actingAs(User::factory()->create())
+        ->get(route('laradocs.index'))
         ->assertOk()
         ->assertDontSee('class="laradocs-stars"', false);
 });
@@ -91,7 +109,8 @@ test('the documentation header shows no count for a repository nobody has starre
 test('the documentation footer carries the credit', function () {
     Http::fake();
 
-    $this->get(route('laradocs.index'))
+    $this->actingAs(User::factory()->create())
+        ->get(route('laradocs.index'))
         ->assertOk()
         ->assertSee('Crafted by an Artisan ♥ Lauro Guedes', false)
         ->assertSee('href="https://lauroguedes.dev"', false);

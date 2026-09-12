@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Http\Middleware\EnsureDocumentationIsReadable;
 use Laradocs\Http\Middleware\EnsureDocsEnabled;
 use Laradocs\Http\Middleware\SetDocsLocale;
 use Laradocs\Http\Middleware\SetDocsVersion;
@@ -225,8 +226,15 @@ return [
         'prefix' => env('LARADOCS_ROUTE_PREFIX', 'docs'),
         'domain' => env('LARADOCS_ROUTE_DOMAIN'),
         'middleware' => ['web'],
+        /*
+         * Signed-in readers only, except on a public demo. Every docs route
+         * takes this list, so the search API, llms.txt and the sitemap are
+         * covered along with the pages. It follows EnsureDocsEnabled, so docs
+         * that are switched off answer 404 instead of asking for a sign-in.
+         */
         'package_middleware' => [
             EnsureDocsEnabled::class,
+            EnsureDocumentationIsReadable::class,
             SetDocsLocale::class,
             SetDocsVersion::class,
         ],
