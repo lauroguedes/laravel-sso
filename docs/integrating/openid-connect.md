@@ -376,19 +376,20 @@ GET /oauth/logout
   &state=<echoed back to the landing page>
 ```
 
-This ends the session on **this server**, always. That part does not depend on
-getting anything else right.
+The same parameters can be sent by `POST`, from a form on your own pages.
+
+**Send `id_token_hint`.** An ID Token this server signed, naming the user who
+is signed in here, is what lets the user be signed out straight away. An
+expired one still counts. Without it, or with a hint that does not check out,
+the user is asked to confirm first, because a link anybody can send should not
+end a session on its own.
 
 `post_logout_redirect_uri` must be **registered on the application, in its
 post-logout list, and is matched exactly.** That list is separate from the
-redirect URIs, which receive authorization codes. `id_token_hint` is what says
-whose list to consult, and without it there is no list, so no redirect. The
-hint's signature is not verified, because the specification uses it only to
-identify the client. That is safe because the registered list is the boundary:
-a forged hint can only reach URIs the named client itself registered.
-
-An unregistered destination is dropped rather than refused. The user asked to
-be logged out and they are. They simply stay here.
+redirect URIs, which receive authorization codes. The application is the one the
+hint was issued to, or the one named by `client_id` if you send that instead.
+When both are sent they must agree. An unregistered destination is dropped
+rather than refused: the user still signs out, and simply stays here.
 
 Logging out here does not reach into other applications and end their sessions.
 Each keeps its own, and each has to log its own user out. What that costs you

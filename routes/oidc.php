@@ -2,7 +2,6 @@
 
 use App\Http\Middleware\EnsureApplicationAdmitsUser;
 use App\Http\Middleware\EnsurePkceIsUsed;
-use App\Http\Middleware\ValidatePostLogoutRedirect;
 use App\Oidc\Http\Controllers\ApproveAuthorizationController;
 use App\Oidc\Http\Controllers\AuthorizationController;
 use App\Oidc\Http\Controllers\DiscoveryController;
@@ -11,6 +10,7 @@ use App\Oidc\Http\Controllers\KeySetController;
 use App\Oidc\Http\Controllers\LogoutController;
 use App\Oidc\Http\Controllers\RevocationController;
 use App\Oidc\Http\Controllers\UserInfoController;
+use Illuminate\Foundation\Http\Middleware\ValidateCsrfToken;
 use Illuminate\Support\Facades\Route;
 use Laravel\Passport\Http\Controllers\AccessTokenController;
 use Laravel\Passport\Http\Controllers\DenyAuthorizationController;
@@ -46,9 +46,16 @@ Route::middleware(['web', 'throttle:sso-discovery'])->group(function (): void {
     Route::delete('oauth/authorize', [DenyAuthorizationController::class, 'deny'])->name('passport.authorizations.deny');
 });
 
-Route::get('oauth/logout', LogoutController::class)
-    ->middleware(['web', ValidatePostLogoutRedirect::class])
-    ->name('oidc.logout');
+Route::middleware('web')->group(function (): void {
+    /*
+     * A relying party may post the request from its own page, which cannot
+     * carry this server's token. The POST only redirects to the same GET.
+     */
+    Route::match(['get', 'post'], 'oauth/logout', LogoutController::class)
+        ->withoutMiddleware(ValidateCsrfToken::class)
+        ->name('oidc.logout');
+    Route::post('oauth/logout/confirm', [LogoutController::class, 'confirm'])->name('oidc.logout.confirm');
+});
 
 Route::middleware('throttle:sso-discovery')->group(function (): void {
     Route::get('.well-known/openid-configuration', DiscoveryController::class)->name('oidc.discovery');

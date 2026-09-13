@@ -6,6 +6,7 @@ namespace App\Providers;
 
 use App\Oidc\Adapters\Native\Claims;
 use App\Oidc\Adapters\Native\IdTokens;
+use App\Oidc\Adapters\Native\Sessions;
 use App\Oidc\Contracts\AuthenticatesClients;
 use App\Oidc\Contracts\DiscoversProvider;
 use App\Oidc\Contracts\EndsSessions;
@@ -36,8 +37,8 @@ use Laravel\Passport\Passport;
  *
  * Each port is bound to the adapter named by "oidc.driver", so controllers and
  * tests ask for a port, never for an adapter. What belongs to this project
- * whichever adapter answers, its claims and what it adds to Passport's codes,
- * tokens and responses, is bound directly.
+ * whichever adapter answers, its claims, its logout policy and what it adds to
+ * Passport's codes, tokens and responses, is bound directly.
  */
 class OidcServiceProvider extends ServiceProvider
 {
@@ -52,7 +53,6 @@ class OidcServiceProvider extends ServiceProvider
         AuthenticatesClients::class => 'clients',
         IntrospectsTokens::class => 'introspection',
         RevokesTokens::class => 'revocation',
-        EndsSessions::class => 'sessions',
     ];
 
     /**
@@ -67,6 +67,7 @@ class OidcServiceProvider extends ServiceProvider
         $this->app->bind(PassportAuthCodeRepository::class, AuthCodeRepository::class);
         $this->app->bind(PassportAccessTokenRepository::class, AccessTokenRepository::class);
         $this->app->bind(ResolvesClaims::class, Claims::class);
+        $this->app->bind(EndsSessions::class, Sessions::class);
         $this->app->bind(IssuesIdTokens::class, IdTokens::class);
 
         /*

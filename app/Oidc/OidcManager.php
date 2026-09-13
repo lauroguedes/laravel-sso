@@ -37,17 +37,15 @@ class OidcManager extends Manager
 
     /**
      * This project's own implementation.
-     *
-     * Ports it does not implement yet are lent by the package adapter, which
-     * is removed once every port has moved across.
      */
     protected function createNativeDriver(): OidcAdapter
     {
-        return $this->container->make(NativeAdapter::class, ['fallback' => $this->driver('admin9')]);
+        return $this->container->make(NativeAdapter::class);
     }
 
     /**
-     * The admin9/laravel-oidc-server package.
+     * The admin9/laravel-oidc-server package, kept for comparison until it is
+     * removed.
      */
     protected function createAdmin9Driver(): OidcAdapter
     {

@@ -20,9 +20,9 @@ return [
     | Driver
     |--------------------------------------------------------------------------
     |
-    | "native" is this project's own implementation, and lends from "admin9",
-    | the admin9/laravel-oidc-server package, whatever it does not implement
-    | yet.
+    | "native" is this project's own implementation. "admin9" wraps the
+    | admin9/laravel-oidc-server package, and remains only until the package
+    | is removed.
     |
     */
 

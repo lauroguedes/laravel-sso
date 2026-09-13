@@ -6,7 +6,6 @@ namespace App\Oidc\Adapters\Admin9;
 
 use App\Oidc\Contracts\AuthenticatesClients;
 use App\Oidc\Contracts\DiscoversProvider;
-use App\Oidc\Contracts\EndsSessions;
 use App\Oidc\Contracts\IntrospectsTokens;
 use App\Oidc\Contracts\OidcAdapter;
 use App\Oidc\Contracts\ProvidesSigningKeys;
@@ -15,16 +14,14 @@ use App\Oidc\Exceptions\OAuthError;
 use App\Oidc\Exceptions\SigningKeyUnavailable;
 use Illuminate\Http\Request;
 use Laravel\Passport\Client;
-use Symfony\Component\HttpFoundation\Response;
 
 /**
  * admin9/laravel-oidc-server behind this project's ports.
  *
- * A thin wrapper: every answer comes from the package unchanged. It lets the
- * native adapter lend a port from the package until that port is rebuilt, and
- * it is removed together with the package.
+ * A thin wrapper: every answer comes from the package unchanged. It is removed
+ * together with the package.
  */
-class Admin9Adapter implements AuthenticatesClients, DiscoversProvider, EndsSessions, IntrospectsTokens, OidcAdapter, ProvidesSigningKeys, RevokesTokens
+class Admin9Adapter implements AuthenticatesClients, DiscoversProvider, IntrospectsTokens, OidcAdapter, ProvidesSigningKeys, RevokesTokens
 {
     public function __construct(private readonly PackageEndpoints $endpoints) {}
 
@@ -49,11 +46,6 @@ class Admin9Adapter implements AuthenticatesClients, DiscoversProvider, EndsSess
     }
 
     public function revocation(): RevokesTokens
-    {
-        return $this;
-    }
-
-    public function sessions(): EndsSessions
     {
         return $this;
     }
@@ -118,11 +110,6 @@ class Admin9Adapter implements AuthenticatesClients, DiscoversProvider, EndsSess
         if ($token !== null) {
             $this->endpoints->revokeToken($token, $tokenTypeHint, $client);
         }
-    }
-
-    public function endSession(Request $request): Response
-    {
-        return $this->endpoints->logout($request);
     }
 
     /**

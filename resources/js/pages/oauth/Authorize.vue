@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { Head, useForm, usePage } from '@inertiajs/vue3';
-import { computed } from 'vue';
+import { Head, useForm } from '@inertiajs/vue3';
 import AuthLayout from '@/layouts/AuthLayout.vue';
+import SignedInAccount from '@/components/SignedInAccount.vue';
 import { Button } from '@/components/ui/button';
 import { Spinner } from '@/components/ui/spinner';
 import {
@@ -21,9 +21,6 @@ const { authToken } = defineProps<{
     scopes: ScopeOption[];
     authToken: string;
 }>();
-
-const page = usePage();
-const user = computed(() => page.props.auth.user);
 
 /*
  * The state a client sent travels with the serialized authorization request in
@@ -51,11 +48,7 @@ function deny() {
         <Head :title="`Authorize ${application.name}`" />
 
         <div class="flex flex-col gap-6">
-            <div class="rounded-lg border p-4 text-sm">
-                <p class="text-muted-foreground">Signed in as</p>
-                <p class="font-medium">{{ user.name }}</p>
-                <p class="text-muted-foreground">{{ user.email }}</p>
-            </div>
+            <SignedInAccount />
 
             <div v-if="scopes.length > 0" class="grid gap-2">
                 <p class="text-sm font-medium">
