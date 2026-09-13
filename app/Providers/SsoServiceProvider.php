@@ -4,9 +4,7 @@ declare(strict_types=1);
 
 namespace App\Providers;
 
-use Admin9\OidcServer\Services\ClaimsService;
 use App\Models\Application;
-use App\Services\ApplicationClaimsService;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\RateLimiter;
@@ -36,21 +34,6 @@ use Symfony\Component\HttpFoundation\Response;
  */
 class SsoServiceProvider extends ServiceProvider
 {
-    /**
-     * Register any application services.
-     *
-     * The OIDC package binds its claims service as a singleton in its own
-     * register step, so the replacement is declared here to take precedence.
-     * It gives claim resolution the one thing the package does not pass down,
-     * which application is asking, and is shared under its own class too, so
-     * every caller holds the same instance.
-     */
-    public function register(): void
-    {
-        $this->app->singleton(ApplicationClaimsService::class);
-        $this->app->alias(ApplicationClaimsService::class, ClaimsService::class);
-    }
-
     /**
      * Bootstrap any application services.
      */

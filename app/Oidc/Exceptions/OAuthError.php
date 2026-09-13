@@ -16,10 +16,14 @@ use RuntimeException;
  */
 class OAuthError extends RuntimeException implements ShouldntReport
 {
+    /**
+     * @param  array<string, string>  $headers
+     */
     public function __construct(
         public readonly string $error,
         public readonly string $description,
         public readonly int $status,
+        public readonly array $headers = [],
     ) {
         parent::__construct($description);
     }
@@ -41,6 +45,19 @@ class OAuthError extends RuntimeException implements ShouldntReport
     }
 
     /**
+     * The access token was not granted the scope the resource requires.
+     *
+     * Announced in the WWW-Authenticate header as well as the body, as RFC 6750
+     * section 3 requires of a protected resource.
+     */
+    public static function insufficientScope(string $scope): self
+    {
+        return new self('insufficient_scope', "The access token was not granted the {$scope} scope.", 403, [
+            'WWW-Authenticate' => "Bearer error=\"insufficient_scope\", scope=\"{$scope}\"",
+        ]);
+    }
+
+    /**
      * The token type hint names a type this server does not handle.
      */
     public static function unsupportedTokenType(): self
@@ -56,6 +73,6 @@ class OAuthError extends RuntimeException implements ShouldntReport
         return response()->json([
             'error' => $this->error,
             'error_description' => $this->description,
-        ], $this->status);
+        ], $this->status, $this->headers);
     }
 }

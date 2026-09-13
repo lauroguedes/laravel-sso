@@ -180,7 +180,7 @@ class TokenState implements IntrospectsTokens, RevokesTokens
             'iat' => $token->issuedAt,
             'sub' => $token->userId,
             'aud' => $token->clientId,
-            'iss' => $this->discovery->metadata()['issuer'],
+            'iss' => $this->discovery->issuer(),
         ], fn (mixed $value): bool => $value !== null);
     }
 

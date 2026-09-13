@@ -155,11 +155,12 @@ the rate limits, and the defaults for every setting the interface can change.
 
 ## Claims are scoped to the asking client
 
-The OIDC package resolves claims without knowing which client asked, which is
-fine for name and email but not for roles and permissions. The client is passed
-in explicitly: ID Token issuance knows the client a token is issued to, and at
-`/oauth/userinfo` the client comes from the presented token. If neither yields a
-client, the authorization claims are omitted rather than guessed.
+The scopes an application was granted decide which claims it receives, and the
+user model supplies each value. Roles and permissions differ per application, so
+they are looked up for the asking client only: ID Token issuance knows the
+client a token is issued to, and at `/oauth/userinfo` the client comes from the
+presented token. Without a client, the authorization claims are omitted rather
+than guessed.
 
 One application never learns what a user may do in another.
 

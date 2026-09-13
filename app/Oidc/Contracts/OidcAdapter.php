@@ -10,6 +10,9 @@ namespace App\Oidc\Contracts;
  * Passport is the OAuth 2.0 server, and an adapter supplies what OpenID Connect
  * adds on top of it. Each port is handed out on its own, so an adapter can
  * implement them one at a time and lend the rest from another adapter.
+ *
+ * Claims are not a port here: which claims a scope discloses and what their
+ * values are belong to this application, so every adapter shares them.
  */
 interface OidcAdapter
 {
@@ -22,11 +25,6 @@ interface OidcAdapter
      * The keys that sign ID Tokens.
      */
     public function signingKeys(): ProvidesSigningKeys;
-
-    /**
-     * The claims a user discloses.
-     */
-    public function claims(): ResolvesClaims;
 
     /**
      * Client authentication at the protocol endpoints.

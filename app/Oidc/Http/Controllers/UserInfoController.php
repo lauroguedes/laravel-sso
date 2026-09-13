@@ -22,10 +22,18 @@ class UserInfoController extends Controller
 
     /**
      * Handle the incoming request.
+     *
+     * UserInfo belongs to OpenID Connect, so the token must have been granted
+     * openid (OpenID Connect Core section 5.3). A token issued for some other
+     * purpose is refused rather than answered.
      */
     public function __invoke(Request $request): JsonResponse
     {
         $user = $request->user() ?? throw OAuthError::invalidToken();
+
+        if (! $user->tokenCan('openid')) {
+            throw OAuthError::insufficientScope('openid');
+        }
 
         [$scopes, $clientId] = $this->grantOf($user->currentAccessToken());
 

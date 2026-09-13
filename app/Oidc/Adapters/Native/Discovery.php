@@ -5,33 +5,35 @@ declare(strict_types=1);
 namespace App\Oidc\Adapters\Native;
 
 use App\Oidc\Contracts\DiscoversProvider;
+use App\Oidc\Contracts\ResolvesClaims;
 use App\Services\ScopeRegistry;
 use Illuminate\Contracts\Config\Repository;
 
 /**
  * The discovery document, built from the protocol configuration.
  *
- * Every value comes from "config/oidc-server.php", so what this server
- * advertises and what it enforces are read from the same place. The one
- * exception is introspection, which never offers "none" because
- * IntrospectionController refuses public clients.
+ * Every value comes from "config/oidc-server.php", or from the code that acts
+ * on it, so what this server advertises and what it does cannot drift.
+ * Introspection never offers "none", because IntrospectionController refuses
+ * public clients.
  */
 class Discovery implements DiscoversProvider
 {
-    /**
-     * The claims every ID Token may carry, whatever the scopes.
-     */
-    private const PROTOCOL_CLAIMS = ['sub', 'iss', 'aud', 'exp', 'iat', 'auth_time'];
-
     public function __construct(
         private readonly Repository $config,
         private readonly ScopeRegistry $scopes,
+        private readonly ResolvesClaims $claims,
     ) {}
+
+    public function issuer(): string
+    {
+        return rtrim((string) $this->config->get('oidc-server.issuer'), '/');
+    }
 
     public function metadata(): array
     {
         $protocol = (array) $this->config->get('oidc-server');
-        $issuer = rtrim((string) $protocol['issuer'], '/');
+        $issuer = $this->issuer();
 
         return [
             'issuer' => $issuer,
@@ -48,10 +50,7 @@ class Discovery implements DiscoversProvider
             'id_token_signing_alg_values_supported' => $protocol['id_token_signing_alg_values_supported'],
             'scopes_supported' => $this->scopes->ids(),
             'token_endpoint_auth_methods_supported' => $protocol['token_endpoint_auth_methods_supported'],
-            'claims_supported' => array_values(array_unique([
-                ...self::PROTOCOL_CLAIMS,
-                ...array_merge(...array_column((array) $protocol['scopes'], 'claims')),
-            ])),
+            'claims_supported' => $this->claims->supportedClaims(),
             'code_challenge_methods_supported' => $protocol['code_challenge_methods_supported'],
             'grant_types_supported' => $protocol['grant_types_supported'],
             'introspection_endpoint_auth_methods_supported' => array_values(array_diff($protocol['token_endpoint_auth_methods_supported'], ['none'])),

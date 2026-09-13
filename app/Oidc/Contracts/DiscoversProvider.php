@@ -12,6 +12,11 @@ namespace App\Oidc\Contracts;
 interface DiscoversProvider
 {
     /**
+     * The issuer, exactly as every token and the document state it.
+     */
+    public function issuer(): string;
+
+    /**
      * The document served at /.well-known/openid-configuration.
      *
      * @return array<string, mixed>

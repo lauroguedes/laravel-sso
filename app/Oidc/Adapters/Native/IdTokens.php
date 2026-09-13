@@ -36,7 +36,7 @@ class IdTokens implements IssuesIdTokens
 
     public function issue(IdTokenRequest $request): string
     {
-        $issuer = (string) $this->discovery->metadata()['issuer'];
+        $issuer = $this->discovery->issuer();
         $subject = $request->user->getOidcSubject();
         $clientId = $request->clientId;
 

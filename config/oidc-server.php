@@ -127,7 +127,7 @@ return [
          * Authorization claims are opt in. An application only learns the
          * role and permissions a user holds *in that application* when it has
          * been granted this scope, and never learns anything about any other
-         * application. See App\Services\ApplicationClaimsService.
+         * application. See App\Oidc\Adapters\Native\Claims.
          */
         'roles' => [
             'description' => 'Access your role and permissions in this application',
@@ -142,34 +142,6 @@ return [
     */
 
     'default_scopes' => ['openid'],
-
-    /*
-    |--------------------------------------------------------------------------
-    | Claims Resolver
-    |--------------------------------------------------------------------------
-    |
-    | Maps a claim name to a model attribute. Anything that needs computing is
-    | handled by App\Models\User::resolveOidcClaim() so this file stays
-    | cacheable.
-    |
-    */
-
-    'claims_resolver' => [],
-
-    /*
-    |--------------------------------------------------------------------------
-    | Default Claims Map
-    |--------------------------------------------------------------------------
-    |
-    | Plain attribute mappings only. "email_verified" and "updated_at" are
-    | derived values and are resolved on the User model.
-    |
-    */
-
-    'default_claims_map' => [
-        'name' => 'name',
-        'email' => 'email',
-    ],
 
     /*
     |--------------------------------------------------------------------------

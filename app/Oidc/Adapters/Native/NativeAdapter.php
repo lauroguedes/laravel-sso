@@ -10,7 +10,6 @@ use App\Oidc\Contracts\EndsSessions;
 use App\Oidc\Contracts\IntrospectsTokens;
 use App\Oidc\Contracts\OidcAdapter;
 use App\Oidc\Contracts\ProvidesSigningKeys;
-use App\Oidc\Contracts\ResolvesClaims;
 use App\Oidc\Contracts\RevokesTokens;
 use Illuminate\Contracts\Container\Container;
 
@@ -40,11 +39,6 @@ class NativeAdapter implements OidcAdapter
     public function signingKeys(): ProvidesSigningKeys
     {
         return $this->container->make(SigningKeys::class);
-    }
-
-    public function claims(): ResolvesClaims
-    {
-        return $this->fallback->claims();
     }
 
     public function clients(): AuthenticatesClients

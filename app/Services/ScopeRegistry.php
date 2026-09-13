@@ -40,4 +40,20 @@ class ScopeRegistry
     {
         return array_keys((array) config('oidc-server.scopes', []));
     }
+
+    /**
+     * The claims the given scopes disclose, in the order the scopes list them.
+     *
+     * @param  array<int, string>  $scopes
+     * @return array<int, string>
+     */
+    public function claimsOf(array $scopes): array
+    {
+        /** @var array<string, array{claims?: array<int, string>}> $configured */
+        $configured = config('oidc-server.scopes', []);
+
+        return array_values(array_unique(array_merge(
+            ...array_map(fn (string $scope): array => $configured[$scope]['claims'] ?? [], $scopes),
+        )));
+    }
 }

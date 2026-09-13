@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Providers;
 
+use App\Oidc\Adapters\Native\Claims;
 use App\Oidc\Adapters\Native\IdTokens;
 use App\Oidc\Contracts\AuthenticatesClients;
 use App\Oidc\Contracts\DiscoversProvider;
@@ -34,9 +35,9 @@ use Laravel\Passport\Passport;
  * Wires the OpenID Connect layer into Passport.
  *
  * Each port is bound to the adapter named by "oidc.driver", so controllers and
- * tests ask for a port, never for an adapter. What only this project does with
- * Passport, carrying the authorization context through its codes and tokens
- * and adding the ID Token to its response, is bound directly.
+ * tests ask for a port, never for an adapter. What belongs to this project
+ * whichever adapter answers, its claims and what it adds to Passport's codes,
+ * tokens and responses, is bound directly.
  */
 class OidcServiceProvider extends ServiceProvider
 {
@@ -48,7 +49,6 @@ class OidcServiceProvider extends ServiceProvider
     private const PORTS = [
         DiscoversProvider::class => 'discovery',
         ProvidesSigningKeys::class => 'signingKeys',
-        ResolvesClaims::class => 'claims',
         AuthenticatesClients::class => 'clients',
         IntrospectsTokens::class => 'introspection',
         RevokesTokens::class => 'revocation',
@@ -66,6 +66,7 @@ class OidcServiceProvider extends ServiceProvider
         $this->app->bind(PassportClientRepository::class, ClientRepository::class);
         $this->app->bind(PassportAuthCodeRepository::class, AuthCodeRepository::class);
         $this->app->bind(PassportAccessTokenRepository::class, AccessTokenRepository::class);
+        $this->app->bind(ResolvesClaims::class, Claims::class);
         $this->app->bind(IssuesIdTokens::class, IdTokens::class);
 
         /*

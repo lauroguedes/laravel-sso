@@ -4,19 +4,15 @@ declare(strict_types=1);
 
 namespace App\Oidc\Adapters\Admin9;
 
-use Admin9\OidcServer\Contracts\OidcUserInterface;
 use App\Oidc\Contracts\AuthenticatesClients;
 use App\Oidc\Contracts\DiscoversProvider;
 use App\Oidc\Contracts\EndsSessions;
 use App\Oidc\Contracts\IntrospectsTokens;
 use App\Oidc\Contracts\OidcAdapter;
-use App\Oidc\Contracts\OidcUser;
 use App\Oidc\Contracts\ProvidesSigningKeys;
-use App\Oidc\Contracts\ResolvesClaims;
 use App\Oidc\Contracts\RevokesTokens;
 use App\Oidc\Exceptions\OAuthError;
 use App\Oidc\Exceptions\SigningKeyUnavailable;
-use App\Services\ApplicationClaimsService;
 use Illuminate\Http\Request;
 use Laravel\Passport\Client;
 use Symfony\Component\HttpFoundation\Response;
@@ -28,12 +24,9 @@ use Symfony\Component\HttpFoundation\Response;
  * native adapter lend a port from the package until that port is rebuilt, and
  * it is removed together with the package.
  */
-class Admin9Adapter implements AuthenticatesClients, DiscoversProvider, EndsSessions, IntrospectsTokens, OidcAdapter, ProvidesSigningKeys, ResolvesClaims, RevokesTokens
+class Admin9Adapter implements AuthenticatesClients, DiscoversProvider, EndsSessions, IntrospectsTokens, OidcAdapter, ProvidesSigningKeys, RevokesTokens
 {
-    public function __construct(
-        private readonly PackageEndpoints $endpoints,
-        private readonly ApplicationClaimsService $claims,
-    ) {}
+    public function __construct(private readonly PackageEndpoints $endpoints) {}
 
     public function discovery(): DiscoversProvider
     {
@@ -41,11 +34,6 @@ class Admin9Adapter implements AuthenticatesClients, DiscoversProvider, EndsSess
     }
 
     public function signingKeys(): ProvidesSigningKeys
-    {
-        return $this;
-    }
-
-    public function claims(): ResolvesClaims
     {
         return $this;
     }
@@ -68,6 +56,11 @@ class Admin9Adapter implements AuthenticatesClients, DiscoversProvider, EndsSess
     public function sessions(): EndsSessions
     {
         return $this;
+    }
+
+    public function issuer(): string
+    {
+        return (string) $this->metadata()['issuer'];
     }
 
     public function metadata(): array
@@ -100,17 +93,6 @@ class Admin9Adapter implements AuthenticatesClients, DiscoversProvider, EndsSess
         }
 
         return $body;
-    }
-
-    public function claimsFor(OidcUser $user, array $scopes, ?string $clientId): array
-    {
-        if (! $user instanceof OidcUserInterface) {
-            return ['sub' => $user->getOidcSubject()];
-        }
-
-        $resolve = fn (): array => $this->claims->resolveForUser($user, $scopes);
-
-        return $clientId === null ? $resolve() : $this->claims->forClient($clientId, $resolve);
     }
 
     public function authenticate(Request $request): ?Client

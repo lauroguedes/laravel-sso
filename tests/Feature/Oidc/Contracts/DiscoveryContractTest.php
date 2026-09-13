@@ -13,7 +13,8 @@ test('discovery describes this issuer and the scopes it offers', function (strin
         'jwks_uri' => config('sso.issuer').'/.well-known/jwks.json',
         'response_types_supported' => ['code'],
         'code_challenge_methods_supported' => ['S256'],
-    ])->and($metadata['scopes_supported'])->toEqualCanonicalizing(['openid', 'profile', 'email', 'roles']);
+    ])->and($metadata['scopes_supported'])->toEqualCanonicalizing(['openid', 'profile', 'email', 'roles'])
+        ->and(oidcAdapter($adapter)->discovery()->issuer())->toBe($metadata['issuer']);
 })->with('oidc adapters');
 
 test('the key set publishes RS256 signing keys without private material', function (string $adapter) {

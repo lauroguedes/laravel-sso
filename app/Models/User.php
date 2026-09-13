@@ -2,8 +2,6 @@
 
 namespace App\Models;
 
-use Admin9\OidcServer\Concerns\HasOidcClaims;
-use Admin9\OidcServer\Contracts\OidcUserInterface;
 use App\Enums\PlatformPermission;
 use App\Events\UserDisabled;
 use App\Events\UserEnabled;
@@ -49,19 +47,10 @@ use Spatie\Permission\Traits\HasRoles;
  */
 #[Fillable(['name', 'email', 'password'])]
 #[Hidden(['password', 'two_factor_secret', 'two_factor_recovery_codes', 'remember_token'])]
-class User extends Authenticatable implements MustVerifyEmail, OAuthenticatable, OidcUser, OidcUserInterface, PasskeyUser
+class User extends Authenticatable implements MustVerifyEmail, OAuthenticatable, OidcUser, PasskeyUser
 {
     /** @use HasFactory<UserFactory> */
     use HasApiTokens, HasFactory, HasRoles, Notifiable, PasskeyAuthenticatable, TwoFactorAuthenticatable;
-
-    /*
-     * The trait's resolver is aliased rather than called through parent::,
-     * because a class method silently shadows the trait method it overrides
-     * and parent:: would look at Illuminate's Authenticatable instead.
-     */
-    use HasOidcClaims {
-        resolveOidcClaim as protected resolveDefaultOidcClaim;
-    }
 
     /**
      * Get the attributes that should be cast.
@@ -241,18 +230,24 @@ class User extends Authenticatable implements MustVerifyEmail, OAuthenticatable,
     }
 
     /**
-     * Resolve a single OpenID Connect claim.
-     *
-     * Claims that are a plain attribute read are mapped in
-     * "config/oidc-server.php". Derived claims are computed here so that the
-     * configuration stays free of closures and "config:cache" keeps working.
+     * The stable identifier relying parties know this user by.
      */
-    protected function resolveOidcClaim(string $claim): mixed
+    public function getOidcSubject(): string
+    {
+        return (string) $this->getKey();
+    }
+
+    /**
+     * The value of one OpenID Connect claim. A new claim is a line here and a line in its scope.
+     */
+    public function resolveOidcClaim(string $claim): mixed
     {
         return match ($claim) {
+            'name' => $this->name,
+            'email' => $this->email,
             'email_verified' => $this->email_verified_at !== null,
             'updated_at' => $this->updated_at?->timestamp,
-            default => $this->resolveDefaultOidcClaim($claim),
+            default => null,
         };
     }
 }

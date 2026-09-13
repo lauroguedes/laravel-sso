@@ -20,4 +20,12 @@ interface ResolvesClaims
      * @return array<string, mixed>
      */
     public function claimsFor(OidcUser $user, array $scopes, ?string $clientId): array;
+
+    /**
+     * Every claim an ID Token or UserInfo answer may carry, as discovery
+     * advertises them.
+     *
+     * @return array<int, string>
+     */
+    public function supportedClaims(): array;
 }
