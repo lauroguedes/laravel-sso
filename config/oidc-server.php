@@ -2,8 +2,6 @@
 
 declare(strict_types=1);
 
-use App\Http\Middleware\EnsureApplicationAdmitsUser;
-use App\Http\Middleware\EnsurePkceIsUsed;
 use App\Models\Application;
 use App\Models\User;
 
@@ -69,9 +67,9 @@ return [
     | Ignore Passport Routes
     |--------------------------------------------------------------------------
     |
-    | The package registers the full endpoint set itself (including Passport's
-    | own authorize and token controllers), so Passport must not also register
-    | them. Turning this off would produce duplicate route names.
+    | Every protocol endpoint, Passport's authorize and token controllers
+    | included, is declared in "routes/oidc.php", so Passport must not also
+    | register them. Turning this off would produce duplicate route names.
     |
     */
 
@@ -280,27 +278,12 @@ return [
     | Routes Configuration
     |--------------------------------------------------------------------------
     |
-    | Rate limiters are defined in App\Providers\SsoServiceProvider and are
-    | tuned through the "sso.rate_limits" configuration.
-    |
-    | Note: the package applies "discovery_middleware" to the /oauth/authorize
-    | routes as well as to the /.well-known endpoints, so that limiter is sized
-    | for interactive browser traffic behind shared IP addresses. That shared
-    | group is also the only seam for the two policies that belong to the
-    | authorization endpoint — requiring PKCE, and turning away users who have
-    | not been granted access. Both ignore every other request.
+    | Off. Every endpoint is declared in "routes/oidc.php".
     |
     */
 
     'routes' => [
-        'enabled' => true,
-        'discovery_middleware' => [
-            'throttle:sso-discovery',
-            EnsurePkceIsUsed::class,
-            EnsureApplicationAdmitsUser::class,
-        ],
-        'token_middleware' => ['throttle:sso-token'],
-        'userinfo_middleware' => ['auth:api', 'throttle:sso-userinfo'],
+        'enabled' => false,
     ],
 
 ];

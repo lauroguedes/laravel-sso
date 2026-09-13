@@ -24,32 +24,6 @@ use League\OAuth2\Server\ResponseTypes\BearerTokenResponse;
  */
 const SEAMS_REDIRECT_URI = 'https://seams.example.com/auth/callback';
 
-/**
- * Sign in to a trusted application and redeem the code.
- *
- * @return array<string, mixed>
- */
-function seamsIssueTokens(User $user, Application $application): array
-{
-    [$verifier, $challenge] = pkcePair();
-
-    $authorization = authorizationRequest($user, $application, [
-        'scope' => 'openid email',
-        'code_challenge' => $challenge,
-    ]);
-
-    parse_str(parse_url($authorization->headers->get('Location'), PHP_URL_QUERY), $query);
-
-    return test()->postJson('/oauth/token', [
-        'grant_type' => 'authorization_code',
-        'client_id' => $application->id,
-        'client_secret' => $application->plainSecret,
-        'redirect_uri' => SEAMS_REDIRECT_URI,
-        'code_verifier' => $verifier,
-        'code' => $query['code'],
-    ])->assertOk()->json();
-}
-
 describe('token grants', function () {
     beforeEach(function () {
         $calls = $this->calls = new ArrayObject;
@@ -128,7 +102,7 @@ describe('token grants', function () {
     afterEach(fn () => Passport::useAuthorizationServerResponseType(null));
 
     test('redeeming a code checks it, stores the access token and revokes the code before the response is built', function () {
-        seamsIssueTokens($this->user, $this->application);
+        issueTokens($this->user, $this->application);
 
         expect($this->calls->getArrayCopy())->toBe([
             'persistNewAuthCode',
@@ -140,7 +114,7 @@ describe('token grants', function () {
     });
 
     test('refreshing revokes the old access token before storing the new one and building the response', function () {
-        $refreshToken = seamsIssueTokens($this->user, $this->application)['refresh_token'];
+        $refreshToken = issueTokens($this->user, $this->application)['refresh_token'];
         $this->calls->exchangeArray([]);
 
         $this->postJson('/oauth/token', [

@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Http\Middleware;
 
-use App\Concerns\IdentifiesAuthorizationRequests;
 use Closure;
 use Illuminate\Http\Request;
 use Laravel\Passport\Exceptions\OAuthServerException as PassportException;
@@ -22,13 +21,10 @@ use Symfony\Component\HttpFoundation\Response;
  * well: once an authorization code carries a challenge, the token endpoint
  * will not redeem it without the matching verifier.
  *
- * This is applied through the OIDC package's "discovery_middleware", which it
- * also puts on the /.well-known endpoints, hence the request check.
+ * Attached to GET /oauth/authorize in "routes/oidc.php".
  */
 class EnsurePkceIsUsed
 {
-    use IdentifiesAuthorizationRequests;
-
     /**
      * Handle an incoming request.
      *
@@ -36,7 +32,7 @@ class EnsurePkceIsUsed
      */
     public function handle(Request $request, Closure $next): Response
     {
-        if (! $this->isAuthorizationStart($request) || ! config('sso.oauth.require_pkce')) {
+        if (! config('sso.oauth.require_pkce')) {
             return $next($request);
         }
 

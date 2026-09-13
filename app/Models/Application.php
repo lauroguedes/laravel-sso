@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Models;
 
-use Admin9\OidcServer\Models\OidcClient;
 use App\Enums\ApplicationType;
 use App\Enums\PlatformPermission;
 use App\Events\UserApplicationAccessGranted;
@@ -14,6 +13,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Laravel\Passport\Client;
 use Laravel\Passport\Scope;
 use Stringable;
 
@@ -37,7 +37,7 @@ use Stringable;
  * @property bool $skips_authorization
  * @property bool $restricts_access
  */
-class Application extends OidcClient
+class Application extends Client
 {
     /**
      * The model's default attribute values.

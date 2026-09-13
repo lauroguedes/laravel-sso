@@ -9,9 +9,6 @@ use Admin9\OidcServer\Services\ClaimsService;
 use App\Models\User;
 use Closure;
 use Illuminate\Support\Facades\DB;
-use Laravel\Passport\AccessToken;
-use Laravel\Passport\Token;
-use Throwable;
 
 /**
  * Adds application scoped authorization claims to ID Tokens and UserInfo.
@@ -22,14 +19,10 @@ use Throwable;
  * permissions are not: reporting must never learn what a user may do in
  * billing.
  *
- * The requesting client is therefore established here, from one of two places:
- *
- *  - during token issuance, ApplicationIdTokenService wraps generation in
- *    forClient(), because only it knows the client at that point;
- *  - at the UserInfo endpoint, from the access token presented by the caller.
- *
- * If neither yields a client, the authorization claims are omitted rather than
- * guessed.
+ * The requesting client is therefore established around the call, with
+ * forClient(). ApplicationIdTokenService knows the client a token is issued
+ * to, and the UserInfo endpoint knows the client its access token was issued
+ * to. Without one, the authorization claims are omitted rather than guessed.
  */
 class ApplicationClaimsService extends ClaimsService
 {
@@ -58,17 +51,11 @@ class ApplicationClaimsService extends ClaimsService
 
         $requested = $this->authorizationClaimsGrantedBy($scopes);
 
-        if ($requested === [] || ! $user instanceof User) {
+        if ($requested === [] || $this->clientId === null || ! $user instanceof User) {
             return $claims;
         }
 
-        $clientId = $this->clientId ?? $this->clientIdFromAccessToken($user);
-
-        if ($clientId === null) {
-            return $claims;
-        }
-
-        $authorization = $this->authorizationClaims($user, $clientId);
+        $authorization = $this->authorizationClaims($user, $this->clientId);
 
         return [...$claims, ...array_intersect_key($authorization, array_flip($requested))];
     }
@@ -155,31 +142,5 @@ class ApplicationClaimsService extends ClaimsService
                 ->values()
                 ->all(),
         ];
-    }
-
-    /**
-     * The client behind the access token the caller presented, if any.
-     *
-     * Used by the UserInfo endpoint, which authenticates with a bearer token
-     * rather than issuing one.
-     *
-     * A bearer token resolves to an AccessToken, which carries the client on
-     * the request attributes; reading "client_id" from it instead would be
-     * forwarded to the underlying model and cost a query. The cookie guard
-     * yields the Token model itself.
-     */
-    private function clientIdFromAccessToken(User $user): ?string
-    {
-        try {
-            $token = $user->token();
-        } catch (Throwable) {
-            return null;
-        }
-
-        return match (true) {
-            $token instanceof AccessToken => $token->oauth_client_id,
-            $token instanceof Token => $token->client_id,
-            default => null,
-        };
     }
 }

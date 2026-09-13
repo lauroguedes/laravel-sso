@@ -2,6 +2,8 @@
 
 use App\Models\Application;
 use App\Models\User;
+use App\Oidc\Contracts\OidcAdapter;
+use App\Oidc\OidcManager;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Env;
 use Illuminate\Support\Str;
@@ -162,4 +164,54 @@ function idTokenHeaders(string $idToken): DataSet
 function idTokenClaims(string $idToken): DataSet
 {
     return (new Parser(new JoseEncoder))->parse($idToken)->claims();
+}
+
+/*
+|--------------------------------------------------------------------------
+| OpenID Connect Adapters
+|--------------------------------------------------------------------------
+|
+| Contract tests run every port against each adapter. Behaviour an adapter is
+| meant to change stays out of them, and is pinned at the endpoints instead.
+|
+*/
+
+dataset('oidc adapters', ['native', 'admin9']);
+
+/**
+ * The OpenID Connect adapter registered under a name.
+ */
+function oidcAdapter(string $name): OidcAdapter
+{
+    return app(OidcManager::class)->driver($name);
+}
+
+/**
+ * Sign in to an application with the openid and email scopes, and redeem the
+ * code for its tokens.
+ *
+ * The application must skip the consent screen and still hold its plain
+ * secret, as Application::factory()->trusted()->withSecret() leaves it.
+ *
+ * @return array<string, mixed>
+ */
+function issueTokens(User $user, Application $application): array
+{
+    [$verifier, $challenge] = pkcePair();
+
+    $authorization = authorizationRequest($user, $application, [
+        'scope' => 'openid email',
+        'code_challenge' => $challenge,
+    ]);
+
+    parse_str(parse_url($authorization->headers->get('Location'), PHP_URL_QUERY), $query);
+
+    return test()->postJson('/oauth/token', [
+        'grant_type' => 'authorization_code',
+        'client_id' => $application->id,
+        'client_secret' => $application->plainSecret,
+        'redirect_uri' => $application->redirect_uris[0],
+        'code_verifier' => $verifier,
+        'code' => $query['code'],
+    ])->assertOk()->json();
 }

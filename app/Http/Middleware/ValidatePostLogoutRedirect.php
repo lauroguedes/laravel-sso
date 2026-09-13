@@ -29,9 +29,7 @@ use Throwable;
  * send them next. Refusing the request would leave the session alive over a
  * redirect mistake, which is the more dangerous failure.
  *
- * Attached to the web group rather than the route, because the package
- * registers "oauth/logout" itself and exposes no middleware seam for it. The
- * route name is the guard, so nothing else is affected.
+ * Attached to the logout route in "routes/oidc.php".
  */
 class ValidatePostLogoutRedirect
 {
@@ -42,10 +40,6 @@ class ValidatePostLogoutRedirect
      */
     public function handle(Request $request, Closure $next): Response
     {
-        if (! $request->routeIs('oidc.logout')) {
-            return $next($request);
-        }
-
         $destination = $this->approvedDestination($request);
 
         /*

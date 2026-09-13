@@ -45,10 +45,14 @@ class SsoServiceProvider extends ServiceProvider
      * step, so these replacements are declared here to take precedence.
      * Together they give claim resolution the one thing the package does not
      * pass down: which application is asking.
+     *
+     * The claims service is also shared under its own class, so the ID Token
+     * service and the OIDC adapter hold the same instance.
      */
     public function register(): void
     {
-        $this->app->singleton(ClaimsService::class, ApplicationClaimsService::class);
+        $this->app->singleton(ApplicationClaimsService::class);
+        $this->app->alias(ApplicationClaimsService::class, ClaimsService::class);
         $this->app->singleton(IdTokenService::class, ApplicationIdTokenService::class);
     }
 
@@ -100,7 +104,7 @@ class SsoServiceProvider extends ServiceProvider
     private function configureRateLimiting(): void
     {
         /*
-         * The OIDC package applies this limiter to /oauth/authorize as well as
+         * "routes/oidc.php" applies this limiter to /oauth/authorize as well as
          * to the discovery endpoints, so it is sized for browser traffic that
          * may arrive from many users behind a single address.
          */
