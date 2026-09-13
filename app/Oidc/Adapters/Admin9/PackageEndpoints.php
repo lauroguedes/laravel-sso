@@ -12,9 +12,9 @@ use Laravel\Passport\Client;
  * The package's controller, with the protected steps its endpoints are built
  * from made public.
  *
- * The adapter needs client authentication and token lookup without the request
- * handling wrapped around them. The package's own names are kept, so each call
- * traces straight back to the vendor code.
+ * The adapter needs client authentication, token lookup and key naming without
+ * the request handling wrapped around them. The package's own names are kept,
+ * so each call traces straight back to the vendor code.
  */
 class PackageEndpoints extends OidcController
 {
@@ -34,5 +34,10 @@ class PackageEndpoints extends OidcController
     public function revokeToken(string $token, string $tokenTypeHint, Client $client): void
     {
         parent::revokeToken($token, $tokenTypeHint, $client);
+    }
+
+    public function generateKeyId(string $publicKey): string
+    {
+        return parent::generateKeyId($publicKey);
     }
 }

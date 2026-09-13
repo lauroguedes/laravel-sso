@@ -115,13 +115,16 @@ class InstallCommand extends Command
      * every relying party's cached key set, so an existing pair is reported
      * and left exactly as it is.
      *
+     * Keys held in PASSPORT_PRIVATE_KEY count as present. Generating files
+     * beside them would only add a second pair that nothing signs with.
+     *
      * Passport refuses to overwrite either file, so its exit code is what
      * decides the result: reporting GENERATED on the strength of the guard
      * alone would announce success over a half-written key directory.
      */
     private function ensureSigningKeys(): void
     {
-        if (file_exists(Passport::keyPath('oauth-private.key'))) {
+        if (filled(config('passport.private_key')) || file_exists(Passport::keyPath('oauth-private.key'))) {
             $this->components->twoColumnDetail('OAuth signing keys', '<fg=green;options=bold>PRESENT</>');
 
             return;

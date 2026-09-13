@@ -64,21 +64,22 @@ test('it leaves existing signing keys untouched', function () {
 });
 
 test('it generates signing keys when there are none', function () {
-    $directory = storage_path('framework/testing/keys-'.uniqid());
-    $original = Passport::$keyPath;
-
-    File::ensureDirectoryExists($directory);
-    Passport::$keyPath = $directory;
-
-    try {
+    withoutKeyFiles(function (string $directory) {
         $this->artisan('sso:install --no-interaction')->assertSuccessful();
 
         expect(File::exists($directory.'/oauth-private.key'))->toBeTrue()
             ->and(File::exists($directory.'/oauth-public.key'))->toBeTrue();
-    } finally {
-        Passport::$keyPath = $original;
-        File::deleteDirectory($directory);
-    }
+    });
+});
+
+test('it does not generate key files when the keys come from the environment', function () {
+    withoutKeyFiles(function (string $directory) {
+        config()->set('passport.private_key', 'a private key held in the environment');
+
+        $this->artisan('sso:install --no-interaction')->assertSuccessful();
+
+        expect(File::files($directory))->toBeEmpty();
+    });
 });
 
 test('it warns when the issuer is not reached over HTTPS', function () {

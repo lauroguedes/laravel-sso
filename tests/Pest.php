@@ -6,9 +6,11 @@ use App\Oidc\Contracts\OidcAdapter;
 use App\Oidc\OidcManager;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Env;
+use Illuminate\Support\Facades\File;
 use Illuminate\Support\Str;
 use Illuminate\Testing\TestResponse;
 use Inertia\Support\SessionKey;
+use Laravel\Passport\Passport;
 use Lcobucci\JWT\Encoding\JoseEncoder;
 use Lcobucci\JWT\Token\DataSet;
 use Lcobucci\JWT\Token\Parser;
@@ -214,4 +216,31 @@ function issueTokens(User $user, Application $application): array
         'code_verifier' => $verifier,
         'code' => $query['code'],
     ])->assertOk()->json();
+}
+
+/**
+ * Run a callback on a server with no key files.
+ *
+ * Passport is pointed at an empty key directory for the duration, and put back
+ * afterwards even when the callback fails, so no later test inherits it.
+ *
+ * @template TReturn
+ *
+ * @param  Closure(string): TReturn  $callback  given the empty directory
+ * @return TReturn
+ */
+function withoutKeyFiles(Closure $callback): mixed
+{
+    $original = Passport::$keyPath;
+    $directory = storage_path('framework/testing/keys-'.uniqid());
+
+    File::ensureDirectoryExists($directory);
+    Passport::$keyPath = $directory;
+
+    try {
+        return $callback($directory);
+    } finally {
+        Passport::$keyPath = $original;
+        File::deleteDirectory($directory);
+    }
 }

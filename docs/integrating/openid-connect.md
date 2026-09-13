@@ -268,9 +268,10 @@ have. That is what lets a key rotation happen without redeploying anything.
 Nothing here is secret. A public key verifies signatures and cannot create
 them, which is why the set is safe to publish and safe to cache anywhere.
 
-The private half lives at `storage/oauth-private.key`. It is not in version
-control, and `sso:install` never replaces an existing one. Rotating it
-invalidates every ID Token in flight and every cached key set. See
+The private half lives at `storage/oauth-private.key`, or in
+`PASSPORT_PRIVATE_KEY`. It is not in version control, and `sso:install` never
+replaces an existing one. Rotating it invalidates every ID Token in flight and
+every cached key set. See
 [Deployment](/docs/getting-started/deployment#signing-keys).
 
 ## Introspection

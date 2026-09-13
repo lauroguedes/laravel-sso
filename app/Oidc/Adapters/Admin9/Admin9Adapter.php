@@ -75,6 +75,21 @@ class Admin9Adapter implements AuthenticatesClients, DiscoversProvider, EndsSess
         return $this->endpoints->discovery()->getData(true);
     }
 
+    public function privateKey(): string
+    {
+        return $this->keyFile('private');
+    }
+
+    public function publicKey(): string
+    {
+        return $this->keyFile('public');
+    }
+
+    public function keyId(): string
+    {
+        return $this->endpoints->generateKeyId($this->publicKey());
+    }
+
     public function keySet(): array
     {
         $response = $this->endpoints->jwks();
@@ -126,6 +141,23 @@ class Admin9Adapter implements AuthenticatesClients, DiscoversProvider, EndsSess
     public function endSession(Request $request): Response
     {
         return $this->endpoints->logout($request);
+    }
+
+    /**
+     * One half of the key pair, from the file the package always reads.
+     *
+     * @return non-empty-string
+     */
+    private function keyFile(string $type): string
+    {
+        $path = storage_path("oauth-{$type}.key");
+        $contents = is_file($path) ? file_get_contents($path) : false;
+
+        if ($contents === false || $contents === '') {
+            throw new SigningKeyUnavailable(ucfirst($type).' key not found', "The OAuth {$type} key has not been generated.");
+        }
+
+        return $contents;
     }
 
     /**

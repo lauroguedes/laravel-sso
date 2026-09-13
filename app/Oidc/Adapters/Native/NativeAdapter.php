@@ -22,16 +22,20 @@ use App\Oidc\Contracts\RevokesTokens;
  */
 class NativeAdapter implements OidcAdapter
 {
-    public function __construct(private readonly OidcAdapter $fallback) {}
+    public function __construct(
+        private readonly OidcAdapter $fallback,
+        private readonly Discovery $discovery,
+        private readonly SigningKeys $signingKeys,
+    ) {}
 
     public function discovery(): DiscoversProvider
     {
-        return $this->fallback->discovery();
+        return $this->discovery;
     }
 
     public function signingKeys(): ProvidesSigningKeys
     {
-        return $this->fallback->signingKeys();
+        return $this->signingKeys;
     }
 
     public function claims(): ResolvesClaims

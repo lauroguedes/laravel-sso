@@ -43,7 +43,7 @@ class OidcManager extends Manager
      */
     protected function createNativeDriver(): OidcAdapter
     {
-        return new NativeAdapter($this->driver('admin9'));
+        return $this->container->make(NativeAdapter::class, ['fallback' => $this->driver('admin9')]);
     }
 
     /**
