@@ -4,7 +4,8 @@ import { computed } from 'vue';
 
 /**
  * The account a sign-in flow page acts for, so nobody approves an application
- * or signs out as somebody else by mistake.
+ * or signs out as somebody else by mistake. Anything in the slot sits under
+ * the address, such as a way to switch accounts.
  */
 const page = usePage();
 const user = computed(() => page.props.auth.user);
@@ -15,5 +16,6 @@ const user = computed(() => page.props.auth.user);
         <p class="text-muted-foreground">Signed in as</p>
         <p class="font-medium">{{ user.name }}</p>
         <p class="text-muted-foreground">{{ user.email }}</p>
+        <slot />
     </div>
 </template>

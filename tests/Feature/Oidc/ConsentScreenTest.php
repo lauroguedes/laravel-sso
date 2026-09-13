@@ -2,6 +2,8 @@
 
 use App\Models\Application;
 use App\Models\User;
+use App\Oidc\ConsentScreen;
+use App\Services\Settings;
 
 /**
  * The consent screen is what an untrusted application's users actually see.
@@ -123,4 +125,73 @@ test('an approval carrying someone else\'s token is refused', function () {
 
 test('a guest is sent to sign in before being asked to consent', function () {
     authorizationRequest(null, $this->application)->assertRedirect(route('login'));
+});
+
+describe('as worded on the Consent tab', function () {
+    test('the heading names the application, and the message is its description', function () {
+        authorizationRequest($this->user, $this->application)
+            ->assertInertia(fn ($page) => $page
+                ->where('consent.heading', 'Continue to Reporting')
+                ->where('consent.message', 'Company reporting')
+                ->where('consent.privacyUrl', null)
+                ->where('consent.termsUrl', null));
+    });
+
+    test('an application with no description gets a general message', function () {
+        $this->application->forceFill(['description' => null])->save();
+
+        authorizationRequest($this->user, $this->application)
+            ->assertInertia(fn ($page) => $page->where('consent.message', ConsentScreen::DEFAULT_MESSAGE));
+    });
+
+    test('an administrator\'s wording replaces the defaults', function () {
+        app(Settings::class)->put([
+            'consent_heading' => 'Sign in to {application}',
+            'consent_message' => '{application} is run by IT.',
+            'consent_scope_descriptions' => ['email' => 'Your work address'],
+            'consent_privacy_url' => 'https://example.com/privacy',
+            'consent_terms_url' => 'https://example.com/terms',
+        ]);
+
+        authorizationRequest($this->user, $this->application, ['scope' => 'openid email'])
+            ->assertInertia(fn ($page) => $page
+                ->where('consent.heading', 'Sign in to Reporting')
+                ->where('consent.message', 'Reporting is run by IT.')
+                ->where('scopes', fn ($scopes) => collect($scopes)->firstWhere('id', 'email')['description'] === 'Your work address')
+                ->where('consent.privacyUrl', 'https://example.com/privacy')
+                ->where('consent.termsUrl', 'https://example.com/terms'));
+    });
+
+    test('the signed-in account offers a way to sign in as somebody else, unless it is hidden', function () {
+        authorizationRequest($this->user, $this->application)
+            ->assertInertia(fn ($page) => $page->where(
+                'consent.switchAccountUrl',
+                fn (string $url): bool => str_contains($url, '/oauth/authorize?') && str_contains($url, 'prompt=login'),
+            ));
+
+        app(Settings::class)->put(['consent_show_account' => false]);
+
+        authorizationRequest($this->user, $this->application)
+            ->assertInertia(fn ($page) => $page->where('consent.switchAccountUrl', null));
+    });
+
+    test('an approval already given is remembered, unless the Consent tab says to ask every time', function (bool $remember) {
+        app(Settings::class)->put(['consent_remember_approvals' => $remember]);
+
+        [$verifier, $challenge] = pkcePair();
+
+        $consent = authorizationRequest($this->user, $this->application, ['scope' => 'openid email', 'code_challenge' => $challenge]);
+
+        $approval = $this->actingAs($this->user)->post('/oauth/authorize', [
+            'auth_token' => $consent->viewData('page')['props']['authToken'],
+        ]);
+
+        redeemCode($this->application, $approval, $verifier);
+
+        $again = authorizationRequest($this->user, $this->application, ['scope' => 'openid email']);
+
+        $remember
+            ? $again->assertRedirectContains(CONSENT_SCREEN_REDIRECT_URI)
+            : $again->assertOk()->assertInertia(fn ($page) => $page->component('oauth/Authorize'));
+    })->with(['remembered' => true, 'asked every time' => false]);
 });

@@ -5,10 +5,14 @@ declare(strict_types=1);
 namespace App\Oidc\Http\Controllers;
 
 use App\Oidc\Passport\AuthorizationContext;
+use App\Services\Settings;
+use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Http\Request;
+use Laravel\Passport\Client;
 use Laravel\Passport\Contracts\AuthorizationViewResponse;
 use Laravel\Passport\Exceptions\OAuthServerException;
 use Laravel\Passport\Http\Controllers\AuthorizationController as PassportAuthorizationController;
+use Laravel\Passport\Scope;
 use League\OAuth2\Server\RequestTypes\AuthorizationRequestInterface;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
@@ -57,6 +61,20 @@ class AuthorizationController extends PassportAuthorizationController
         }
 
         return $response;
+    }
+
+    /**
+     * Whether earlier approvals already cover this request.
+     *
+     * Turned off on the Consent tab, every authorization asks again, even for
+     * scopes the user already granted.
+     *
+     * @param  Scope[]  $scopes
+     */
+    protected function hasGrantedScopes(Authenticatable $user, Client $client, array $scopes): bool
+    {
+        return app(Settings::class)->get('consent_remember_approvals') === true
+            && parent::hasGrantedScopes($user, $client, $scopes);
     }
 
     /**

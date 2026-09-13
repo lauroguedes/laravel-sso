@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Services;
 
 use App\Enums\SettingsSection;
+use App\Oidc\ConsentScreen;
 
 /**
  * The choices the App settings form offers.
@@ -76,10 +77,21 @@ class InterfaceOptions
         'audit_retention_days' => ['unit' => 'days', 'min' => 7, 'max' => 3650],
     ];
 
+    public function __construct(private readonly ScopeRegistry $scopes) {}
+
     /**
      * Everything the form offers, ready to render.
      *
-     * @return array<string, list<mixed>>
+     * @return array{
+     *     baseColors: list<array{value: string, label: string, swatch: string}>,
+     *     accents: list<array{value: string, label: string, swatch: string}>,
+     *     rowsPerPage: list<int|string>,
+     *     sidebarVariants: list<array{value: string, label: string, description: string}>,
+     *     authLayouts: list<array{value: string, label: string, description: string}>,
+     *     durations: list<array{name: string, unit: string, min: int, max: int}>,
+     *     sections: list<array{value: string, label: string}>,
+     *     consent: array{defaultMessage: string, scopes: array<int, array{id: string, description: string}>},
+     * }
      */
     public function all(ThemePalette $palette): array
     {
@@ -91,6 +103,14 @@ class InterfaceOptions
             'authLayouts' => self::AUTH_LAYOUTS,
             'durations' => $this->durations(),
             'sections' => SettingsSection::options(),
+            /*
+             * What the consent page shows when a field is left blank, so the
+             * preview falls back to exactly what people would see.
+             */
+            'consent' => [
+                'defaultMessage' => ConsentScreen::DEFAULT_MESSAGE,
+                'scopes' => $this->scopes->all(),
+            ],
         ];
     }
 

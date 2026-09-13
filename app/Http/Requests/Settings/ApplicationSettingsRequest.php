@@ -7,6 +7,7 @@ namespace App\Http\Requests\Settings;
 use App\Enums\SettingsSection;
 use App\Models\Setting;
 use App\Services\InterfaceOptions;
+use App\Services\ScopeRegistry;
 use App\Services\ThemePalette;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
@@ -23,6 +24,11 @@ use Illuminate\Validation\Rule;
  */
 class ApplicationSettingsRequest extends FormRequest
 {
+    /**
+     * A link somebody will follow from a page this server shows.
+     */
+    private const WEB_ADDRESS = ['string', 'max:2000', 'url:http,https'];
+
     /**
      * What each section is allowed to contain.
      *
@@ -72,7 +78,7 @@ class ApplicationSettingsRequest extends FormRequest
             SettingsSection::Links->value => [
                 'documentation_links' => ['array', 'max:6'],
                 'documentation_links.*.label' => ['required', 'string', 'max:40'],
-                'documentation_links.*.url' => ['required', 'string', 'max:2000', 'url:http,https'],
+                'documentation_links.*.url' => ['required', ...self::WEB_ADDRESS],
             ],
             SettingsSection::Access->value => [
                 'allow_registration' => ['boolean'],
@@ -83,6 +89,16 @@ class ApplicationSettingsRequest extends FormRequest
                     $options->durationNames(),
                     array_map($options->durationRules(...), $options->durationNames()),
                 ),
+            ],
+            SettingsSection::Consent->value => [
+                'consent_heading' => ['required', 'string', 'max:120'],
+                'consent_message' => ['nullable', 'string', 'max:300'],
+                'consent_scope_descriptions' => ['array'],
+                'consent_scope_descriptions.*' => ['string', 'max:160'],
+                'consent_show_account' => ['boolean'],
+                'consent_remember_approvals' => ['boolean'],
+                'consent_privacy_url' => ['nullable', ...self::WEB_ADDRESS],
+                'consent_terms_url' => ['nullable', ...self::WEB_ADDRESS],
             ],
         ];
     }
@@ -142,6 +158,7 @@ class ApplicationSettingsRequest extends FormRequest
         $this->castNumbers();
         $this->castSwitches();
         $this->dropBlankLinks();
+        $this->keepWrittenScopeWording();
     }
 
     /**
@@ -163,20 +180,20 @@ class ApplicationSettingsRequest extends FormRequest
     }
 
     /**
-     * The same, for the switches.
+     * The same, for the switches of the section being saved.
      *
      * An unchecked switch posts nothing at all, so each one is read as false
-     * rather than left absent — otherwise turning registration off would save
-     * a payload that says nothing about registration.
+     * rather than left absent: otherwise turning a switch off would save a
+     * payload that says nothing about it. A switch is a setting validated as
+     * nothing but a boolean; the "remove_" flags beside uploads are not
+     * settings.
      */
     private function castSwitches(): void
     {
-        if ($this->input('section') !== 'access') {
-            return;
-        }
-
-        foreach (['allow_registration', 'require_email_verification', 'logout_other_sessions_on_password_change'] as $key) {
-            $this->merge([$key => $this->boolean($key)]);
+        foreach (self::sections()[$this->string('section')->toString()] ?? [] as $key => $rules) {
+            if ($rules === ['boolean'] && ! str_starts_with($key, 'remove_')) {
+                $this->merge([$key => $this->boolean($key)]);
+            }
         }
     }
 
@@ -208,6 +225,29 @@ class ApplicationSettingsRequest extends FormRequest
                     && trim((string) ($link['label'] ?? '')) !== ''
                     && trim((string) ($link['url'] ?? '')) !== '',
             )),
+        ]);
+    }
+
+    /**
+     * Keep scope wording only where somebody wrote some, for scopes that exist.
+     *
+     * A blank field arrives as null and means "use the standard description",
+     * and wording for a scope since removed from the configuration would be
+     * stored for nothing to show.
+     */
+    private function keepWrittenScopeWording(): void
+    {
+        if ($this->input('section') !== 'consent') {
+            return;
+        }
+
+        $wording = $this->input('consent_scope_descriptions');
+
+        $this->merge([
+            'consent_scope_descriptions' => array_filter(
+                array_intersect_key(is_array($wording) ? $wording : [], array_flip(app(ScopeRegistry::class)->ids())),
+                is_string(...),
+            ),
         ]);
     }
 }

@@ -230,6 +230,23 @@ return [
         'session_lifetime' => (int) env('SESSION_LIFETIME', 120),
 
         'logout_other_sessions_on_password_change' => true,
+
+        /*
+         * The consent screen. Not pinnable: the wording is the operator's to
+         * change, and nothing about a deployment decides it.
+         *
+         * "{application}" is replaced with the name of the application asking.
+         * A message left empty falls back to the application's description,
+         * and a scope with no wording of its own uses its description in
+         * "config/oidc-server.php".
+         */
+        'consent_heading' => 'Continue to {application}',
+        'consent_message' => null,
+        'consent_scope_descriptions' => [],
+        'consent_show_account' => true,
+        'consent_remember_approvals' => true,
+        'consent_privacy_url' => null,
+        'consent_terms_url' => null,
     ],
 
     /*

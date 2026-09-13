@@ -1,8 +1,9 @@
 <script setup lang="ts">
 import { Form, Head, router } from '@inertiajs/vue3';
 import { Check, Plus, RotateCcw, X } from '@lucide/vue';
-import { computed, ref } from 'vue';
+import { computed, reactive, ref } from 'vue';
 import BrandMark from '@/components/BrandMark.vue';
+import ConsentCard from '@/components/ConsentCard.vue';
 import DangerousAction from '@/components/DangerousAction.vue';
 import Heading from '@/components/Heading.vue';
 import InputError from '@/components/InputError.vue';
@@ -22,6 +23,9 @@ import {
 } from '@/components/ui/select';
 import { Spinner } from '@/components/ui/spinner';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Textarea } from '@/components/ui/textarea';
+import { nameApplication } from '@/lib/consent';
+import type { ScopeOption } from '@/types/administration';
 import type { DurationUnit } from '@/lib/duration';
 import { useTabInUrl } from '@/composables/useTabInUrl';
 import { destroy, edit, update } from '@/routes/application-settings';
@@ -61,12 +65,19 @@ type Settings = {
     session_lifetime: number;
     logout_other_sessions_on_password_change: boolean;
     audit_retention_days: number;
+    consent_heading: string;
+    consent_message: string | null;
+    consent_scope_descriptions: Record<string, string>;
+    consent_show_account: boolean;
+    consent_remember_approvals: boolean;
+    consent_privacy_url: string | null;
+    consent_terms_url: string | null;
 };
 
 type Palette = { value: string; label: string; swatch: string };
 type Variant = { value: string; label: string; description: string };
 
-const { settings, pinned, tab } = defineProps<{
+const { settings, pinned, tab, options } = defineProps<{
     settings: Settings;
     pinned: string[];
     /** Which tab to open, so saving one returns to the one that was saved. */
@@ -85,6 +96,8 @@ const { settings, pinned, tab } = defineProps<{
             max: number;
         }[];
         sections: { value: string; label: string }[];
+        /* What the consent page falls back to, for the preview. */
+        consent: { defaultMessage: string; scopes: ScopeOption[] };
     };
 }>();
 
@@ -187,6 +200,69 @@ const explanations: Record<string, { label: string; description: string }> = {
             'How much of the audit trail is kept. Older entries are removed by the scheduled clean-up.',
     },
 };
+
+/*
+ * The Consent tab previews the page as it is typed, for an example application.
+ * A blank field falls back to what the server would show.
+ */
+const consentDraft = reactive({
+    heading: settings.consent_heading,
+    message: settings.consent_message ?? '',
+    scopes: { ...settings.consent_scope_descriptions } as Record<
+        string,
+        string
+    >,
+    showAccount: settings.consent_show_account,
+    privacyUrl: settings.consent_privacy_url ?? '',
+    termsUrl: settings.consent_terms_url ?? '',
+});
+
+const previewApplication = 'Example application';
+
+const consentPreview = computed(() => ({
+    scopes: options.consent.scopes.map((scope) => ({
+        id: scope.id,
+        description: consentDraft.scopes[scope.id]?.trim() || scope.description,
+    })),
+    consent: {
+        heading: nameApplication(consentDraft.heading, previewApplication),
+        message:
+            consentDraft.message.trim() === ''
+                ? options.consent.defaultMessage
+                : nameApplication(consentDraft.message, previewApplication),
+        switchAccountUrl: consentDraft.showAccount ? '#' : null,
+        privacyUrl: consentDraft.privacyUrl.trim() || null,
+        termsUrl: consentDraft.termsUrl.trim() || null,
+    },
+}));
+
+type SwitchOption = {
+    name: string;
+    label: string;
+    description: string;
+    defaultValue: boolean;
+    onChange?: (checked: boolean) => void;
+};
+
+const consentSwitches = computed<SwitchOption[]>(() => [
+    {
+        name: 'consent_show_account',
+        label: 'Show the signed-in account',
+        description:
+            'Who is about to approve, with a link to sign in as somebody else instead.',
+        defaultValue: settings.consent_show_account,
+        onChange: (checked) => {
+            consentDraft.showAccount = checked;
+        },
+    },
+    {
+        name: 'consent_remember_approvals',
+        label: 'Remember approvals',
+        description:
+            'An application somebody already approved does not ask again for the same scopes, for as long as the access token it was issued lasts. Turned off, every sign-in asks.',
+        defaultValue: settings.consent_remember_approvals,
+    },
+]);
 
 function resetToDefaults() {
     router.delete(destroy().url);
@@ -586,6 +662,156 @@ function resetToDefaults() {
                         Save access
                     </Button>
                 </Form>
+            </TabsContent>
+            <TabsContent value="consent">
+                <div class="grid gap-8 lg:grid-cols-[minmax(0,1fr)_22rem]">
+                    <Form
+                        v-bind="update.form()"
+                        class="space-y-6"
+                        v-slot="{ errors, processing }"
+                    >
+                        <input type="hidden" name="section" value="consent" />
+
+                        <SettingsField
+                            id="consent_heading"
+                            label="Heading"
+                            description="The title of the consent page. {application} is replaced with the name of the application asking."
+                            :error="errors.consent_heading"
+                        >
+                            <Input
+                                id="consent_heading"
+                                v-model="consentDraft.heading"
+                                name="consent_heading"
+                                maxlength="120"
+                            />
+                        </SettingsField>
+
+                        <SettingsField
+                            id="consent_message"
+                            label="Message"
+                            description="The line under the heading. Left blank, the page shows the application's own description."
+                            :error="errors.consent_message"
+                        >
+                            <Textarea
+                                id="consent_message"
+                                v-model="consentDraft.message"
+                                name="consent_message"
+                                maxlength="300"
+                                rows="2"
+                            />
+                        </SettingsField>
+
+                        <div class="grid gap-3">
+                            <div class="grid gap-1">
+                                <p class="text-sm font-medium">
+                                    What each scope says
+                                </p>
+                                <p class="text-muted-foreground text-sm">
+                                    Leave a scope blank to keep its standard
+                                    wording.
+                                </p>
+                            </div>
+
+                            <SettingsField
+                                v-for="scope in options.consent.scopes"
+                                :id="`consent_scope_${scope.id}`"
+                                :key="scope.id"
+                                :label="scope.id"
+                                :error="
+                                    errors[
+                                        `consent_scope_descriptions.${scope.id}`
+                                    ]
+                                "
+                            >
+                                <Input
+                                    :id="`consent_scope_${scope.id}`"
+                                    v-model="consentDraft.scopes[scope.id]"
+                                    :name="`consent_scope_descriptions[${scope.id}]`"
+                                    :placeholder="scope.description"
+                                    maxlength="160"
+                                />
+                            </SettingsField>
+                        </div>
+
+                        <div class="grid gap-4">
+                            <div
+                                v-for="option in consentSwitches"
+                                :key="option.name"
+                                class="rounded-lg border p-3"
+                            >
+                                <SwitchField
+                                    :name="option.name"
+                                    :label="option.label"
+                                    :description="option.description"
+                                    :default-value="option.defaultValue"
+                                    :errors="errors"
+                                    @change="option.onChange?.($event)"
+                                />
+                            </div>
+                        </div>
+
+                        <div class="grid gap-4 sm:grid-cols-2">
+                            <SettingsField
+                                id="consent_privacy_url"
+                                label="Privacy policy"
+                                description="Your organisation's policy, linked under the buttons when set."
+                                :error="errors.consent_privacy_url"
+                            >
+                                <Input
+                                    id="consent_privacy_url"
+                                    v-model="consentDraft.privacyUrl"
+                                    name="consent_privacy_url"
+                                    type="url"
+                                    inputmode="url"
+                                    placeholder="https://example.com/privacy"
+                                />
+                            </SettingsField>
+
+                            <SettingsField
+                                id="consent_terms_url"
+                                label="Terms"
+                                description="Your organisation's terms, linked under the buttons when set."
+                                :error="errors.consent_terms_url"
+                            >
+                                <Input
+                                    id="consent_terms_url"
+                                    v-model="consentDraft.termsUrl"
+                                    name="consent_terms_url"
+                                    type="url"
+                                    inputmode="url"
+                                    placeholder="https://example.com/terms"
+                                />
+                            </SettingsField>
+                        </div>
+
+                        <Button type="submit" :disabled="processing">
+                            <Spinner v-if="processing" />
+                            Save consent
+                        </Button>
+                    </Form>
+
+                    <div class="grid content-start gap-2">
+                        <p class="text-sm font-medium">Preview</p>
+
+                        <div class="rounded-xl border p-6" inert>
+                            <div class="mb-6 space-y-2 text-center">
+                                <p class="text-xl font-medium">
+                                    {{ consentPreview.consent.heading }}
+                                </p>
+                                <p class="text-muted-foreground text-sm">
+                                    {{ consentPreview.consent.message }}
+                                </p>
+                            </div>
+
+                            <ConsentCard
+                                :application-name="previewApplication"
+                                :scopes="consentPreview.scopes"
+                                :consent="consentPreview.consent"
+                                disabled
+                            />
+                        </div>
+                    </div>
+                </div>
             </TabsContent>
         </Tabs>
     </div>

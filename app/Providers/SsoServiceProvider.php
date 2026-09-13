@@ -5,13 +5,12 @@ declare(strict_types=1);
 namespace App\Providers;
 
 use App\Models\Application;
+use App\Oidc\ConsentScreen;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
-use Inertia\Inertia;
 use Laravel\Passport\Passport;
-use Laravel\Passport\Scope;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
@@ -58,17 +57,12 @@ class SsoServiceProvider extends ServiceProvider
     {
         $this->app->booted(function (): void {
             Passport::authorizationView(
-                fn (array $parameters): Response => Inertia::render('oauth/Authorize', [
-                    'application' => [
-                        'name' => $parameters['client']->name,
-                        'description' => $parameters['client']->description,
-                    ],
-                    'scopes' => array_map(fn (Scope $scope): array => [
-                        'id' => $scope->id,
-                        'description' => $scope->description,
-                    ], $parameters['scopes']),
-                    'authToken' => $parameters['authToken'],
-                ])->toResponse($parameters['request'])
+                fn (array $parameters): Response => $this->app->make(ConsentScreen::class)->render(
+                    $parameters['client'],
+                    $parameters['scopes'],
+                    $parameters['authToken'],
+                    $parameters['request'],
+                ),
             );
         });
     }

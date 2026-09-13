@@ -231,6 +231,22 @@ reworded, moved below your own runbook, or removed.
 | Session lifetime                       | Minutes of inactivity before somebody signs in to this server again      |
 | Audit retention                        | Days kept by the scheduled `activitylog:clean`                           |
 
+**Consent**
+
+What an application's users see when it asks for approval, with a live preview
+beside the form that uses the same component as the real page.
+
+| Setting                    | Reaches                                                                                                                                  |
+| -------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| Heading                    | The page title. `{application}` is replaced with the name of the application asking                                                      |
+| Message                    | The line under it. Left blank, the application's own description is shown                                                                |
+| What each scope says       | The wording for each scope. A blank one keeps the standard description                                                                   |
+| Show the signed-in account | The account card, with a link to sign in as somebody else instead                                                                        |
+| Remember approvals         | Whether an application somebody already approved skips the page for the same scopes, for as long as the access token it was issued lasts |
+| Privacy policy and terms   | Links to your organisation's policies under the buttons, when set                                                                        |
+
+Consent is only shown to applications that are not marked trusted.
+
 ### Storage and pinning
 
 Only what you actually change is stored, so raising a default in

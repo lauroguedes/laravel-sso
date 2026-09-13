@@ -59,6 +59,15 @@ function sectionDefaults(): array
             'session_lifetime' => 120,
             'audit_retention_days' => 365,
         ],
+        'consent' => [
+            'consent_heading' => 'Continue to {application}',
+            'consent_message' => '',
+            'consent_scope_descriptions' => [],
+            'consent_show_account' => '1',
+            'consent_remember_approvals' => '1',
+            'consent_privacy_url' => '',
+            'consent_terms_url' => '',
+        ],
     ];
 }
 
@@ -450,5 +459,36 @@ describe('permission isolation', function () {
 
         $this->actingAs(User::factory()->create())->get(route('profile.edit'))
             ->assertInertia(fn ($page) => $page->where('can.manageSettings', false));
+    });
+});
+
+describe('the consent screen', function () {
+    test('its wording is stored, keeping only scope wording that was written for a scope that exists', function () {
+        saveSection('consent', [
+            'consent_heading' => 'Sign in to {application}',
+            'consent_message' => 'Approved by IT.',
+            'consent_scope_descriptions' => ['email' => 'Your work address', 'profile' => '', 'unknown' => 'Nothing'],
+            'consent_show_account' => '0',
+            'consent_privacy_url' => 'https://example.com/privacy',
+        ])->assertSessionHasNoErrors();
+
+        $settings = storedSettings();
+
+        expect($settings->get('consent_heading'))->toBe('Sign in to {application}')
+            ->and($settings->get('consent_message'))->toBe('Approved by IT.')
+            ->and($settings->get('consent_scope_descriptions'))->toEqual(['email' => 'Your work address'])
+            ->and($settings->get('consent_show_account'))->toBeFalse()
+            ->and($settings->get('consent_remember_approvals'))->toBeTrue()
+            ->and($settings->get('consent_privacy_url'))->toBe('https://example.com/privacy');
+    });
+
+    test('an unchanged consent tab stores nothing', function () {
+        saveSection('consent')->assertSessionHasNoErrors();
+
+        expect(Setting::query()->whereLike('key', 'consent_%')->exists())->toBeFalse();
+    });
+
+    test('a policy link that is not a web address is refused', function () {
+        saveSection('consent', ['consent_terms_url' => 'javascript:alert(1)'])->assertSessionHasErrors('consent_terms_url');
     });
 });
