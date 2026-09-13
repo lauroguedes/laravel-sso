@@ -5,10 +5,8 @@ declare(strict_types=1);
 namespace App\Providers;
 
 use Admin9\OidcServer\Services\ClaimsService;
-use Admin9\OidcServer\Services\IdTokenService;
 use App\Models\Application;
 use App\Services\ApplicationClaimsService;
-use App\Services\ApplicationIdTokenService;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\RateLimiter;
@@ -21,11 +19,11 @@ use Symfony\Component\HttpFoundation\Response;
 /**
  * Wires the Identity Provider's OAuth2 / OpenID Connect layer.
  *
- * Laravel Passport is the authorization server and admin9/laravel-oidc-server
- * is the OpenID Connect layer on top of it. Scopes, token lifetimes, the
- * client model and the id_token response type are configured by that package
- * from "config/oidc-server.php", so they are not repeated here. This provider
- * only holds policy that neither package decides for us.
+ * Laravel Passport is the authorization server and admin9/laravel-oidc-server is
+ * the OpenID Connect layer on top of it. Scopes, token lifetimes, and the
+ * client model are configured by that package from "config/oidc-server.php", so
+ * they are not repeated here. This provider only holds policy that neither
+ * package decides for us.
  *
  * Two Passport features are deliberately left untouched:
  *
@@ -41,19 +39,16 @@ class SsoServiceProvider extends ServiceProvider
     /**
      * Register any application services.
      *
-     * The OIDC package binds both of these as singletons in its own register
-     * step, so these replacements are declared here to take precedence.
-     * Together they give claim resolution the one thing the package does not
-     * pass down: which application is asking.
-     *
-     * The claims service is also shared under its own class, so the ID Token
-     * service and the OIDC adapter hold the same instance.
+     * The OIDC package binds its claims service as a singleton in its own
+     * register step, so the replacement is declared here to take precedence.
+     * It gives claim resolution the one thing the package does not pass down,
+     * which application is asking, and is shared under its own class too, so
+     * every caller holds the same instance.
      */
     public function register(): void
     {
         $this->app->singleton(ApplicationClaimsService::class);
         $this->app->alias(ApplicationClaimsService::class, ClaimsService::class);
-        $this->app->singleton(IdTokenService::class, ApplicationIdTokenService::class);
     }
 
     /**

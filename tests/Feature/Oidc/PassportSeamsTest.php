@@ -2,6 +2,7 @@
 
 use App\Models\Application;
 use App\Models\User;
+use App\Oidc\Passport\AuthorizationContext;
 use Illuminate\Auth\Events\Login;
 use Illuminate\Contracts\Events\Dispatcher;
 use Illuminate\Support\Facades\Auth;
@@ -175,7 +176,8 @@ describe('sign-in', function () {
             'password' => 'password',
         ])->assertRedirect(route('dashboard', absolute: false));
 
-        expect($this->viaRemember->getArrayCopy())->toBe([false]);
+        expect($this->viaRemember->getArrayCopy())->toBe([false])
+            ->and(session()->has(AuthorizationContext::AUTH_TIME_SESSION_KEY))->toBeTrue();
     });
 
     test('restoring a session from the remember me cookie raises the login event as well', function () {
@@ -195,6 +197,7 @@ describe('sign-in', function () {
             ->get(route('dashboard'))
             ->assertOk();
 
-        expect($this->viaRemember->getArrayCopy())->toBe([true]);
+        expect($this->viaRemember->getArrayCopy())->toBe([true])
+            ->and(session()->has(AuthorizationContext::AUTH_TIME_SESSION_KEY))->toBeFalse();
     });
 });

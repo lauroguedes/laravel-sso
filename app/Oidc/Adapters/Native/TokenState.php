@@ -5,11 +5,11 @@ declare(strict_types=1);
 namespace App\Oidc\Adapters\Native;
 
 use App\Models\User;
+use App\Oidc\Contracts\DiscoversProvider;
 use App\Oidc\Contracts\IntrospectsTokens;
 use App\Oidc\Contracts\ResolvesClaims;
 use App\Oidc\Contracts\RevokesTokens;
 use App\Services\SessionManager;
-use Illuminate\Contracts\Config\Repository;
 use Illuminate\Contracts\Encryption\Encrypter;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
@@ -47,7 +47,7 @@ class TokenState implements IntrospectsTokens, RevokesTokens
         private readonly RefreshTokenRepository $refreshTokens,
         private readonly ResolvesClaims $claims,
         private readonly SessionManager $sessions,
-        private readonly Repository $config,
+        private readonly DiscoversProvider $discovery,
         Encrypter $encrypter,
     ) {
         $this->setEncryptionKey(Passport::tokenEncryptionKey($encrypter));
@@ -180,7 +180,7 @@ class TokenState implements IntrospectsTokens, RevokesTokens
             'iat' => $token->issuedAt,
             'sub' => $token->userId,
             'aud' => $token->clientId,
-            'iss' => $this->config->get('oidc-server.issuer'),
+            'iss' => $this->discovery->metadata()['issuer'],
         ], fn (mixed $value): bool => $value !== null);
     }
 

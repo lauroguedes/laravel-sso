@@ -147,6 +147,15 @@ redirect URI with `?code=...&state=...`.
 Check that `state` matches what you sent. That is what makes the response
 yours rather than an attacker's.
 
+Two optional parameters tie the sign-in to this request:
+
+- `nonce=<random>` comes back in the ID Token, and only there. Send it to
+  `/oauth/authorize`, not to the token endpoint.
+- `max_age=<seconds>` asks for a recent sign-in. A user who signed in longer ago,
+  or whose session was restored from a remember me cookie, signs in again first.
+  With `prompt=none` nobody can be asked, so you get `error=login_required`.
+  `prompt=login` always asks.
+
 **2. Exchange the code for tokens.**
 
 ```bash
@@ -178,6 +187,11 @@ hand, all of it is mandatory:
 - `aud` contains your client ID.
 - `exp` is in the future, `iat` is not implausibly old.
 - `nonce` matches the one you sent, if you sent one.
+- `auth_time` is recent enough, if you sent `max_age`.
+
+An ID Token expires after its own lifetime, independently of the access token
+issued beside it. See
+[token lifetimes](/docs/getting-started/configuration#token-lifetimes).
 
 An ID Token says who signed in. It is not an API credential, so do not send it
 to your own backend as a bearer token, and do not accept one there.
@@ -191,6 +205,9 @@ curl -X POST https://auth.example.com/oauth/token \
   -d client_id=9f3c2b... \
   -d client_secret=<omit for a public client>
 ```
+
+A refreshed ID Token keeps the `auth_time` of the original sign-in and carries
+no `nonce`.
 
 Access tokens last 15 minutes by default and refresh tokens 14 days. A refresh
 token stops working the moment an administrator revokes it, from the

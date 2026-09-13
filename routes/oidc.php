@@ -3,6 +3,8 @@
 use App\Http\Middleware\EnsureApplicationAdmitsUser;
 use App\Http\Middleware\EnsurePkceIsUsed;
 use App\Http\Middleware\ValidatePostLogoutRedirect;
+use App\Oidc\Http\Controllers\ApproveAuthorizationController;
+use App\Oidc\Http\Controllers\AuthorizationController;
 use App\Oidc\Http\Controllers\DiscoveryController;
 use App\Oidc\Http\Controllers\IntrospectionController;
 use App\Oidc\Http\Controllers\KeySetController;
@@ -11,8 +13,6 @@ use App\Oidc\Http\Controllers\RevocationController;
 use App\Oidc\Http\Controllers\UserInfoController;
 use Illuminate\Support\Facades\Route;
 use Laravel\Passport\Http\Controllers\AccessTokenController;
-use Laravel\Passport\Http\Controllers\ApproveAuthorizationController;
-use Laravel\Passport\Http\Controllers\AuthorizationController;
 use Laravel\Passport\Http\Controllers\DenyAuthorizationController;
 
 /*

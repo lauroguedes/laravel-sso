@@ -20,9 +20,10 @@ use Illuminate\Support\Facades\DB;
  * billing.
  *
  * The requesting client is therefore established around the call, with
- * forClient(). ApplicationIdTokenService knows the client a token is issued
- * to, and the UserInfo endpoint knows the client its access token was issued
- * to. Without one, the authorization claims are omitted rather than guessed.
+ * forClient(), by whichever caller knows it: ID Token issuance knows the
+ * client a token is issued to, and UserInfo the client its access token was
+ * issued to. Without one, the authorization claims are omitted rather than
+ * guessed.
  */
 class ApplicationClaimsService extends ClaimsService
 {
