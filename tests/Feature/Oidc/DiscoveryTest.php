@@ -90,3 +90,22 @@ test('userinfo returns 401 for a session authenticated user without a token', fu
         ->getJson('/oauth/userinfo')
         ->assertUnauthorized();
 });
+
+test('discovery advertises the signing algorithm, subject type and revocation client authentication', function () {
+    $response = $this->getJson('/.well-known/openid-configuration');
+
+    expect($response->json())
+        ->id_token_signing_alg_values_supported->toBe(['RS256'])
+        ->subject_types_supported->toBe(['public'])
+        ->revocation_endpoint_auth_methods_supported->toEqualCanonicalizing(['client_secret_basic', 'client_secret_post', 'none']);
+});
+
+test('clients may cache the discovery document for an hour and the key set for a day', function () {
+    $discovery = $this->get('/.well-known/openid-configuration')->headers;
+    $keySet = $this->get('/.well-known/jwks.json')->headers;
+
+    expect($discovery->hasCacheControlDirective('public'))->toBeTrue()
+        ->and($discovery->getCacheControlDirective('max-age'))->toBe('3600')
+        ->and($keySet->hasCacheControlDirective('public'))->toBeTrue()
+        ->and($keySet->getCacheControlDirective('max-age'))->toBe('86400');
+});
