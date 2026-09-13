@@ -15,8 +15,8 @@ use League\OAuth2\Server\Entities\AuthCodeEntityInterface;
 use League\OAuth2\Server\ResponseTypes\BearerTokenResponse;
 
 /**
- * The Passport and league/oauth2-server behaviour the native OpenID Connect
- * layer is built on.
+ * The Passport and league/oauth2-server behaviour the OpenID Connect layer in
+ * app/Oidc is built on.
  *
  * Binding a nonce and auth_time to an ID Token needs somewhere to store them
  * when a code is issued, and somewhere to read them back before the token

@@ -18,7 +18,7 @@ use Throwable;
  * Everything here exists because the thing being configured does not know this
  * settings table exists: notifications read "app.name", the session guard
  * reads "session.lifetime", Fortify decides which authentication routes exist
- * from "fortify.features", the issuer reads "oidc-server.tokens". Copying the
+ * from "fortify.features", the issuer reads "oidc.tokens". Copying the
  * values across once, at boot, is what lets an administrator change them
  * without a redeploy.
  *
@@ -150,14 +150,14 @@ class SettingsServiceProvider extends ServiceProvider
     {
         config([
             /*
-             * "oidc-server.tokens" and not a copy under "sso": that block is
+             * "oidc.tokens" and not a copy under "sso": that block is
              * what the issuer reads when it mints a token, and a mirror the
              * interface wrote to instead would save cleanly and change
              * nothing.
              */
-            'oidc-server.tokens.access_token_ttl' => $settings['access_token_ttl'],
-            'oidc-server.tokens.refresh_token_ttl' => $settings['refresh_token_ttl'],
-            'oidc-server.tokens.id_token_ttl' => $settings['id_token_ttl'],
+            'oidc.tokens.access_token_ttl' => $settings['access_token_ttl'],
+            'oidc.tokens.refresh_token_ttl' => $settings['refresh_token_ttl'],
+            'oidc.tokens.id_token_ttl' => $settings['id_token_ttl'],
             'session.lifetime' => $settings['session_lifetime'],
             'activitylog.clean_after_days' => $settings['audit_retention_days'],
         ]);

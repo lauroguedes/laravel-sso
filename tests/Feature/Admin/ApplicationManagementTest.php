@@ -321,7 +321,7 @@ describe('scopes', function () {
 
     test('rejects a scope Passport knows but this server does not advertise', function () {
         Passport::tokensCan([
-            ...collect(config('oidc-server.scopes'))->map(fn ($scope) => $scope['description'])->all(),
+            ...collect(config('oidc.scopes'))->map(fn ($scope) => $scope['description'])->all(),
             'mcp:use' => 'Use MCP server',
         ]);
 

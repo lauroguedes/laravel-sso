@@ -27,8 +27,8 @@ abstract class TestCase extends BaseTestCase
      * Give the suite the signing keys a real installation has.
      *
      * Access tokens, ID Tokens and the key set read storage/oauth-*.key when
-     * PASSPORT_PRIVATE_KEY and PASSPORT_PUBLIC_KEY are not set, and the admin9
-     * adapter always reads that path. Existing keys are never replaced.
+     * PASSPORT_PRIVATE_KEY and PASSPORT_PUBLIC_KEY are not set. Existing keys
+     * are never replaced.
      */
     private function ensureSigningKeys(): void
     {

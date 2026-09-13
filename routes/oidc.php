@@ -21,10 +21,9 @@ use Laravel\Passport\Http\Controllers\DenyAuthorizationController;
 |--------------------------------------------------------------------------
 |
 | Passport's own routes are ignored, so every protocol endpoint is declared
-| here. The route names are the ones Passport and the OIDC package used, which
-| this application links by.
+| here, under the route names this application links by.
 |
-| Rate limiters are defined in App\Providers\SsoServiceProvider and tuned
+| Rate limiters are defined in App\Providers\OidcServiceProvider and tuned
 | through "sso.rate_limits". The discovery limiter also covers the
 | /oauth/authorize routes, so it is sized for browser traffic from many users
 | behind a single address.

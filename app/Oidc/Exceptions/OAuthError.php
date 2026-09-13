@@ -11,7 +11,7 @@ use RuntimeException;
 /**
  * An error answered to the client in the shape OAuth 2.0 defines.
  *
- * Adapters throw it and the framework renders it. It describes what was
+ * Thrown anywhere in app/Oidc and rendered by the framework. It describes what was
  * wrong with the caller's request, so it is never reported.
  */
 class OAuthError extends RuntimeException implements ShouldntReport

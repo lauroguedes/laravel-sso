@@ -92,7 +92,7 @@ test('it warns when the issuer is not reached over HTTPS', function () {
 });
 
 test('it warns when the openid scope is missing', function () {
-    config()->set('oidc-server.scopes', ['profile' => []]);
+    config()->set('oidc.scopes', ['profile' => []]);
 
     $this->artisan('sso:install --no-interaction')
         ->expectsOutputToContain('cannot issue an ID Token')

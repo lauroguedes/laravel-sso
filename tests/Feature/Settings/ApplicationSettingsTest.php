@@ -1,6 +1,7 @@
 <?php
 
 use App\Enums\PlatformPermission;
+use App\Models\Application;
 use App\Models\Setting;
 use App\Models\User;
 use App\Providers\SettingsServiceProvider;
@@ -307,16 +308,18 @@ describe('access and security', function () {
 
     test('a token lifetime an administrator chose is the one tokens are issued with', function () {
         /*
-         * The issuer reads "oidc-server.tokens". Storing the value under this
-         * project's own mirror of it would save cleanly and change nothing,
-         * which is the one failure an operator has no way to see.
+         * Passport takes its lifetimes from "oidc.tokens". Storing the value
+         * under this project's own mirror of it would save cleanly and change
+         * nothing, which is the one failure an operator has no way to see.
          */
         saveSection('access', ['access_token_ttl' => 300]);
 
         $this->app->forgetInstance(Settings::class);
         (new SettingsServiceProvider($this->app))->register();
 
-        expect(config('oidc-server.tokens.access_token_ttl'))->toBe(300);
+        $tokens = issueTokens($this->admin, Application::factory()->trusted()->withSecret('lifetime-secret')->create());
+
+        expect($tokens['expires_in'])->toBe(300);
     });
 
     test('a token lifetime outside the bounds is refused', function () {

@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace App\Oidc\Adapters\Native;
+namespace App\Oidc;
 
 use App\Oidc\Contracts\OidcUser;
 use App\Oidc\Contracts\ResolvesClaims;

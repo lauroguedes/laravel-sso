@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace App\Oidc\Adapters\Native;
+namespace App\Oidc;
 
 use App\Oidc\Contracts\ProvidesSigningKeys;
 use App\Oidc\Exceptions\SigningKeyUnavailable;
@@ -89,8 +89,8 @@ class SigningKeys implements ProvidesSigningKeys
     /**
      * The identifier published for a public key.
      *
-     * Derived as the OIDC package derived it, so key sets that relying parties
-     * have already cached stay valid.
+     * Unchanged since version 1, so key sets that relying parties have already
+     * cached stay valid.
      */
     private static function keyIdFor(string $publicKey): string
     {

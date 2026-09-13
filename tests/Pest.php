@@ -2,8 +2,6 @@
 
 use App\Models\Application;
 use App\Models\User;
-use App\Oidc\Contracts\OidcAdapter;
-use App\Oidc\OidcManager;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Env;
 use Illuminate\Support\Facades\File;
@@ -166,26 +164,6 @@ function idTokenHeaders(string $idToken): DataSet
 function idTokenClaims(string $idToken): DataSet
 {
     return (new Parser(new JoseEncoder))->parse($idToken)->claims();
-}
-
-/*
-|--------------------------------------------------------------------------
-| OpenID Connect Adapters
-|--------------------------------------------------------------------------
-|
-| Contract tests run every port against each adapter. Behaviour an adapter is
-| meant to change stays out of them, and is pinned at the endpoints instead.
-|
-*/
-
-dataset('oidc adapters', ['native', 'admin9']);
-
-/**
- * The OpenID Connect adapter registered under a name.
- */
-function oidcAdapter(string $name): OidcAdapter
-{
-    return app(OidcManager::class)->driver($name);
 }
 
 /**

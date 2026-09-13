@@ -6,7 +6,7 @@ order: 2
 
 Almost everything is an environment variable. The two configuration files that
 matter are `config/sso.php`, which holds the defaults an operator changes, and
-`config/oidc-server.php`, which describes the protocol surface.
+`config/oidc.php`, which describes the protocol surface.
 
 Nothing here needs editing to run the server. Set the issuer, and the defaults
 are the ones you want.
@@ -188,7 +188,7 @@ does not do it for you.
 
 ## Scopes and claims
 
-Defined in `config/oidc-server.php`, not by an environment variable, because
+Defined in `config/oidc.php`, not by an environment variable, because
 adding one is a decision about what this server discloses rather than a
 deployment setting.
 
@@ -212,8 +212,7 @@ have its configuration cached.
 
 ## Protocol surface
 
-Also in `config/oidc-server.php`, and hardened relative to the package's
-defaults:
+Also in `config/oidc.php`, and hardened on purpose:
 
 - `response_types_supported` is `['code']` only.
 - The implicit grant and the resource owner password credentials grant are not

@@ -2,7 +2,7 @@
 
 use App\Models\Application;
 use App\Models\User;
-use App\Oidc\Adapters\Native\AuthorizationClaims;
+use App\Oidc\AuthorizationClaims;
 use App\Oidc\Contracts\ResolvesClaims;
 use App\Services\ScopeRegistry;
 

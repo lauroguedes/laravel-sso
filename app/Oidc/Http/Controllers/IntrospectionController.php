@@ -24,9 +24,9 @@ class IntrospectionController extends Controller
     /**
      * Handle the incoming request.
      *
-     * Only a confidential client may ask, whichever adapter answers. The answer
-     * describes whoever the token belongs to, which a client that cannot keep
-     * a secret has no business learning (RFC 7662 section 4).
+     * Only a confidential client may ask. The answer describes whoever the
+     * token belongs to, which a client that cannot keep a secret has no
+     * business learning (RFC 7662 section 4).
      */
     public function __invoke(Request $request): JsonResponse
     {

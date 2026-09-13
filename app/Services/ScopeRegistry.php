@@ -10,7 +10,7 @@ namespace App\Services;
  * Passport::scopes() is deliberately not used as the source here. Other
  * packages register their own scopes with Passport — laravel/mcp adds
  * "mcp:use", for example — and those are not advertised by our discovery
- * document. Reading "config/oidc-server.php" keeps the administration
+ * document. Reading "config/oidc.php" keeps the administration
  * interface, validation and discovery describing the same set.
  */
 class ScopeRegistry
@@ -23,7 +23,7 @@ class ScopeRegistry
     public function all(): array
     {
         /** @var array<string, array{description?: string}> $scopes */
-        $scopes = config('oidc-server.scopes', []);
+        $scopes = config('oidc.scopes', []);
 
         return array_map(fn (string $id): array => [
             'id' => $id,
@@ -38,7 +38,7 @@ class ScopeRegistry
      */
     public function ids(): array
     {
-        return array_keys((array) config('oidc-server.scopes', []));
+        return array_keys((array) config('oidc.scopes', []));
     }
 
     /**
@@ -50,7 +50,7 @@ class ScopeRegistry
     public function claimsOf(array $scopes): array
     {
         /** @var array<string, array{claims?: array<int, string>}> $configured */
-        $configured = config('oidc-server.scopes', []);
+        $configured = config('oidc.scopes', []);
 
         return array_values(array_unique(array_merge(
             ...array_map(fn (string $scope): array => $configured[$scope]['claims'] ?? [], $scopes),

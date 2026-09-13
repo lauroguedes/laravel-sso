@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace App\Oidc\Adapters\Native;
+namespace App\Oidc;
 
 use App\Oidc\Contracts\DiscoversProvider;
 use App\Oidc\Contracts\IdTokenRequest;
@@ -51,7 +51,7 @@ class IdTokens implements IssuesIdTokens
             ->issuedBy($issuer)
             ->permittedFor($clientId)
             ->issuedAt($now)
-            ->expiresAt($now->addSeconds((int) $this->config->get('oidc-server.tokens.id_token_ttl')))
+            ->expiresAt($now->addSeconds((int) $this->config->get('oidc.tokens.id_token_ttl')))
             ->relatedTo($subject);
 
         if ($request->authTime !== null) {

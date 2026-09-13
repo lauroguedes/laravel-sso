@@ -36,8 +36,8 @@ test('keys supplied only through the environment sign every token and name the p
         $idToken = (new Parser(new JoseEncoder))->parse($tokens['id_token']);
 
         /*
-         * The key id is derived from the public key as the OIDC package derived
-         * it, so key sets relying parties have already cached stay valid.
+         * The key id is derived from the public key as it was in version 1, so
+         * key sets relying parties have already cached stay valid.
          */
         expect((new Sha256)->verify($idToken->signature()->hash(), $idToken->payload(), InMemory::plainText($publicKey)))->toBeTrue()
             ->and($idToken->headers()->get('kid'))

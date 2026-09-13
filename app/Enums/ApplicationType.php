@@ -86,7 +86,7 @@ enum ApplicationType: string
      * Interactive applications almost always want the standard OpenID Connect
      * set; a machine to machine client has no user to describe. The list is
      * intersected with what the server actually offers, so removing a scope
-     * from "config/oidc-server.php" cannot pre-select something that
+     * from "config/oidc.php" cannot pre-select something that
      * validation would then reject.
      *
      * @param  array<int, string>  $offered

@@ -76,7 +76,7 @@ describe('auth_time', function () {
 });
 
 test('an id token expires after the id token lifetime, not with the access token', function () {
-    config(['oidc-server.tokens.id_token_ttl' => 300]);
+    config(['oidc.tokens.id_token_ttl' => 300]);
 
     $claims = idTokenClaims(issueTokens($this->user, $this->application, 'openid')['id_token']);
 

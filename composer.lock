@@ -4,72 +4,8 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "6f90aa1c2a3daa3b3a289c4ffd37a9c2",
+    "content-hash": "b325b9b54272b45f5ccb56f230802a7e",
     "packages": [
-        {
-            "name": "admin9/laravel-oidc-server",
-            "version": "v1.2.0",
-            "source": {
-                "type": "git",
-                "url": "https://github.com/admin9-labs/laravel-oidc-server.git",
-                "reference": "48e4729ef438564b371da8d9ace90f84f6f00a02"
-            },
-            "dist": {
-                "type": "zip",
-                "url": "https://api.github.com/repos/admin9-labs/laravel-oidc-server/zipball/48e4729ef438564b371da8d9ace90f84f6f00a02",
-                "reference": "48e4729ef438564b371da8d9ace90f84f6f00a02",
-                "shasum": ""
-            },
-            "require": {
-                "defuse/php-encryption": "^2.4",
-                "laravel/passport": "^12.0|^13.0",
-                "lcobucci/jwt": "^5.0",
-                "php": "^8.2",
-                "spatie/laravel-package-tools": "^1.16"
-            },
-            "require-dev": {
-                "orchestra/testbench": "^9.0|^10.0|^11.0",
-                "pestphp/pest": "^3.0|^4.0",
-                "phpunit/phpunit": "^11.0|^12.0"
-            },
-            "type": "library",
-            "extra": {
-                "laravel": {
-                    "providers": [
-                        "Admin9\\OidcServer\\OidcServerServiceProvider"
-                    ]
-                }
-            },
-            "autoload": {
-                "psr-4": {
-                    "Admin9\\OidcServer\\": "src/"
-                }
-            },
-            "notification-url": "https://packagist.org/downloads/",
-            "license": [
-                "MIT"
-            ],
-            "authors": [
-                {
-                    "name": "ADMIN9 Labs",
-                    "homepage": "https://github.com/admin9-labs"
-                }
-            ],
-            "description": "OpenID Connect Server for Laravel Passport — adds OIDC Discovery, JWKS, UserInfo, Token Introspection, Token Revocation, and RP-Initiated Logout.",
-            "homepage": "https://github.com/admin9-labs/laravel-oidc-server",
-            "keywords": [
-                "laravel",
-                "oauth2",
-                "oidc",
-                "openid-connect",
-                "passport"
-            ],
-            "support": {
-                "issues": "https://github.com/admin9-labs/laravel-oidc-server/issues",
-                "source": "https://github.com/admin9-labs/laravel-oidc-server"
-            },
-            "time": "2026-06-29T18:57:25+00:00"
-        },
         {
             "name": "bacon/bacon-qr-code",
             "version": "v3.1.1",

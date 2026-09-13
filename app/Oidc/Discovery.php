@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace App\Oidc\Adapters\Native;
+namespace App\Oidc;
 
 use App\Oidc\Contracts\DiscoversProvider;
 use App\Oidc\Contracts\ResolvesClaims;
@@ -12,8 +12,8 @@ use Illuminate\Contracts\Config\Repository;
 /**
  * The discovery document, built from the protocol configuration.
  *
- * Every value comes from "config/oidc-server.php", or from the code that acts
- * on it, so what this server advertises and what it does cannot drift.
+ * Every value comes from "config/oidc.php", the issuer from "config/sso.php",
+ * or from the code that acts on them, so what this server advertises and what it does cannot drift.
  * Introspection never offers "none", because IntrospectionController refuses
  * public clients.
  */
@@ -27,12 +27,12 @@ class Discovery implements DiscoversProvider
 
     public function issuer(): string
     {
-        return rtrim((string) $this->config->get('oidc-server.issuer'), '/');
+        return rtrim((string) $this->config->get('sso.issuer'), '/');
     }
 
     public function metadata(): array
     {
-        $protocol = (array) $this->config->get('oidc-server');
+        $protocol = (array) $this->config->get('oidc');
         $issuer = $this->issuer();
 
         return [

@@ -15,8 +15,8 @@ use Symfony\Component\HttpFoundation\Response;
 /**
  * The consent page, worded the way an administrator chose on the Consent tab.
  *
- * Rendered through Inertia rather than the OIDC package's Blade view, so it is
- * drawn with the same components as the rest of the interface.
+ * Rendered through Inertia rather than a Blade view, so it is drawn with the
+ * same components as the rest of the interface.
  */
 class ConsentScreen
 {

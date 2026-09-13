@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace App\Oidc\Adapters\Native;
+namespace App\Oidc;
 
 /**
  * A token a client presented, once proven genuine, unexpired and not revoked.
