@@ -12,8 +12,10 @@ use App\Oidc\Contracts\ProvidesSigningKeys;
 use App\Oidc\Contracts\ResolvesClaims;
 use App\Oidc\Contracts\RevokesTokens;
 use App\Oidc\OidcManager;
+use App\Oidc\Passport\ClientRepository;
 use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Support\ServiceProvider;
+use Laravel\Passport\ClientRepository as PassportClientRepository;
 
 /**
  * Binds each OpenID Connect port to the adapter named by "oidc.driver".
@@ -44,6 +46,7 @@ class OidcServiceProvider extends ServiceProvider
     public function register(): void
     {
         $this->app->singleton(OidcManager::class);
+        $this->app->bind(PassportClientRepository::class, ClientRepository::class);
 
         foreach (self::PORTS as $port => $method) {
             $this->app->bind($port, fn (Application $app): object => $app->make(OidcManager::class)->driver()->{$method}());

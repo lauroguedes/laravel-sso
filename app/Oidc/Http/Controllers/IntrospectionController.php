@@ -23,10 +23,18 @@ class IntrospectionController extends Controller
 
     /**
      * Handle the incoming request.
+     *
+     * Only a confidential client may ask, whichever adapter answers. The answer
+     * describes whoever the token belongs to, which a client that cannot keep
+     * a secret has no business learning (RFC 7662 section 4).
      */
     public function __invoke(Request $request): JsonResponse
     {
-        $client = $this->clients->authenticate($request) ?? throw OAuthError::invalidClient();
+        $client = $this->clients->authenticate($request);
+
+        if ($client === null || ! $client->confidential()) {
+            throw OAuthError::invalidClient();
+        }
 
         return response()->json($this->tokens->introspect(
             $client,

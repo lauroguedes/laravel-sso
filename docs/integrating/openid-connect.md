@@ -292,9 +292,10 @@ five minutes ago. This server is the only place that knows, so a resource
 server that cannot afford to honour a revoked token for the rest of its
 15-minute life asks here instead of trusting the expiry.
 
-**How it works.** POST the token, authenticating as a registered client with
-`client_secret_basic` or `client_secret_post`. A live token gets its metadata
-back:
+**How it works.** POST the token, authenticating as a confidential client with
+`client_secret_basic` or `client_secret_post`. A public client, which holds no
+secret, is refused with `invalid_client`, because the answer describes whoever
+the token belongs to. A live token gets its metadata back:
 
 ```json
 {
@@ -311,16 +312,21 @@ back:
 }
 ```
 
-Anything expired, revoked or unrecognised gets `{"active": false}` and nothing
-else, so the endpoint cannot be used to probe for which tokens exist.
+`username` appears only when the token was granted the `email` scope.
 
-Pass `token_type_hint=refresh_token` to introspect a refresh token. The default
-is `access_token`, and the two are looked up separately.
+Anything expired, revoked, forged or unrecognised gets `{"active": false}` and
+nothing else, so the endpoint cannot be used to probe for which tokens exist. A
+token counts only once its signature, or for a refresh token its encryption,
+shows this server issued it.
+
+Refresh tokens introspect too, with `token_type` set to `refresh_token`.
+`token_type_hint` only decides which kind is tried first, and an unknown hint is
+ignored.
 
 > [!NOTE]
-> Any client registered on this server can authenticate here and introspect
-> any token, including one issued to a different application. Treat the client
-> list as trusted.
+> A client can introspect any token, including one issued to a different
+> application. That is what lets a resource server check the tokens of the
+> clients that call it, so treat every confidential client as trusted.
 
 ## Revocation
 
@@ -331,7 +337,12 @@ curl -X POST https://auth.example.com/oauth/revoke \
 ```
 
 RFC 7009. A client retires a token it no longer needs, typically at sign-out.
-Revoking an access token revokes the refresh token issued with it.
+Revoking either token of a pair revokes both.
+
+A client can only revoke its own tokens. A public client revokes them by sending
+its `client_id` without a secret. An unknown token, or one issued to another
+client, still gets `200`, so the endpoint reveals nothing about tokens that are
+not the caller's.
 
 This is the client's own housekeeping. An administrator revokes tokens from the
 interface instead, which is described under [Logout](#logout).

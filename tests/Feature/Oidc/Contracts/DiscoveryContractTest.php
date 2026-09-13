@@ -1,5 +1,7 @@
 <?php
 
+use Illuminate\Support\Arr;
+
 /**
  * What every adapter publishes about this provider, and the keys behind it.
  */
@@ -33,11 +35,12 @@ test('the active key is published, and its private half signs what its public ha
 })->with('oidc adapters');
 
 /*
- * The native document replaces the package's without a relying party
- * noticing. Phase by phase this narrows to the values the native adapter
- * deliberately changes.
+ * The native document replaces the package's without a relying party noticing,
+ * apart from the introspection methods, which no longer offer "none".
  */
-test('the native discovery document is the package document, key for key', function () {
-    expect(oidcAdapter('native')->discovery()->metadata())
-        ->toBe(oidcAdapter('admin9')->discovery()->metadata());
+test('the native discovery document is the package document, apart from introspection client authentication', function () {
+    $differs = ['introspection_endpoint_auth_methods_supported'];
+
+    expect(Arr::except(oidcAdapter('native')->discovery()->metadata(), $differs))
+        ->toBe(Arr::except(oidcAdapter('admin9')->discovery()->metadata(), $differs));
 });

@@ -189,20 +189,19 @@ function oidcAdapter(string $name): OidcAdapter
 }
 
 /**
- * Sign in to an application with the openid and email scopes, and redeem the
- * code for its tokens.
+ * Sign in to an application and redeem the code for its tokens.
  *
  * The application must skip the consent screen and still hold its plain
  * secret, as Application::factory()->trusted()->withSecret() leaves it.
  *
  * @return array<string, mixed>
  */
-function issueTokens(User $user, Application $application): array
+function issueTokens(User $user, Application $application, string $scope = 'openid email'): array
 {
     [$verifier, $challenge] = pkcePair();
 
     $authorization = authorizationRequest($user, $application, [
-        'scope' => 'openid email',
+        'scope' => $scope,
         'code_challenge' => $challenge,
     ]);
 

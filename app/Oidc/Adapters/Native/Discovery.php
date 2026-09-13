@@ -12,7 +12,9 @@ use Illuminate\Contracts\Config\Repository;
  * The discovery document, built from the protocol configuration.
  *
  * Every value comes from "config/oidc-server.php", so what this server
- * advertises and what it enforces are read from the same place.
+ * advertises and what it enforces are read from the same place. The one
+ * exception is introspection, which never offers "none" because
+ * IntrospectionController refuses public clients.
  */
 class Discovery implements DiscoversProvider
 {
@@ -52,7 +54,7 @@ class Discovery implements DiscoversProvider
             ])),
             'code_challenge_methods_supported' => $protocol['code_challenge_methods_supported'],
             'grant_types_supported' => $protocol['grant_types_supported'],
-            'introspection_endpoint_auth_methods_supported' => $protocol['token_endpoint_auth_methods_supported'],
+            'introspection_endpoint_auth_methods_supported' => array_values(array_diff($protocol['token_endpoint_auth_methods_supported'], ['none'])),
             'revocation_endpoint_auth_methods_supported' => $protocol['token_endpoint_auth_methods_supported'],
         ];
     }

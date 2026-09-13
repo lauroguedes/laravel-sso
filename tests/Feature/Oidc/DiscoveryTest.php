@@ -109,3 +109,8 @@ test('clients may cache the discovery document for an hour and the key set for a
         ->and($keySet->hasCacheControlDirective('public'))->toBeTrue()
         ->and($keySet->getCacheControlDirective('max-age'))->toBe('86400');
 });
+
+test('discovery offers introspection to confidential clients only', function () {
+    expect($this->getJson('/.well-known/openid-configuration')->json('introspection_endpoint_auth_methods_supported'))
+        ->toEqualCanonicalizing(['client_secret_basic', 'client_secret_post']);
+});
