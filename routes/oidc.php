@@ -62,7 +62,7 @@ Route::middleware('throttle:sso-discovery')->group(function (): void {
 });
 
 Route::match(['get', 'post'], 'oauth/userinfo', UserInfoController::class)
-    ->middleware(['auth:api', 'throttle:sso-userinfo'])
+    ->middleware('throttle:sso-userinfo')
     ->name('oidc.userinfo');
 
 Route::middleware('throttle:sso-token')->group(function (): void {

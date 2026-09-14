@@ -82,7 +82,21 @@ test('discovery is reachable without authentication', function () {
 });
 
 test('userinfo returns 401 without an access token', function () {
-    $this->getJson('/oauth/userinfo')->assertUnauthorized();
+    $this->getJson('/oauth/userinfo')
+        ->assertUnauthorized()
+        ->assertHeader('WWW-Authenticate', 'Bearer');
+});
+
+test('userinfo challenges an unusable token even when the client did not ask for JSON', function () {
+    /*
+     * A browser application's fetch sends no Accept header. The framework's
+     * guest handling would redirect it to the sign-in page, which it cannot
+     * follow across origins.
+     */
+    $this->get('/oauth/userinfo', ['Authorization' => 'Bearer not-a-token'])
+        ->assertUnauthorized()
+        ->assertJson(['error' => 'invalid_token'])
+        ->assertHeader('WWW-Authenticate', 'Bearer error="invalid_token"');
 });
 
 test('userinfo returns 401 for a session authenticated user without a token', function () {

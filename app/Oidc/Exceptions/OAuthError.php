@@ -37,11 +37,16 @@ class OAuthError extends RuntimeException implements ShouldntReport
     }
 
     /**
-     * The request carried no valid access token.
+     * The request carried no usable access token.
+     *
+     * Challenged in the WWW-Authenticate header, as RFC 6750 section 3 requires,
+     * naming the error only when a token was actually presented.
      */
-    public static function invalidToken(): self
+    public static function invalidToken(bool $presented): self
     {
-        return new self('invalid_token', 'The access token is invalid or expired.', 401);
+        return new self('invalid_token', 'The access token is missing, invalid, expired or revoked.', 401, [
+            'WWW-Authenticate' => $presented ? 'Bearer error="invalid_token"' : 'Bearer',
+        ]);
     }
 
     /**

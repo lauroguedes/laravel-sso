@@ -244,7 +244,9 @@ Use it when you want fresh values. The ID Token is a snapshot from sign-in
 time.
 
 The token must have been granted `openid`. One that was not gets `403` with
-`insufficient_scope`, in the body and in the `WWW-Authenticate` header.
+`insufficient_scope`, in the body and in the `WWW-Authenticate` header. A
+missing, expired or revoked token gets `401` with `invalid_token` and a `Bearer`
+challenge in the same header, whatever the request accepts.
 
 ## The key set (`jwks.json`)
 

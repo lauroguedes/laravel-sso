@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Middleware\HandleInertiaRequests;
 use App\Models\Application;
 use App\Models\User;
 use App\Oidc\ConsentScreen;
@@ -95,6 +96,45 @@ test('denying sends the application an access_denied error instead of a code', f
 
     expect($query)->not->toHaveKey('code')
         ->and($query['error'])->toBe('access_denied');
+});
+
+test('a decision made on the consent page leaves for the application with a full page load', function (string $method, string $expected) {
+    $response = authorizationRequest($this->user, $this->application, ['scope' => 'openid email', 'state' => 'opaque-state']);
+
+    $decision = $this->actingAs($this->user)->withHeader('X-Inertia', 'true')->{$method}('/oauth/authorize', [
+        'auth_token' => $response->viewData('page')['props']['authToken'],
+        'state' => 'opaque-state',
+    ]);
+
+    $location = (string) $decision->assertStatus(409)->headers->get('X-Inertia-Location');
+
+    parse_str((string) parse_url($location, PHP_URL_QUERY), $query);
+
+    expect($location)->toStartWith(CONSENT_SCREEN_REDIRECT_URI)
+        ->and($query)->toHaveKey($expected);
+})->with([
+    'approving' => ['post', 'code'],
+    'denying' => ['delete', 'error'],
+]);
+
+test('signing in to an application that skips consent leaves for it with a full page load', function () {
+    $this->application->forceFill(['skips_authorization' => true])->save();
+
+    /*
+     * The sign-in page submits through Inertia, and its request follows the
+     * redirect back to the authorization endpoint, which sends it straight on
+     * to the application.
+     */
+    $this->withHeaders([
+        'X-Inertia' => 'true',
+        'X-Inertia-Version' => (string) app(HandleInertiaRequests::class)->version(request()),
+    ]);
+
+    $location = (string) authorizationRequest($this->user, $this->application, ['state' => 'opaque-state'])
+        ->assertStatus(409)
+        ->headers->get('X-Inertia-Location');
+
+    expect($location)->toStartWith(CONSENT_SCREEN_REDIRECT_URI)->toContain('code=');
 });
 
 test('an approval cannot be replayed with a stale token', function () {

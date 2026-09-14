@@ -7,9 +7,12 @@ use App\Models\Application;
 use App\Models\AuditRecord;
 use App\Models\User;
 use App\Services\Settings;
+use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
+use Inertia\Inertia;
 use Inertia\Middleware;
+use Symfony\Component\HttpFoundation\Response;
 
 class HandleInertiaRequests extends Middleware
 {
@@ -33,6 +36,39 @@ class HandleInertiaRequests extends Middleware
     }
 
     public function __construct(private readonly Settings $settings) {}
+
+    /**
+     * Handle the incoming request.
+     *
+     * A visit the page makes itself, such as signing in or answering the
+     * consent screen, can end in a redirect to an application on another
+     * origin: its redirect URI, carrying a code or an error. The page's request
+     * would follow that redirect and be refused by the browser, leaving the
+     * user where they were, so the page is told to navigate there instead.
+     */
+    public function handle(Request $request, Closure $next): Response
+    {
+        $response = parent::handle($request, $next);
+        $location = $response->headers->get('Location');
+
+        if ($request->header('X-Inertia') && $response->isRedirection() && is_string($location) && $this->leavesThisServer($location, $request)) {
+            return Inertia::location($location);
+        }
+
+        return $response;
+    }
+
+    /**
+     * Whether a redirect points at another origin.
+     */
+    private function leavesThisServer(string $location, Request $request): bool
+    {
+        $origin = $request->getSchemeAndHttpHost();
+
+        return parse_url($location, PHP_URL_HOST) !== null
+            && $location !== $origin
+            && ! str_starts_with($location, $origin.'/');
+    }
 
     /**
      * How this server presents itself, chosen by an administrator.

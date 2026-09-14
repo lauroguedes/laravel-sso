@@ -11,7 +11,6 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Laravel\Passport\AccessToken;
 use Laravel\Passport\Contracts\ScopeAuthorizable;
-use Laravel\Passport\Token;
 
 /**
  * Returns the claims of the user an access token was issued for.
@@ -26,10 +25,17 @@ class UserInfoController extends Controller
      * UserInfo belongs to OpenID Connect, so the token must have been granted
      * openid (OpenID Connect Core section 5.3). A token issued for some other
      * purpose is refused rather than answered.
+     *
+     * The token is resolved here rather than by auth:api, whose refusal is a
+     * redirect to the sign-in page with no Bearer challenge. Whether a token
+     * was sent is read first, because Passport's guard clears the Authorization
+     * header when the token it finds there is unusable.
      */
     public function __invoke(Request $request): JsonResponse
     {
-        $user = $request->user() ?? throw OAuthError::invalidToken();
+        $presented = $request->bearerToken() !== null;
+
+        $user = $request->user('api') ?? throw OAuthError::invalidToken($presented);
 
         if (! $user->tokenCan('openid')) {
             throw OAuthError::insufficientScope('openid');
@@ -45,8 +51,7 @@ class UserInfoController extends Controller
      *
      * A bearer token resolves to an AccessToken, which carries both among its
      * attributes. Asking it for "scopes" or "client_id" instead is forwarded
-     * to the token's row and costs a query. The cookie guard yields that row,
-     * a Token, itself.
+     * to the token's row and costs a query.
      *
      * @return array{0: array<int, string>, 1: string|null}
      */
@@ -54,7 +59,6 @@ class UserInfoController extends Controller
     {
         return match (true) {
             $token instanceof AccessToken => [$token->oauth_scopes, $token->oauth_client_id],
-            $token instanceof Token => [$token->scopes, $token->client_id],
             default => [['openid'], null],
         };
     }
