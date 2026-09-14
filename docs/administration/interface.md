@@ -233,8 +233,10 @@ reworded, moved below your own runbook, or removed.
 
 **Consent**
 
-What an application's users see when it asks for approval, with a live preview
-beside the form that uses the same component as the real page.
+What an application's users see when it asks for approval. The tab shows a
+live preview, drawn with the same component as the real page, and the edit
+button at its top right opens the settings in a panel on the right. The preview
+follows what you type, and nothing changes for users until you save.
 
 | Setting                    | Reaches                                                                                                                                  |
 | -------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |

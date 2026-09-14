@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { Component } from 'vue';
+import type { Component, HTMLAttributes } from 'vue';
 import { Button } from '@/components/ui/button';
 import {
     Tooltip,
@@ -21,12 +21,14 @@ const {
     variant = 'ghost',
     size = 'icon',
     disabled = false,
+    class: buttonClass,
 } = defineProps<{
     label: string;
     icon: Component;
     variant?: 'default' | 'ghost' | 'outline' | 'secondary' | 'destructive';
     size?: 'icon' | 'icon-sm' | 'sm';
     disabled?: boolean;
+    class?: HTMLAttributes['class'];
 }>();
 
 defineEmits<{ click: [MouseEvent] }>();
@@ -41,6 +43,7 @@ defineEmits<{ click: [MouseEvent] }>();
                     :variant="variant"
                     :size="size"
                     :disabled="disabled"
+                    :class="buttonClass"
                     :aria-label="label"
                     @click="$emit('click', $event)"
                 >
