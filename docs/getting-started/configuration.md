@@ -105,6 +105,22 @@ up delivered to somebody else's host.
 
 An application may register at most 20 redirect URIs.
 
+## Browser applications
+
+A single-page application runs in the browser and calls this server from its
+own origin, so the browser asks this server first. Only the origins listed here
+are answered, and only on the endpoints such an application calls: discovery,
+the key set, `/oauth/token`, `/oauth/userinfo` and `/oauth/revoke`.
+
+| Variable                   | Default |                                                                                    |
+| -------------------------- | ------- | ---------------------------------------------------------------------------------- |
+| `SSO_CORS_ALLOWED_ORIGINS` | empty   | Comma-separated origins, such as `https://app.example.com,http://localhost:3000` |
+
+An origin is a scheme, host and port, with no path and no trailing slash. Left
+empty, no other origin is answered, which suits a server whose applications all
+run on servers of their own. Introspection and the interface never answer
+another origin, whatever is listed, as `tests/Feature/Oidc/CorsTest.php` shows.
+
 ## Rate limits
 
 Requests per minute for the protocol endpoints, keyed by client IP.
