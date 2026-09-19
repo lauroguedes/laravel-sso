@@ -26,8 +26,9 @@ abstract class TestCase extends BaseTestCase
     /**
      * Give the suite the signing keys a real installation has.
      *
-     * Tokens, ID Tokens and the key set all read storage/oauth-*.key, a path
-     * the OIDC package hard-codes. Existing keys are never replaced.
+     * Access tokens, ID Tokens and the key set read storage/oauth-*.key when
+     * PASSPORT_PRIVATE_KEY and PASSPORT_PUBLIC_KEY are not set. Existing keys
+     * are never replaced.
      */
     private function ensureSigningKeys(): void
     {

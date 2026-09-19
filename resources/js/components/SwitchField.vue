@@ -16,6 +16,8 @@ defineProps<{
     defaultValue: boolean;
     errors: Record<string, string>;
 }>();
+
+const emit = defineEmits<{ change: [checked: boolean] }>();
 </script>
 
 <template>
@@ -31,6 +33,7 @@ defineProps<{
                 :name="name"
                 value="1"
                 :default-value="defaultValue"
+                @update:model-value="emit('change', $event)"
             />
         </div>
 

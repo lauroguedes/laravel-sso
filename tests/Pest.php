@@ -4,9 +4,11 @@ use App\Models\Application;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Env;
+use Illuminate\Support\Facades\File;
 use Illuminate\Support\Str;
 use Illuminate\Testing\TestResponse;
 use Inertia\Support\SessionKey;
+use Laravel\Passport\Passport;
 use Lcobucci\JWT\Encoding\JoseEncoder;
 use Lcobucci\JWT\Token\DataSet;
 use Lcobucci\JWT\Token\Parser;
@@ -162,4 +164,82 @@ function idTokenHeaders(string $idToken): DataSet
 function idTokenClaims(string $idToken): DataSet
 {
     return (new Parser(new JoseEncoder))->parse($idToken)->claims();
+}
+
+/**
+ * Sign in to an application and redeem the code for its tokens.
+ *
+ * The application must skip the consent screen and still hold its plain
+ * secret, as Application::factory()->trusted()->withSecret() leaves it.
+ *
+ * @param  array<string, string|null>  $parameters  added to the authorization request
+ * @return array<string, mixed>
+ */
+function issueTokens(User $user, Application $application, string $scope = 'openid email', array $parameters = []): array
+{
+    [$verifier, $challenge] = pkcePair();
+
+    $authorization = authorizationRequest($user, $application, [
+        'scope' => $scope,
+        'code_challenge' => $challenge,
+        ...$parameters,
+    ]);
+
+    return redeemCode($application, $authorization, $verifier);
+}
+
+/**
+ * Sign in with a password, which is what records the sign-in time.
+ */
+function signInWithPassword(User $user): void
+{
+    test()->post(route('login.store'), ['email' => $user->email, 'password' => 'password']);
+}
+
+/**
+ * Redeem the code in an authorization's redirect back to the application.
+ *
+ * @param  array<string, string>  $parameters  added to the token request
+ * @return array<string, mixed>
+ */
+function redeemCode(Application $application, TestResponse $authorization, string $verifier, array $parameters = []): array
+{
+    parse_str(parse_url($authorization->headers->get('Location'), PHP_URL_QUERY), $query);
+
+    return test()->postJson('/oauth/token', [
+        'grant_type' => 'authorization_code',
+        'client_id' => $application->id,
+        'client_secret' => $application->plainSecret,
+        'redirect_uri' => $application->redirect_uris[0],
+        'code_verifier' => $verifier,
+        'code' => $query['code'],
+        ...$parameters,
+    ])->assertOk()->json();
+}
+
+/**
+ * Run a callback on a server with no key files.
+ *
+ * Passport is pointed at an empty key directory for the duration, and put back
+ * afterwards even when the callback fails, so no later test inherits it.
+ *
+ * @template TReturn
+ *
+ * @param  Closure(string): TReturn  $callback  given the empty directory
+ * @return TReturn
+ */
+function withoutKeyFiles(Closure $callback): mixed
+{
+    $original = Passport::$keyPath;
+    $directory = storage_path('framework/testing/keys-'.uniqid());
+
+    File::ensureDirectoryExists($directory);
+    Passport::$keyPath = $directory;
+
+    try {
+        return $callback($directory);
+    } finally {
+        Passport::$keyPath = $original;
+        File::deleteDirectory($directory);
+    }
 }

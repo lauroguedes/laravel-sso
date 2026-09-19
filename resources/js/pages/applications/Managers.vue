@@ -4,6 +4,9 @@ import { X } from '@lucide/vue';
 import ApplicationLayout from '@/layouts/applications/Layout.vue';
 import CandidatePicker from '@/components/applications/CandidatePicker.vue';
 import DangerousAction from '@/components/DangerousAction.vue';
+import DataTable from '@/components/DataTable.vue';
+import Pagination from '@/components/Pagination.vue';
+import SearchInput from '@/components/SearchInput.vue';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -14,6 +17,7 @@ import {
     CardTitle,
 } from '@/components/ui/card';
 import { useListingFilters } from '@/composables/useListingFilters';
+import type { ListingFilters } from '@/composables/useListingFilters';
 import { index } from '@/routes/applications';
 import {
     destroy as removeManager,
@@ -23,6 +27,8 @@ import {
 import type {
     ApplicationHeader,
     ApplicationSection,
+    DataTableColumn,
+    Paginator,
     UserCandidate,
 } from '@/types/administration';
 
@@ -47,20 +53,43 @@ type Manager = {
     disabled: boolean;
 };
 
-const { application, filters } = defineProps<{
+const { application, managerFilters, candidateFilters } = defineProps<{
     application: ApplicationHeader;
     sections: ApplicationSection[];
     canManageApplication: boolean;
-    filters: { search: string | null };
-    managers: Manager[];
-    candidates: UserCandidate[];
+    managers: Paginator<Manager>;
+    managerFilters: ListingFilters;
+    candidates: Paginator<UserCandidate>;
+    candidateFilters: ListingFilters;
 }>();
 
-const { search } = useListingFilters(
+/* Two listings, each with its own prefix, as the access page has. */
+const {
+    search: managerSearch,
+    setFilter: filterManagers,
+    goToPage: goToManagersPage,
+} = useListingFilters(
     managersIndex(application.id).url,
-    filters,
-    ['candidates', 'filters'],
+    managerFilters,
+    ['managers', 'managerFilters'],
+    'managers_',
 );
+
+const {
+    search: candidateSearch,
+    setFilter: filterCandidates,
+    goToPage: goToCandidatesPage,
+} = useListingFilters(
+    managersIndex(application.id).url,
+    candidateFilters,
+    ['candidates', 'candidateFilters'],
+    'candidates_',
+);
+
+const columns: DataTableColumn[] = [
+    { id: 'user', header: 'User', alwaysVisible: true },
+    { id: 'actions', header: '', align: 'right', alwaysVisible: true },
+];
 
 function assign(userId: number) {
     router.post(addManager(application.id).url, { user_id: userId });
@@ -92,56 +121,68 @@ function remove(manager: Manager) {
             </CardHeader>
 
             <CardContent>
-                <ul
-                    v-if="managers.length > 0"
-                    class="divide-y rounded-lg border"
+                <DataTable
+                    :columns="columns"
+                    :rows="managers.data"
+                    :row-key="(manager) => manager.id"
+                    :empty="
+                        managerFilters.search
+                            ? 'No manager matches this search.'
+                            : 'Nobody looks after this application yet. An administrator maintains it until somebody is assigned.'
+                    "
                 >
-                    <li
-                        v-for="manager in managers"
-                        :key="manager.id"
-                        class="flex items-center justify-between gap-3 px-3 py-2"
-                    >
-                        <div class="min-w-0">
-                            <div class="flex items-center gap-2 font-medium">
-                                {{ manager.name }}
-                                <Badge
-                                    v-if="manager.disabled"
-                                    variant="destructive"
-                                >
-                                    Disabled
-                                </Badge>
-                            </div>
-                            <div class="text-muted-foreground truncate text-sm">
-                                {{ manager.email }}
-                            </div>
-                        </div>
+                    <template #toolbar>
+                        <SearchInput
+                            v-model="managerSearch"
+                            placeholder="Search by name or email"
+                            label="Search managers"
+                        />
+                    </template>
 
+                    <template #cell-user="{ row }">
+                        <div class="flex items-center gap-2 font-medium">
+                            {{ row.name }}
+                            <Badge v-if="row.disabled" variant="destructive">
+                                Disabled
+                            </Badge>
+                        </div>
+                        <div class="text-muted-foreground truncate text-sm">
+                            {{ row.email }}
+                        </div>
+                    </template>
+
+                    <template #cell-actions="{ row }">
                         <DangerousAction
                             title="Remove this manager?"
-                            :description="`${manager.name} will lose the ability to configure ${application.name}. Their access to sign in, if they have any, is unaffected.`"
+                            :description="`${row.name} will lose the ability to configure ${application.name}. Their access to sign in, if they have any, is unaffected.`"
                             confirm-label="Remove manager"
-                            @confirm="remove(manager)"
+                            @confirm="remove(row)"
                         >
                             <Button
                                 variant="ghost"
                                 size="icon"
-                                :aria-label="`Remove ${manager.name} as a manager`"
+                                :aria-label="`Remove ${row.name} as a manager`"
                             >
                                 <X class="size-4" />
                             </Button>
                         </DangerousAction>
-                    </li>
-                </ul>
+                    </template>
 
-                <p v-else class="text-muted-foreground text-sm">
-                    Nobody looks after this application yet. An administrator
-                    maintains it until somebody is assigned.
-                </p>
+                    <template #footer>
+                        <Pagination
+                            :paginator="managers"
+                            @update:page="goToManagersPage"
+                            @update:per-page="
+                                (size) => filterManagers('per_page', size)
+                            "
+                        />
+                    </template>
+                </DataTable>
             </CardContent>
         </Card>
 
         <CandidatePicker
-            v-model:search="search"
+            v-model:search="candidateSearch"
             title="Add a manager"
             description="Only people holding the Developer role can be assigned: without it the assignment would grant them nothing."
             search-label="Search developers to assign"
@@ -149,6 +190,8 @@ function remove(manager: Manager) {
             :candidates="candidates"
             empty="No developer matches this search, or everyone matching already looks after this application."
             @select="assign"
+            @update:page="goToCandidatesPage"
+            @update:per-page="(size) => filterCandidates('per_page', size)"
         />
     </ApplicationLayout>
 </template>

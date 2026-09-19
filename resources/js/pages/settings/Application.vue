@@ -1,10 +1,12 @@
 <script setup lang="ts">
 import { Form, Head, router } from '@inertiajs/vue3';
-import { Check, Plus, RotateCcw, X } from '@lucide/vue';
-import { computed, ref } from 'vue';
+import { Check, Pencil, Plus, RotateCcw, X } from '@lucide/vue';
+import { computed, reactive, ref } from 'vue';
 import BrandMark from '@/components/BrandMark.vue';
+import ConsentCard from '@/components/ConsentCard.vue';
 import DangerousAction from '@/components/DangerousAction.vue';
 import Heading from '@/components/Heading.vue';
+import IconButton from '@/components/IconButton.vue';
 import InputError from '@/components/InputError.vue';
 import DurationField from '@/components/settings/DurationField.vue';
 import ImageUploadField from '@/components/settings/ImageUploadField.vue';
@@ -20,8 +22,20 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
+import {
+    Sheet,
+    SheetContent,
+    SheetDescription,
+    SheetFooter,
+    SheetHeader,
+    SheetTitle,
+} from '@/components/ui/sheet';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import { Spinner } from '@/components/ui/spinner';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Textarea } from '@/components/ui/textarea';
+import { nameApplication } from '@/lib/consent';
+import type { ScopeOption } from '@/types/administration';
 import type { DurationUnit } from '@/lib/duration';
 import { useTabInUrl } from '@/composables/useTabInUrl';
 import { destroy, edit, update } from '@/routes/application-settings';
@@ -61,12 +75,19 @@ type Settings = {
     session_lifetime: number;
     logout_other_sessions_on_password_change: boolean;
     audit_retention_days: number;
+    consent_heading: string;
+    consent_message: string | null;
+    consent_scope_descriptions: Record<string, string>;
+    consent_show_account: boolean;
+    consent_remember_approvals: boolean;
+    consent_privacy_url: string | null;
+    consent_terms_url: string | null;
 };
 
 type Palette = { value: string; label: string; swatch: string };
 type Variant = { value: string; label: string; description: string };
 
-const { settings, pinned, tab } = defineProps<{
+const { settings, pinned, tab, options } = defineProps<{
     settings: Settings;
     pinned: string[];
     /** Which tab to open, so saving one returns to the one that was saved. */
@@ -85,6 +106,8 @@ const { settings, pinned, tab } = defineProps<{
             max: number;
         }[];
         sections: { value: string; label: string }[];
+        /* What the consent page falls back to, for the preview. */
+        consent: { defaultMessage: string; scopes: ScopeOption[] };
     };
 }>();
 
@@ -187,6 +210,71 @@ const explanations: Record<string, { label: string; description: string }> = {
             'How much of the audit trail is kept. Older entries are removed by the scheduled clean-up.',
     },
 };
+
+/*
+ * The Consent tab previews the page as it is typed, for an example application.
+ * A blank field falls back to what the server would show.
+ */
+const editingConsent = ref(false);
+
+const consentDraft = reactive({
+    heading: settings.consent_heading,
+    message: settings.consent_message ?? '',
+    scopes: { ...settings.consent_scope_descriptions } as Record<
+        string,
+        string
+    >,
+    showAccount: settings.consent_show_account,
+    privacyUrl: settings.consent_privacy_url ?? '',
+    termsUrl: settings.consent_terms_url ?? '',
+});
+
+const previewApplication = 'Example application';
+
+const consentPreview = computed(() => ({
+    scopes: options.consent.scopes.map((scope) => ({
+        id: scope.id,
+        description: consentDraft.scopes[scope.id]?.trim() || scope.description,
+    })),
+    consent: {
+        heading: nameApplication(consentDraft.heading, previewApplication),
+        message:
+            consentDraft.message.trim() === ''
+                ? options.consent.defaultMessage
+                : nameApplication(consentDraft.message, previewApplication),
+        switchAccountUrl: consentDraft.showAccount ? '#' : null,
+        privacyUrl: consentDraft.privacyUrl.trim() || null,
+        termsUrl: consentDraft.termsUrl.trim() || null,
+    },
+}));
+
+type SwitchOption = {
+    name: string;
+    label: string;
+    description: string;
+    defaultValue: boolean;
+    onChange?: (checked: boolean) => void;
+};
+
+const consentSwitches = computed<SwitchOption[]>(() => [
+    {
+        name: 'consent_show_account',
+        label: 'Show the signed-in account',
+        description:
+            'Who is about to approve, with a link to sign in as somebody else instead.',
+        defaultValue: settings.consent_show_account,
+        onChange: (checked) => {
+            consentDraft.showAccount = checked;
+        },
+    },
+    {
+        name: 'consent_remember_approvals',
+        label: 'Remember approvals',
+        description:
+            'An application somebody already approved does not ask again for the same scopes, for as long as the access token it was issued lasts. Turned off, every sign-in asks.',
+        defaultValue: settings.consent_remember_approvals,
+    },
+]);
 
 function resetToDefaults() {
     router.delete(destroy().url);
@@ -586,6 +674,226 @@ function resetToDefaults() {
                         Save access
                     </Button>
                 </Form>
+            </TabsContent>
+            <TabsContent value="consent">
+                <!--
+                    From lg up the preview takes what is left of the window
+                    under the tabs and scrolls on its own, so the page does not.
+                    Below that the settings navigation stacks above it, and the
+                    page scrolls as it does on every other tab.
+                -->
+                <div
+                    class="bg-muted/40 overflow-hidden rounded-xl border [--preview-height:max(28rem,calc(100svh-28rem))]"
+                >
+                    <div
+                        class="flex items-center justify-between gap-2 border-b py-1 pr-1 pl-3"
+                    >
+                        <span class="text-muted-foreground text-xs font-medium">
+                            Preview
+                        </span>
+
+                        <IconButton
+                            label="Edit consent screen"
+                            :icon="Pencil"
+                            size="icon-sm"
+                            class="text-success hover:text-success"
+                            @click="editingConsent = true"
+                        />
+                    </div>
+
+                    <ScrollArea viewport-class="lg:h-(--preview-height)">
+                        <div
+                            class="flex min-h-[28rem] items-center justify-center px-6 py-10 lg:min-h-(--preview-height)"
+                        >
+                            <div class="w-full max-w-sm" inert>
+                                <div class="mb-6 space-y-2 text-center">
+                                    <p class="text-xl font-medium">
+                                        {{ consentPreview.consent.heading }}
+                                    </p>
+                                    <p class="text-muted-foreground text-sm">
+                                        {{ consentPreview.consent.message }}
+                                    </p>
+                                </div>
+
+                                <ConsentCard
+                                    :application-name="previewApplication"
+                                    :scopes="consentPreview.scopes"
+                                    :consent="consentPreview.consent"
+                                    disabled
+                                />
+                            </div>
+                        </div>
+                    </ScrollArea>
+                </div>
+
+                <!--
+                    Not modal, so nothing dims the preview while the panel is
+                    open: watching it change is the point of editing here. It
+                    stays in the page while closed, so reopening it shows what
+                    was typed and any errors, not what was last saved.
+                -->
+                <Sheet
+                    v-model:open="editingConsent"
+                    :modal="false"
+                    :unmount-on-hide="false"
+                >
+                    <SheetContent class="w-full gap-0 sm:max-w-md">
+                        <SheetHeader class="border-b pr-12">
+                            <SheetTitle>Edit consent screen</SheetTitle>
+                            <SheetDescription>
+                                The preview follows what you type. Nothing
+                                changes for users until you save.
+                            </SheetDescription>
+                        </SheetHeader>
+
+                        <Form
+                            v-bind="update.form()"
+                            class="flex min-h-0 flex-1 flex-col"
+                            v-slot="{ errors, processing }"
+                            @success="editingConsent = false"
+                        >
+                            <input
+                                type="hidden"
+                                name="section"
+                                value="consent"
+                            />
+
+                            <ScrollArea class="min-h-0 flex-1">
+                                <div class="space-y-6 p-4">
+                                    <SettingsField
+                                        id="consent_heading"
+                                        label="Heading"
+                                        description="The title of the consent page. {application} is replaced with the name of the application asking."
+                                        :error="errors.consent_heading"
+                                    >
+                                        <Input
+                                            id="consent_heading"
+                                            v-model="consentDraft.heading"
+                                            name="consent_heading"
+                                            maxlength="120"
+                                        />
+                                    </SettingsField>
+
+                                    <SettingsField
+                                        id="consent_message"
+                                        label="Message"
+                                        description="The line under the heading. Left blank, the page shows the application's own description."
+                                        :error="errors.consent_message"
+                                    >
+                                        <Textarea
+                                            id="consent_message"
+                                            v-model="consentDraft.message"
+                                            name="consent_message"
+                                            maxlength="300"
+                                            rows="2"
+                                        />
+                                    </SettingsField>
+
+                                    <div class="grid gap-3">
+                                        <div class="grid gap-1">
+                                            <p class="text-sm font-medium">
+                                                What each scope says
+                                            </p>
+                                            <p
+                                                class="text-muted-foreground text-sm"
+                                            >
+                                                Leave a scope blank to keep its
+                                                standard wording.
+                                            </p>
+                                        </div>
+
+                                        <SettingsField
+                                            v-for="scope in options.consent
+                                                .scopes"
+                                            :id="`consent_scope_${scope.id}`"
+                                            :key="scope.id"
+                                            :label="scope.id"
+                                            :error="
+                                                errors[
+                                                    `consent_scope_descriptions.${scope.id}`
+                                                ]
+                                            "
+                                        >
+                                            <Input
+                                                :id="`consent_scope_${scope.id}`"
+                                                v-model="
+                                                    consentDraft.scopes[
+                                                        scope.id
+                                                    ]
+                                                "
+                                                :name="`consent_scope_descriptions[${scope.id}]`"
+                                                :placeholder="scope.description"
+                                                maxlength="160"
+                                            />
+                                        </SettingsField>
+                                    </div>
+
+                                    <div class="grid gap-4">
+                                        <div
+                                            v-for="option in consentSwitches"
+                                            :key="option.name"
+                                            class="rounded-lg border p-3"
+                                        >
+                                            <SwitchField
+                                                :name="option.name"
+                                                :label="option.label"
+                                                :description="
+                                                    option.description
+                                                "
+                                                :default-value="
+                                                    option.defaultValue
+                                                "
+                                                :errors="errors"
+                                                @change="
+                                                    option.onChange?.($event)
+                                                "
+                                            />
+                                        </div>
+                                    </div>
+
+                                    <SettingsField
+                                        id="consent_privacy_url"
+                                        label="Privacy policy"
+                                        description="Your organisation's policy, linked under the buttons when set."
+                                        :error="errors.consent_privacy_url"
+                                    >
+                                        <Input
+                                            id="consent_privacy_url"
+                                            v-model="consentDraft.privacyUrl"
+                                            name="consent_privacy_url"
+                                            type="url"
+                                            inputmode="url"
+                                            placeholder="https://example.com/privacy"
+                                        />
+                                    </SettingsField>
+
+                                    <SettingsField
+                                        id="consent_terms_url"
+                                        label="Terms"
+                                        description="Your organisation's terms, linked under the buttons when set."
+                                        :error="errors.consent_terms_url"
+                                    >
+                                        <Input
+                                            id="consent_terms_url"
+                                            v-model="consentDraft.termsUrl"
+                                            name="consent_terms_url"
+                                            type="url"
+                                            inputmode="url"
+                                            placeholder="https://example.com/terms"
+                                        />
+                                    </SettingsField>
+                                </div>
+                            </ScrollArea>
+
+                            <SheetFooter class="border-t">
+                                <Button type="submit" :disabled="processing">
+                                    <Spinner v-if="processing" />
+                                    Save consent
+                                </Button>
+                            </SheetFooter>
+                        </Form>
+                    </SheetContent>
+                </Sheet>
             </TabsContent>
         </Tabs>
     </div>

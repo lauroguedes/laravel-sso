@@ -82,11 +82,49 @@ test('discovery is reachable without authentication', function () {
 });
 
 test('userinfo returns 401 without an access token', function () {
-    $this->getJson('/oauth/userinfo')->assertUnauthorized();
+    $this->getJson('/oauth/userinfo')
+        ->assertUnauthorized()
+        ->assertHeader('WWW-Authenticate', 'Bearer');
+});
+
+test('userinfo challenges an unusable token even when the client did not ask for JSON', function () {
+    /*
+     * A browser application's fetch sends no Accept header. The framework's
+     * guest handling would redirect it to the sign-in page, which it cannot
+     * follow across origins.
+     */
+    $this->get('/oauth/userinfo', ['Authorization' => 'Bearer not-a-token'])
+        ->assertUnauthorized()
+        ->assertJson(['error' => 'invalid_token'])
+        ->assertHeader('WWW-Authenticate', 'Bearer error="invalid_token"');
 });
 
 test('userinfo returns 401 for a session authenticated user without a token', function () {
     $this->actingAs(User::factory()->create())
         ->getJson('/oauth/userinfo')
         ->assertUnauthorized();
+});
+
+test('discovery advertises the signing algorithm, subject type and revocation client authentication', function () {
+    $response = $this->getJson('/.well-known/openid-configuration');
+
+    expect($response->json())
+        ->id_token_signing_alg_values_supported->toBe(['RS256'])
+        ->subject_types_supported->toBe(['public'])
+        ->revocation_endpoint_auth_methods_supported->toEqualCanonicalizing(['client_secret_basic', 'client_secret_post', 'none']);
+});
+
+test('clients may cache the discovery document for an hour and the key set for a day', function () {
+    $discovery = $this->get('/.well-known/openid-configuration')->headers;
+    $keySet = $this->get('/.well-known/jwks.json')->headers;
+
+    expect($discovery->hasCacheControlDirective('public'))->toBeTrue()
+        ->and($discovery->getCacheControlDirective('max-age'))->toBe('3600')
+        ->and($keySet->hasCacheControlDirective('public'))->toBeTrue()
+        ->and($keySet->getCacheControlDirective('max-age'))->toBe('86400');
+});
+
+test('discovery offers introspection to confidential clients only', function () {
+    expect($this->getJson('/.well-known/openid-configuration')->json('introspection_endpoint_auth_methods_supported'))
+        ->toEqualCanonicalizing(['client_secret_basic', 'client_secret_post']);
 });

@@ -70,7 +70,7 @@ test('the model reports the address truthfully whatever the switch says', functi
      * enforcement, the model reports fact.
      */
     expect($user->hasVerifiedEmail())->toBeFalse()
-        ->and($user->getOidcClaims(['email'])['email_verified'])->toBeFalse();
+        ->and($user->resolveOidcClaim('email_verified'))->toBeFalse();
 
     $this->actingAs($user)->get(route('dashboard'))->assertOk();
 });

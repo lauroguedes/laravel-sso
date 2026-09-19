@@ -29,6 +29,9 @@ enum SettingsSection: string
     /** Who may sign up, and how long anything they are issued lasts. */
     case Access = 'access';
 
+    /** What the consent screen says, and whether an approval is remembered. */
+    case Consent = 'consent';
+
     /**
      * The section shown when nothing names one.
      */
@@ -56,6 +59,7 @@ enum SettingsSection: string
             self::Layout => 'Layout',
             self::Links => 'Links',
             self::Access => 'Access',
+            self::Consent => 'Consent',
         };
     }
 

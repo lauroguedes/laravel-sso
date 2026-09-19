@@ -9,7 +9,7 @@ order: 2
 | Layer            | What                                                        |
 | ---------------- | ----------------------------------------------------------- |
 | OAuth 2.0 server | Laravel Passport                                            |
-| OpenID Connect   | `admin9/laravel-oidc-server`, layered on Passport           |
+| OpenID Connect   | Our own, in `app/Oidc`, layered on Passport                 |
 | Authentication   | Laravel Fortify: reset, verification, two-factor, passkeys  |
 | Permissions      | `spatie/laravel-permission`                                 |
 | Audit trail      | `spatie/laravel-activitylog`, with three columns of our own |
@@ -142,6 +142,12 @@ See [Authorization](/docs/administration/authorization).
 over the configured defaults. `ScopeRegistry` answers what may be requested,
 reading the same config the discovery document does.
 
+**`app/Oidc`** is the OpenID Connect layer on top of Passport: discovery, the
+key set, ID Tokens, claims, UserInfo, introspection, revocation and logout.
+Each part sits behind an interface in `app/Oidc/Contracts`, bound in
+`OidcServiceProvider`, so replacing one is a different binding rather than a
+rewrite.
+
 **`app/Policies`** answers every authorization question. Controllers ask, and
 never decide.
 
@@ -151,15 +157,16 @@ nested route belongs to.
 
 **`config/sso.php`** is the operator's file: the issuer, the redirect policy,
 the rate limits, and the defaults for every setting the interface can change.
-`config/oidc-server.php` is the protocol surface.
+`config/oidc.php` is the protocol surface.
 
 ## Claims are scoped to the asking client
 
-The OIDC package resolves claims without knowing which client asked, which is
-fine for name and email but not for roles and permissions. Two subclasses close
-the gap: `ApplicationIdTokenService` wraps token issuance, and at `/oauth/userinfo`
-the client comes from the presented token. If neither yields a client, the
-authorization claims are omitted rather than guessed.
+The scopes an application was granted decide which claims it receives, and the
+user model supplies each value. Roles and permissions differ per application, so
+they are looked up for the asking client only: ID Token issuance knows the
+client a token is issued to, and at `/oauth/userinfo` the client comes from the
+presented token. Without a client, the authorization claims are omitted rather
+than guessed.
 
 One application never learns what a user may do in another.
 
@@ -167,7 +174,7 @@ One application never learns what a user may do in another.
 
 Nothing else knows the settings table exists. `SettingsServiceProvider` copies
 what an administrator chose into the keys their consumers already read:
-`app.name`, `session.lifetime`, `fortify.features`, `oidc-server.tokens`,
+`app.name`, `session.lifetime`, `fortify.features`, `oidc.tokens`,
 `activitylog.clean_after_days`.
 
 Always into the key the consumer reads, never a mirror of it: a mirror saves

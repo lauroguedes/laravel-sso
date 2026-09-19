@@ -2,6 +2,7 @@
 
 use App\Models\Application;
 use App\Models\User;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Str;
 use Laravel\Passport\ClientRepository;
 
@@ -159,18 +160,23 @@ describe('introspection and revocation', function () {
         ])->json();
     });
 
-    test('introspection reports a freshly issued token as active', function () {
-        $response = $this->postJson('/oauth/introspect', [
+    test('introspection reports a freshly issued token as active, with no fields beyond these', function () {
+        $introspection = $this->postJson('/oauth/introspect', [
             'client_id' => $this->client->id,
             'client_secret' => $this->secret,
             'token' => $this->tokens['access_token'],
-        ]);
+        ])->assertOk()->json();
 
-        $response->assertOk()->assertJson([
+        expect(Arr::except($introspection, ['exp', 'iat']))->toEqual([
             'active' => true,
+            'scope' => 'openid email',
             'client_id' => $this->client->id,
+            'username' => $this->user->email,
+            'token_type' => 'Bearer',
             'sub' => (string) $this->user->id,
-        ]);
+            'aud' => $this->client->id,
+            'iss' => config('sso.issuer'),
+        ])->and($introspection['exp'])->toBeInt()->toBeGreaterThan($introspection['iat']);
     });
 
     test('introspection requires client authentication', function () {
@@ -219,6 +225,57 @@ describe('introspection and revocation', function () {
         $this->getJson('/oauth/userinfo', [
             'Authorization' => 'Bearer '.$this->tokens['access_token'],
         ])->assertUnauthorized();
+    });
+
+    test('revoking an access token also revokes its refresh token', function () {
+        $this->postJson('/oauth/revoke', [
+            'client_id' => $this->client->id,
+            'client_secret' => $this->secret,
+            'token' => $this->tokens['access_token'],
+        ])->assertOk();
+
+        $this->postJson('/oauth/token', [
+            'grant_type' => 'refresh_token',
+            'client_id' => $this->client->id,
+            'client_secret' => $this->secret,
+            'refresh_token' => $this->tokens['refresh_token'],
+        ])->assertBadRequest()->assertJson(['error' => 'invalid_grant']);
+    });
+
+    test('revoking a refresh token also revokes its access token', function () {
+        $this->postJson('/oauth/revoke', [
+            'client_id' => $this->client->id,
+            'client_secret' => $this->secret,
+            'token' => $this->tokens['refresh_token'],
+            'token_type_hint' => 'refresh_token',
+        ])->assertOk();
+
+        $this->getJson('/oauth/userinfo', [
+            'Authorization' => 'Bearer '.$this->tokens['access_token'],
+        ])->assertUnauthorized();
+    });
+
+    test('a client cannot revoke a token issued to another client', function () {
+        $other = app(ClientRepository::class)->createAuthorizationCodeGrantClient('Other', [CALLBACK_URI]);
+
+        $this->postJson('/oauth/revoke', [
+            'client_id' => $other->id,
+            'client_secret' => $other->plainSecret,
+            'token' => $this->tokens['access_token'],
+        ])->assertOk();
+
+        $this->getJson('/oauth/userinfo', [
+            'Authorization' => 'Bearer '.$this->tokens['access_token'],
+        ])->assertOk();
+    });
+
+    test('userinfo also answers a POST request', function () {
+        $this->postJson('/oauth/userinfo', [], [
+            'Authorization' => 'Bearer '.$this->tokens['access_token'],
+        ])->assertOk()->assertJson([
+            'sub' => (string) $this->user->id,
+            'email' => $this->user->email,
+        ]);
     });
 
     test('revocation requires client authentication', function () {

@@ -72,9 +72,10 @@ of the above is decoration. If you terminate TLS at a proxy, configure
 **`APP_DEBUG=false` in production.** A stack trace here can carry client
 identifiers, token payloads and authorization request parameters.
 
-**The signing key.** Anyone holding `storage/oauth-private.key` can mint an ID
-Token that all of your applications will believe. Back it up encrypted,
-separately from the database, and restrict who can read it on the server. See
+**The signing key.** Anyone holding `storage/oauth-private.key` (or
+`PASSPORT_PRIVATE_KEY`) can mint an ID Token that all of your applications will
+believe. Back it up encrypted, separately from the database, and restrict who
+can read it on the server. See
 [Deployment](/docs/getting-started/deployment#signing-keys).
 
 **Who holds Super Admin.** The role carries every platform permission,

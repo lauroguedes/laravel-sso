@@ -147,6 +147,15 @@ redirect URI with `?code=...&state=...`.
 Check that `state` matches what you sent. That is what makes the response
 yours rather than an attacker's.
 
+Two optional parameters tie the sign-in to this request:
+
+- `nonce=<random>` comes back in the ID Token, and only there. Send it to
+  `/oauth/authorize`, not to the token endpoint.
+- `max_age=<seconds>` asks for a recent sign-in. A user who signed in longer ago,
+  or whose session was restored from a remember me cookie, signs in again first.
+  With `prompt=none` nobody can be asked, so you get `error=login_required`.
+  `prompt=login` always asks.
+
 **2. Exchange the code for tokens.**
 
 ```bash
@@ -178,6 +187,11 @@ hand, all of it is mandatory:
 - `aud` contains your client ID.
 - `exp` is in the future, `iat` is not implausibly old.
 - `nonce` matches the one you sent, if you sent one.
+- `auth_time` is recent enough, if you sent `max_age`.
+
+An ID Token expires after its own lifetime, independently of the access token
+issued beside it. See
+[token lifetimes](/docs/getting-started/configuration#token-lifetimes).
 
 An ID Token says who signed in. It is not an API credential, so do not send it
 to your own backend as a bearer token, and do not accept one there.
@@ -191,6 +205,9 @@ curl -X POST https://auth.example.com/oauth/token \
   -d client_id=9f3c2b... \
   -d client_secret=<omit for a public client>
 ```
+
+A refreshed ID Token keeps the `auth_time` of the original sign-in and carries
+no `nonce`.
 
 Access tokens last 15 minutes by default and refresh tokens 14 days. A refresh
 token stops working the moment an administrator revokes it, from the
@@ -225,6 +242,11 @@ curl https://auth.example.com/oauth/userinfo \
 Returns the claims the token's scopes allow, for the user the token belongs to.
 Use it when you want fresh values. The ID Token is a snapshot from sign-in
 time.
+
+The token must have been granted `openid`. One that was not gets `403` with
+`insufficient_scope`, in the body and in the `WWW-Authenticate` header. A
+missing, expired or revoked token gets `401` with `invalid_token` and a `Bearer`
+challenge in the same header, whatever the request accepts.
 
 ## The key set (`jwks.json`)
 
@@ -268,9 +290,10 @@ have. That is what lets a key rotation happen without redeploying anything.
 Nothing here is secret. A public key verifies signatures and cannot create
 them, which is why the set is safe to publish and safe to cache anywhere.
 
-The private half lives at `storage/oauth-private.key`. It is not in version
-control, and `sso:install` never replaces an existing one. Rotating it
-invalidates every ID Token in flight and every cached key set. See
+The private half lives at `storage/oauth-private.key`, or in
+`PASSPORT_PRIVATE_KEY`. It is not in version control, and `sso:install` never
+replaces an existing one. Rotating it invalidates every ID Token in flight and
+every cached key set. See
 [Deployment](/docs/getting-started/deployment#signing-keys).
 
 ## Introspection
@@ -291,9 +314,10 @@ five minutes ago. This server is the only place that knows, so a resource
 server that cannot afford to honour a revoked token for the rest of its
 15-minute life asks here instead of trusting the expiry.
 
-**How it works.** POST the token, authenticating as a registered client with
-`client_secret_basic` or `client_secret_post`. A live token gets its metadata
-back:
+**How it works.** POST the token, authenticating as a confidential client with
+`client_secret_basic` or `client_secret_post`. A public client, which holds no
+secret, is refused with `invalid_client`, because the answer describes whoever
+the token belongs to. A live token gets its metadata back:
 
 ```json
 {
@@ -310,16 +334,21 @@ back:
 }
 ```
 
-Anything expired, revoked or unrecognised gets `{"active": false}` and nothing
-else, so the endpoint cannot be used to probe for which tokens exist.
+`username` appears only when the token was granted the `email` scope.
 
-Pass `token_type_hint=refresh_token` to introspect a refresh token. The default
-is `access_token`, and the two are looked up separately.
+Anything expired, revoked, forged or unrecognised gets `{"active": false}` and
+nothing else, so the endpoint cannot be used to probe for which tokens exist. A
+token counts only once its signature, or for a refresh token its encryption,
+shows this server issued it.
+
+Refresh tokens introspect too, with `token_type` set to `refresh_token`.
+`token_type_hint` only decides which kind is tried first, and an unknown hint is
+ignored.
 
 > [!NOTE]
-> Any client registered on this server can authenticate here and introspect
-> any token, including one issued to a different application. Treat the client
-> list as trusted.
+> A client can introspect any token, including one issued to a different
+> application. That is what lets a resource server check the tokens of the
+> clients that call it, so treat every confidential client as trusted.
 
 ## Revocation
 
@@ -330,7 +359,12 @@ curl -X POST https://auth.example.com/oauth/revoke \
 ```
 
 RFC 7009. A client retires a token it no longer needs, typically at sign-out.
-Revoking an access token revokes the refresh token issued with it.
+Revoking either token of a pair revokes both.
+
+A client can only revoke its own tokens. A public client revokes them by sending
+its `client_id` without a secret. An unknown token, or one issued to another
+client, still gets `200`, so the endpoint reveals nothing about tokens that are
+not the caller's.
 
 This is the client's own housekeeping. An administrator revokes tokens from the
 interface instead, which is described under [Logout](#logout).
@@ -344,19 +378,20 @@ GET /oauth/logout
   &state=<echoed back to the landing page>
 ```
 
-This ends the session on **this server**, always. That part does not depend on
-getting anything else right.
+The same parameters can be sent by `POST`, from a form on your own pages.
+
+**Send `id_token_hint`.** An ID Token this server signed, naming the user who
+is signed in here, is what lets the user be signed out straight away. An
+expired one still counts. Without it, or with a hint that does not check out,
+the user is asked to confirm first, because a link anybody can send should not
+end a session on its own.
 
 `post_logout_redirect_uri` must be **registered on the application, in its
 post-logout list, and is matched exactly.** That list is separate from the
-redirect URIs, which receive authorization codes. `id_token_hint` is what says
-whose list to consult, and without it there is no list, so no redirect. The
-hint's signature is not verified, because the specification uses it only to
-identify the client. That is safe because the registered list is the boundary:
-a forged hint can only reach URIs the named client itself registered.
-
-An unregistered destination is dropped rather than refused. The user asked to
-be logged out and they are. They simply stay here.
+redirect URIs, which receive authorization codes. The application is the one the
+hint was issued to, or the one named by `client_id` if you send that instead.
+When both are sent they must agree. An unregistered destination is dropped
+rather than refused: the user still signs out, and simply stays here.
 
 Logging out here does not reach into other applications and end their sessions.
 Each keeps its own, and each has to log its own user out. What that costs you

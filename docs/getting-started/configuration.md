@@ -6,7 +6,7 @@ order: 2
 
 Almost everything is an environment variable. The two configuration files that
 matter are `config/sso.php`, which holds the defaults an operator changes, and
-`config/oidc-server.php`, which describes the protocol surface.
+`config/oidc.php`, which describes the protocol surface.
 
 Nothing here needs editing to run the server. Set the issuer, and the defaults
 are the ones you want.
@@ -105,6 +105,22 @@ up delivered to somebody else's host.
 
 An application may register at most 20 redirect URIs.
 
+## Browser applications
+
+A single-page application runs in the browser and calls this server from its
+own origin, so the browser asks this server first. Only the origins listed here
+are answered, and only on the endpoints such an application calls: discovery,
+the key set, `/oauth/token`, `/oauth/userinfo` and `/oauth/revoke`.
+
+| Variable                   | Default |                                                                                  |
+| -------------------------- | ------- | -------------------------------------------------------------------------------- |
+| `SSO_CORS_ALLOWED_ORIGINS` | empty   | Comma-separated origins, such as `https://app.example.com,http://localhost:3000` |
+
+An origin is a scheme, host and port, with no path and no trailing slash. Left
+empty, no other origin is answered, which suits a server whose applications all
+run on servers of their own. Introspection and the interface never answer
+another origin, whatever is listed, as `tests/Feature/Oidc/CorsTest.php` shows.
+
 ## Rate limits
 
 Requests per minute for the protocol endpoints, keyed by client IP.
@@ -188,7 +204,7 @@ does not do it for you.
 
 ## Scopes and claims
 
-Defined in `config/oidc-server.php`, not by an environment variable, because
+Defined in `config/oidc.php`, not by an environment variable, because
 adding one is a decision about what this server discloses rather than a
 deployment setting.
 
@@ -212,8 +228,7 @@ have its configuration cached.
 
 ## Protocol surface
 
-Also in `config/oidc-server.php`, and hardened relative to the package's
-defaults:
+Also in `config/oidc.php`, and hardened on purpose:
 
 - `response_types_supported` is `['code']` only.
 - The implicit grant and the resource owner password credentials grant are not

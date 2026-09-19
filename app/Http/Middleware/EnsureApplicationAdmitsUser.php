@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Http\Middleware;
 
-use App\Concerns\IdentifiesAuthorizationRequests;
 use App\Exceptions\ApplicationAccessDenied;
 use App\Models\Application;
 use Closure;
@@ -19,16 +18,14 @@ use Symfony\Component\HttpFoundation\Response;
  * Only applies to applications an administrator has marked as restricted;
  * every other application admits any authenticated user.
  *
- * Checked when the authorization starts, which is the only point that names
- * the client. That is sufficient: the approval which follows needs an auth
- * token that only a request passing this check puts in the session.
+ * Attached to GET /oauth/authorize in "routes/oidc.php", the only request that
+ * names the client. That is sufficient: the approval which follows needs an
+ * auth token that only a request passing this check puts in the session.
  *
  * How the refusal is presented belongs to ApplicationAccessDenied.
  */
 class EnsureApplicationAdmitsUser
 {
-    use IdentifiesAuthorizationRequests;
-
     public function __construct(private readonly ClientRepository $clients) {}
 
     /**
@@ -38,15 +35,6 @@ class EnsureApplicationAdmitsUser
      */
     public function handle(Request $request, Closure $next): Response
     {
-        /*
-         * Checked before touching the guard, because this group also covers
-         * the unauthenticated discovery endpoints and resolving a user there
-         * would start a session for nothing.
-         */
-        if (! $this->isAuthorizationStart($request)) {
-            return $next($request);
-        }
-
         $user = Auth::user();
         $application = $this->applicationFor($request);
 

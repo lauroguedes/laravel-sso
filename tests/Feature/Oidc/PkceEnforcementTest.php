@@ -77,9 +77,8 @@ test('a code issued with a challenge cannot be redeemed without the verifier', f
 
 test('the discovery document is reachable while PKCE is required', function () {
     /*
-     * The requirement is applied through the middleware group the package also
-     * puts on the well-known endpoints, so this guards against it rejecting
-     * them too.
+     * The requirement belongs to the authorization route alone, so this guards
+     * against it reaching the well-known endpoints.
      */
     $this->getJson('/.well-known/openid-configuration')->assertOk();
     $this->getJson('/.well-known/jwks.json')->assertOk();

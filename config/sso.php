@@ -67,9 +67,6 @@ return [
     | OpenID Connect client validates the "iss" claim of an ID Token against
     | this exact value, so it must match the URL clients are redirected to.
     |
-    | This same variable drives "oidc-server.issuer". Keep them in sync by
-    | configuring SSO_ISSUER rather than editing either file.
-    |
     */
 
     'issuer' => env('SSO_ISSUER', env('APP_URL')),
@@ -98,7 +95,7 @@ return [
     | for confidential clients; it can never weaken a public one.
     |
     | Token lifetimes are not here: they are operator settings, and the value
-    | actually in force lives in "oidc-server.tokens", which is what the issuer
+    | actually in force lives in "oidc.tokens", which is what the issuer
     | reads. A second copy here would be one nobody consumes.
     |
     */
@@ -184,7 +181,7 @@ return [
     |
     | Nothing writes back to this block. The values an administrator chose are
     | copied into the configuration their consumers read — "app.name",
-    | "session.lifetime", "fortify.features", "oidc-server.tokens" — so that
+    | "session.lifetime", "fortify.features", "oidc.tokens" — so that
     | "what shipped" stays a fixed reference to compare against.
     |
     */
@@ -230,6 +227,23 @@ return [
         'session_lifetime' => (int) env('SESSION_LIFETIME', 120),
 
         'logout_other_sessions_on_password_change' => true,
+
+        /*
+         * The consent screen. Not pinnable: the wording is the operator's to
+         * change, and nothing about a deployment decides it.
+         *
+         * "{application}" is replaced with the name of the application asking.
+         * A message left empty falls back to the application's description,
+         * and a scope with no wording of its own uses its description in
+         * "config/oidc.php".
+         */
+        'consent_heading' => 'Continue to {application}',
+        'consent_message' => null,
+        'consent_scope_descriptions' => [],
+        'consent_show_account' => true,
+        'consent_remember_approvals' => true,
+        'consent_privacy_url' => null,
+        'consent_terms_url' => null,
     ],
 
     /*

@@ -1,5 +1,6 @@
 <?php
 
+use App\Models\Application;
 use App\Models\User;
 use Illuminate\Support\Once;
 use Illuminate\Support\Str;
@@ -85,7 +86,7 @@ test('a confidential client exchanges an authorization code for tokens', functio
     ]);
 
     expect($response->json('token_type'))->toBe('Bearer')
-        ->and($response->json('expires_in'))->toBe(config('oidc-server.tokens.access_token_ttl'));
+        ->and($response->json('expires_in'))->toBe(config('oidc.tokens.access_token_ttl'));
 });
 
 test('the id token carries the standard claims for the granted scopes', function () {
@@ -179,6 +180,16 @@ test('userinfo omits email claims when the email scope was not granted', functio
     $response->assertOk()->assertJsonMissing(['email' => 'alice@example.com']);
 
     expect($response->json())->not->toHaveKey('email_verified');
+});
+
+test('userinfo refuses a token that was not granted openid', function () {
+    $application = Application::factory()->trusted()->withSecret('userinfo-secret')->create();
+    $tokens = issueTokens($this->user, $application, 'email');
+
+    $this->getJson('/oauth/userinfo', ['Authorization' => 'Bearer '.$tokens['access_token']])
+        ->assertForbidden()
+        ->assertJson(['error' => 'insufficient_scope'])
+        ->assertHeader('WWW-Authenticate', 'Bearer error="insufficient_scope", scope="openid"');
 });
 
 test('a refresh token exchanges for a new access token', function () {

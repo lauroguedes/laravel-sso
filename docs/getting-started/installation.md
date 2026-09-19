@@ -40,14 +40,14 @@ Each step is skipped when it has already been done, so the command is safe to
 run again: on a new checkout, after an upgrade, or just to check an existing
 installation.
 
-| Step                           | Behaviour                                                                                                                                                        |
-| ------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Application key                | Generated if `APP_KEY` is empty. An existing key is never replaced.                                                                                              |
-| Migrations                     | Run. Pass `--skip-migrations` to leave the database alone.                                                                                                       |
-| OAuth signing keys             | Generated if `storage/oauth-private.key` is absent. **An existing key pair is never replaced**, because doing so would invalidate every ID Token already issued. |
-| Platform roles and permissions | Reconciled with the enums in `app/Enums`: the Super Admin and Developer roles, and every permission.                                                             |
-| First administrator            | Offered if nobody holds the Super Admin role.                                                                                                                    |
-| Report                         | Prints the issuer, the discovery URL and every protocol endpoint.                                                                                                |
+| Step                           | Behaviour                                                                                                                                                                                              |
+| ------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Application key                | Generated if `APP_KEY` is empty. An existing key is never replaced.                                                                                                                                    |
+| Migrations                     | Run. Pass `--skip-migrations` to leave the database alone.                                                                                                                                             |
+| OAuth signing keys             | Generated if `storage/oauth-private.key` is absent and `PASSPORT_PRIVATE_KEY` is not set. **An existing key pair is never replaced**, because doing so would invalidate every ID Token already issued. |
+| Platform roles and permissions | Reconciled with the enums in `app/Enums`: the Super Admin and Developer roles, and every permission.                                                                                                   |
+| First administrator            | Offered if nobody holds the Super Admin role.                                                                                                                                                          |
+| Report                         | Prints the issuer, the discovery URL and every protocol endpoint.                                                                                                                                      |
 
 It ends with warnings for anything that looks wrong: an issuer that is not
 HTTPS outside local development, an issuer that disagrees with `APP_URL`, a

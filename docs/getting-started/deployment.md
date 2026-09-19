@@ -54,8 +54,9 @@ user's IP.
 
 ## Signing keys
 
-`storage/oauth-private.key` signs every ID Token. `storage/oauth-public.key` is
-what relying parties fetch from `/.well-known/jwks.json` to verify one.
+`storage/oauth-private.key` signs every access token and ID Token.
+`storage/oauth-public.key` is what relying parties fetch from
+`/.well-known/jwks.json` to verify one.
 
 They are not in version control, and `sso:install` will never overwrite an
 existing pair.
@@ -65,18 +66,22 @@ key means every application must re-verify against a new one. Leaking it means
 anyone can mint an ID Token that your applications will believe, the same
 severity as leaking your database and harder to notice.
 
-On a platform with an ephemeral filesystem, every instance must read the same
-key files. Generate the pair once, then put `storage/oauth-private.key` and
-`storage/oauth-public.key` on a shared volume, or write them into `storage/`
-from your secret store before `sso:install` runs. Otherwise the installer
-generates a new pair for that instance, and instances with different keys sign
-tokens that the others' published key set cannot verify.
+On a platform with an ephemeral filesystem, every instance must sign with the
+same pair. Generate it once, then either put both files on a shared volume, or
+hand the keys to every instance through the environment:
 
-> [!WARNING]
-> Do not rely on `PASSPORT_PRIVATE_KEY` and `PASSPORT_PUBLIC_KEY` yet. Passport
-> reads them for access tokens, but ID Tokens and the key set at
-> `/.well-known/jwks.json` are only read from the files, so setting the
-> variables alone leaves the two out of step.
+```bash
+PASSPORT_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\nMIIEvQ...\n-----END PRIVATE KEY-----\n"
+PASSPORT_PUBLIC_KEY="-----BEGIN PUBLIC KEY-----\nMIIBIj...\n-----END PUBLIC KEY-----\n"
+```
+
+A literal `\n` stands for each line break, so a key fits on one line. When the
+variables are set they win over the files for access tokens, ID Tokens and the
+key set alike, and `sso:install` does not generate key files.
+
+Otherwise the installer generates a new pair for each instance, and instances
+with different keys sign tokens that the others' published key set cannot
+verify.
 
 ### Rotating
 

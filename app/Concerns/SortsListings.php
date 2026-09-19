@@ -95,10 +95,52 @@ trait SortsListings
     }
 
     /**
-     * The sort to echo back to the interface, so the header shows its arrow.
+     * One listing's parameters, with its prefix taken off.
+     *
+     * A page holding more than one listing gives each a prefix, so their
+     * searches, filters, sorts, sizes and pages cannot collide. Stripping it
+     * lets the methods above read them as they read a single listing's.
+     */
+    protected function listing(Request $request, string $prefix): Request
+    {
+        return new Request(collect($request->query())
+            ->filter(fn (mixed $value, int|string $key): bool => str_starts_with((string) $key, $prefix))
+            ->mapWithKeys(fn (mixed $value, int|string $key): array => [substr((string) $key, strlen($prefix)) => $value])
+            ->all());
+    }
+
+    /**
+     * The direction a listing was asked to sort in, or null for its own default.
      *
      * @param  array<int, string>  $sortable
-     * @return array{sort: string|null, direction: string|null}
+     * @return 'asc'|'desc'|null
+     */
+    protected function sortedDirection(Request $request, array $sortable): ?string
+    {
+        return $this->sortColumn($request, $sortable) === null ? null : $this->sortDirection($request);
+    }
+
+    /**
+     * Everything one listing echoes back to the interface: what it was narrowed
+     * by, how it is ordered, and how many rows it shows.
+     *
+     * @param  array<int, string>  $sortable
+     * @return array{search: string|null, sort: string|null, direction: string|null, per_page: int}
+     */
+    protected function listingFilters(Request $request, array $sortable = []): array
+    {
+        return [
+            'search' => $request->string('search')->toString() ?: null,
+            ...$this->sortFilters($request, $sortable),
+        ];
+    }
+
+    /**
+     * The sort to echo back to the interface, so the header shows its arrow,
+     * with the page size beside it.
+     *
+     * @param  array<int, string>  $sortable
+     * @return array{sort: string|null, direction: string|null, per_page: int}
      */
     protected function sortFilters(Request $request, array $sortable): array
     {

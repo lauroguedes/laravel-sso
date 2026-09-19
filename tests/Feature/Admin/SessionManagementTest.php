@@ -62,18 +62,84 @@ test('the page lists browser sessions and issued tokens', function () {
     $response->assertOk()->assertInertia(fn ($page) => $page
         ->component('sessions/Index')
         ->where('tracksSessions', true)
-        ->has('browserSessions', 1)
-        ->where('browserSessions.0.user.name', 'Alice Smith')
-        ->where('browserSessions.0.ip_address', '198.51.100.7')
-        ->has('tokens', 1)
-        ->where('tokens.0.application', 'Reporting'));
+        ->has('browserSessions.data', 1)
+        ->where('browserSessions.data.0.user.name', 'Alice Smith')
+        ->where('browserSessions.data.0.ip_address', '198.51.100.7')
+        ->has('tokens.data', 1)
+        ->where('tokens.data.0.application', 'Reporting'));
 });
 
 test('a revoked token is not listed', function () {
     seedToken($this->user, $this->application)->forceFill(['revoked' => true])->save();
 
     $this->actingAs($this->admin)->get(route('sessions.index'))
-        ->assertInertia(fn ($page) => $page->has('tokens', 0));
+        ->assertInertia(fn ($page) => $page->has('tokens.data', 0));
+});
+
+test('each listing is searched on its own', function () {
+    seedSession($this->user, 'alice-session');
+    seedSession(User::factory()->create(['name' => 'Bob Jones']), 'bob-session');
+    seedToken($this->user, $this->application);
+    seedToken(User::factory()->create(), Application::factory()->create(['name' => 'Billing']), 'billing-token');
+
+    $this->actingAs($this->admin)
+        ->get(route('sessions.index', ['sessions_search' => 'alice', 'tokens_search' => 'billing']))
+        ->assertInertia(fn ($page) => $page
+            ->has('browserSessions.data', 1)
+            ->where('browserSessions.data.0.id', 'alice-session')
+            ->where('sessionFilters.search', 'alice')
+            ->has('tokens.data', 1)
+            ->where('tokens.data.0.application', 'Billing')
+            ->where('tokenFilters.search', 'billing'));
+});
+
+test('sessions narrow to those used recently', function () {
+    seedSession($this->user, 'recent-session');
+    DB::table('sessions')->where('id', seedSession($this->user, 'old-session'))
+        ->update(['last_activity' => now()->subDays(2)->timestamp]);
+
+    $this->actingAs($this->admin)
+        ->get(route('sessions.index', ['sessions_active' => 'day']))
+        ->assertInertia(fn ($page) => $page
+            ->has('browserSessions.data', 1)
+            ->where('browserSessions.data.0.id', 'recent-session'));
+});
+
+test('tokens narrow to one application, from those holding tokens', function () {
+    $billing = Application::factory()->create(['name' => 'Billing']);
+    seedToken($this->user, $this->application);
+    seedToken($this->user, $billing, 'billing-token');
+
+    $this->actingAs($this->admin)
+        ->get(route('sessions.index', ['tokens_application' => $billing->id]))
+        ->assertInertia(fn ($page) => $page
+            ->has('tokens.data', 1)
+            /*
+             * By the application rather than the token id: Passport stores an
+             * id in a char column, which PostgreSQL pads out to its width.
+             */
+            ->where('tokens.data.0.application', 'Billing')
+            ->where('tokenApplications', [
+                ['value' => $billing->id, 'label' => 'Billing'],
+                ['value' => $this->application->id, 'label' => 'Reporting'],
+            ]));
+});
+
+test('each listing pages on its own parameter', function () {
+    foreach (range(1, 16) as $number) {
+        seedSession($this->user, "session-{$number}");
+    }
+
+    seedToken($this->user, $this->application);
+
+    $this->actingAs($this->admin)
+        ->get(route('sessions.index', ['sessions_page' => 2, 'sessions_per_page' => 15]))
+        ->assertInertia(fn ($page) => $page
+            ->where('browserSessions.current_page', 2)
+            ->has('browserSessions.data', 1)
+            ->where('browserSessions.total', 16)
+            ->where('tokens.current_page', 1)
+            ->has('tokens.data', 1));
 });
 
 test('an administrator ends one browser session', function () {
@@ -168,7 +234,7 @@ test('the page says so when sessions are not stored in the database', function (
     $this->actingAs($this->admin)->get(route('sessions.index'))
         ->assertInertia(fn ($page) => $page
             ->where('tracksSessions', false)
-            ->has('browserSessions', 0));
+            ->has('browserSessions.data', 0));
 });
 
 describe('the controls are shown only to whoever may use them', function () {

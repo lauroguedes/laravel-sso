@@ -39,3 +39,4 @@ than Keycloak: a Laravel application you can clone, configure, deploy and own.
 | Running one                     | [The interface](/docs/administration/interface)    |
 | Connecting an application to it | [Applications](/docs/integrating/applications)     |
 | Working on the project itself   | [Development](/docs/development)                   |
+| Upgrading to a new release      | [Changelog](/docs/changelog)                       |

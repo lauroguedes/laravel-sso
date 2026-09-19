@@ -90,15 +90,18 @@ who only looks after the application sees three of them.
 
 ## Sessions
 
-Everything that currently keeps someone signed in, in two lists.
+Everything that currently keeps someone signed in, in two lists. Each has its
+own search, filter and pages, so narrowing one leaves the other where it was.
 
 **Browser sessions:** sessions on this server, with the address and last
-activity. Ending one signs that person out here. It does not touch tokens
-applications already hold.
+activity. Search by name, email or address, and narrow to sessions used within
+the last hour, day or week. Ending one signs that person out here. It does not
+touch tokens applications already hold.
 
 **Issued tokens:** every live access token, which application holds it, its
-scopes and when it expires. Revoking one also revokes the refresh token issued
-with it, so the application cannot renew it.
+scopes and when it expires. Search by user or application, and narrow to one
+application. Revoking one also revokes the refresh token issued with it, so the
+application cannot renew it.
 
 Both need `sso.users.manage`. With only `sso.users.view` the page is shown
 without the controls.
@@ -230,6 +233,24 @@ reworded, moved below your own runbook, or removed.
 | Access, refresh and ID token lifetimes | What the OAuth2 server issues, in seconds                                |
 | Session lifetime                       | Minutes of inactivity before somebody signs in to this server again      |
 | Audit retention                        | Days kept by the scheduled `activitylog:clean`                           |
+
+**Consent**
+
+What an application's users see when it asks for approval. The tab shows a
+live preview, drawn with the same component as the real page, and the edit
+button at its top right opens the settings in a panel on the right. The preview
+follows what you type, and nothing changes for users until you save.
+
+| Setting                    | Reaches                                                                                                                                  |
+| -------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| Heading                    | The page title. `{application}` is replaced with the name of the application asking                                                      |
+| Message                    | The line under it. Left blank, the application's own description is shown                                                                |
+| What each scope says       | The wording for each scope. A blank one keeps the standard description                                                                   |
+| Show the signed-in account | The account card, with a link to sign in as somebody else instead                                                                        |
+| Remember approvals         | Whether an application somebody already approved skips the page for the same scopes, for as long as the access token it was issued lasts |
+| Privacy policy and terms   | Links to your organisation's policies under the buttons, when set                                                                        |
+
+Consent is only shown to applications that are not marked trusted.
 
 ### Storage and pinning
 

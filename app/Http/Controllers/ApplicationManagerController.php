@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Controllers;
 
 use App\Concerns\DescribesApplicationSections;
+use App\Concerns\SortsListings;
 use App\Enums\PlatformPermission;
 use App\Http\Requests\Admin\ApplicationManagerRequest;
 use App\Models\Application;
@@ -26,6 +27,7 @@ use Inertia\Response;
 class ApplicationManagerController extends Controller
 {
     use DescribesApplicationSections;
+    use SortsListings;
 
     /**
      * Show the people who look after an application.
@@ -34,23 +36,23 @@ class ApplicationManagerController extends Controller
     {
         $this->authorize('manageStewards', $application);
 
-        $search = $request->string('search')->toString() ?: null;
+        /*
+         * Two listings, so each carries its own search, size and page, and each
+         * is a closure: narrowing one does not run the other's queries.
+         */
+        $managers = $this->listing($request, 'managers_');
+        $managerSearch = $managers->string('search')->toString() ?: null;
+
+        $candidates = $this->listing($request, 'candidates_');
+        $candidateSearch = $candidates->string('search')->toString() ?: null;
 
         return Inertia::render('applications/Managers', [
             'application' => $application->toHeader(),
             'sections' => $this->applicationSections($request->user(), $application),
             'canManageApplication' => $request->user()->can('update', $application),
-            'filters' => ['search' => $search],
-            'managers' => $application->managers()
-                ->orderBy('name')
-                ->get(['users.id', 'name', 'email', 'disabled_at'])
-                ->map(fn (User $manager): array => [
-                    'id' => $manager->id,
-                    'name' => $manager->name,
-                    'email' => $manager->email,
-                    'disabled' => $manager->isDisabled(),
-                ])
-                ->all(),
+            'managerFilters' => $this->listingFilters($managers),
+            'candidateFilters' => $this->listingFilters($candidates),
+            'managers' => fn (): mixed => $this->managersPage($application, $managerSearch, $this->perPage($managers)),
             /*
              * People the assignment would actually change something for: they
              * hold the Developer permission, do not already look after this
@@ -58,17 +60,44 @@ class ApplicationManagerController extends Controller
              * already reaches every application, so assigning one would record
              * nothing their permission does not already say.
              */
-            'candidates' => User::query()
+            'candidates' => fn () => User::query()
                 ->permission(PlatformPermission::ApplicationsDevelop->value)
                 ->withoutPermission(PlatformPermission::ApplicationsManage->value)
                 ->withStatus('active')
-                ->search($search)
+                ->search($candidateSearch)
                 ->whereDoesntHave('managedApplications', fn ($query) => $query
                     ->whereKey($application->getKey()))
                 ->orderBy('name')
-                ->limit(10)
-                ->get(['id', 'name', 'email']),
+                ->orderBy('id')
+                ->paginate($this->perPage($candidates), ['id', 'name', 'email'], 'candidates_page')
+                ->withQueryString(),
         ]);
+    }
+
+    /**
+     * The people who look after the application, a page at a time.
+     *
+     * Returned as mixed, as AuditController::entries() is, because PHPStan will
+     * not match a paginator mapped through through() against any declared row
+     * type.
+     */
+    private function managersPage(Application $application, ?string $search, int $perPage): mixed
+    {
+        return $application->managers()
+            ->when($search, fn ($query, string $term) => $query->whereIn(
+                'users.id',
+                User::query()->search($term)->select('id'),
+            ))
+            ->orderBy('name')
+            ->orderBy('users.id')
+            ->paginate($perPage, ['users.id', 'name', 'email', 'disabled_at'], 'managers_page')
+            ->withQueryString()
+            ->through(fn (User $manager): array => [
+                'id' => $manager->id,
+                'name' => $manager->name,
+                'email' => $manager->email,
+                'disabled' => $manager->isDisabled(),
+            ]);
     }
 
     /**
