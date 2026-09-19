@@ -27,21 +27,19 @@ test('the audit page lists entries newest first', function () {
 
 test('the listing carries what the pager needs', function () {
     /*
-     * The trail is simple-paginated, to avoid counting the fastest growing
-     * table in the schema on every page view. A simple paginator has no
-     * "links" or "total" — only the neighbouring URLs — and the pager reads
-     * those. Sending the length-aware shape's keys instead left the component
-     * dereferencing undefined and rendering nothing.
+     * The pager offers pages by number, which needs the count and the last
+     * page that only a length-aware paginator carries. The trail was simple
+     * paginated before, and the pager had nothing to number.
      */
     $this->audit->record(AuditEvent::UserLoggedIn);
 
     $this->actingAs($this->admin)->get(route('audit.index'))
         ->assertInertia(fn ($page) => $page
-            ->has('entries.prev_page_url')
-            ->has('entries.next_page_url')
+            ->has('entries.total')
+            ->has('entries.last_page')
+            ->has('entries.current_page')
             ->has('entries.from')
-            ->has('entries.to')
-            ->missing('entries.links'));
+            ->has('entries.to'));
 });
 
 test('entries can be narrowed to one stream', function () {

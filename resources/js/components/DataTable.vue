@@ -43,6 +43,10 @@ import {
  * render function, so a column can still hold a badge or a link without
  * leaving the template.
  *
+ * The column picker appears only where a column may be hidden: a table whose
+ * columns are all alwaysVisible, such as the access and manager listings, does
+ * not offer one.
+ *
  * Sorting is handed back to the caller rather than done here. Every list on
  * this server is paginated, and sorting a page in the browser would reorder
  * fifteen rows while claiming to have ordered the whole table.

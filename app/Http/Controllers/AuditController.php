@@ -128,11 +128,12 @@ class AuditController extends Controller
                 fn ($query) => $query->orderBy($sort, $direction)->latest('id'),
             )
             /*
-             * Simple pagination on purpose: a numbered pager would run a
-             * count over the whole table on every view, and this is the one
-             * table that grows with every sign-in and every failed sign-in.
+             * Counted, as every listing here is, so its pages can be offered
+             * by number. This is the fastest growing table in the schema, and
+             * the count is what the retention window bounds: keep
+             * "activitylog:clean" scheduled.
              */
-            ->simplePaginate($perPage)
+            ->paginate($perPage)
             ->withQueryString()
             ->through(fn (AuditRecord $record): array => $identified
                 ? $record->toSummary()

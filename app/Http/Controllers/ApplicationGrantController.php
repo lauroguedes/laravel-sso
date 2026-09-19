@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Controllers;
 
 use App\Concerns\DescribesApplicationSections;
+use App\Concerns\SortsListings;
 use App\Http\Requests\Admin\ApplicationGrantRequest;
 use App\Models\Application;
 use App\Models\ApplicationUser;
@@ -26,6 +27,7 @@ use Inertia\Response;
 class ApplicationGrantController extends Controller
 {
     use DescribesApplicationSections;
+    use SortsListings;
 
     /**
      * Show the users with access to an application.
@@ -34,60 +36,71 @@ class ApplicationGrantController extends Controller
     {
         $this->authorize('viewAccess', $application);
 
-        $search = $request->string('search')->toString() ?: null;
-        $granted = $request->string('granted')->toString() ?: null;
+        /*
+         * Two listings, so each carries its own search, size and page, and each
+         * is a closure: narrowing one does not run the other's queries.
+         */
+        $grants = $this->listing($request, 'grants_');
+        $grantSearch = $grants->string('search')->toString() ?: null;
+
+        $candidates = $this->listing($request, 'candidates_');
+        $candidateSearch = $candidates->string('search')->toString() ?: null;
 
         return Inertia::render('applications/Access', [
             'application' => $application->toHeader(),
             'sections' => $this->applicationSections($request->user(), $application),
             'canManageApplication' => $request->user()->can('update', $application),
-            'filters' => [
-                'search' => $search,
-                'granted' => $granted,
-            ],
-            /*
-             * Sorted and paginated in SQL. The name lives on the joined user,
-             * so ordering in PHP would have meant loading every grant.
-             */
-            'grants' => $application->grants()
-                ->with('user:id,name,email,disabled_at')
-                ->join('users', 'users.id', '=', 'application_user.user_id')
-                /*
-                 * Its own parameter, separate from the candidate search above:
-                 * the two boxes narrow different lists on the same page.
-                 */
-                ->when($granted, fn ($query, string $term) => $query->whereIn(
-                    'application_user.user_id',
-                    User::query()->search($term)->select('id'),
-                ))
-                ->orderBy('users.name')
-                ->orderBy('application_user.id')
-                ->paginate(15, ['application_user.*'])
-                ->withQueryString()
-                ->through(fn (ApplicationUser $grant): array => [
-                    'id' => $grant->id,
-                    'user' => [
-                        'id' => $grant->user->id,
-                        'name' => $grant->user->name,
-                        'email' => $grant->user->email,
-                        'disabled' => $grant->user->isDisabled(),
-                    ],
-                    'role_id' => $grant->application_role_id,
-                ]),
+            'grantFilters' => $this->listingFilters($grants),
+            'candidateFilters' => $this->listingFilters($candidates),
+            'grants' => fn (): mixed => $this->grantsPage($application, $grantSearch, $this->perPage($grants)),
             /*
              * Only users who do not already have access, so the picker cannot
              * offer a choice that validation would then reject.
              */
-            'candidates' => User::query()
-                ->search($search)
+            'candidates' => fn () => User::query()
+                ->search($candidateSearch)
                 ->whereDoesntHave('applicationGrants', fn ($query) => $query
                     ->where('application_id', $application->id))
                 ->orderBy('name')
-                ->limit(10)
-                ->get(['id', 'name', 'email']),
+                ->orderBy('id')
+                ->paginate($this->perPage($candidates), ['id', 'name', 'email'], 'candidates_page')
+                ->withQueryString(),
             'roles' => $application->roles()->orderBy('name')->get(['id', 'name']),
             'canManage' => $request->user()->can('manageAccess', $application),
         ]);
+    }
+
+    /**
+     * The people who already have access, a page at a time.
+     *
+     * Sorted and paginated in SQL: the name lives on the joined user, so
+     * ordering in PHP would have meant loading every grant. Returned as mixed,
+     * as AuditController::entries() is, because PHPStan will not match a
+     * paginator mapped through through() against any declared row type.
+     */
+    private function grantsPage(Application $application, ?string $search, int $perPage): mixed
+    {
+        return $application->grants()
+            ->with('user:id,name,email,disabled_at')
+            ->join('users', 'users.id', '=', 'application_user.user_id')
+            ->when($search, fn ($query, string $term) => $query->whereIn(
+                'application_user.user_id',
+                User::query()->search($term)->select('id'),
+            ))
+            ->orderBy('users.name')
+            ->orderBy('application_user.id')
+            ->paginate($perPage, ['application_user.*'], 'grants_page')
+            ->withQueryString()
+            ->through(fn (ApplicationUser $grant): array => [
+                'id' => $grant->id,
+                'user' => [
+                    'id' => $grant->user->id,
+                    'name' => $grant->user->name,
+                    'email' => $grant->user->email,
+                    'disabled' => $grant->user->isDisabled(),
+                ],
+                'role_id' => $grant->application_role_id,
+            ]);
     }
 
     /**

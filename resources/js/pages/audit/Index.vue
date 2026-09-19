@@ -9,7 +9,7 @@ import Pagination from '@/components/Pagination.vue';
 import SearchInput from '@/components/SearchInput.vue';
 import { useListingFilters } from '@/composables/useListingFilters';
 import { index } from '@/routes/audit';
-import type { AuditEntry } from '@/types/administration';
+import type { AuditEntry, Paginator } from '@/types/administration';
 
 defineOptions({
     layout: {
@@ -20,17 +20,10 @@ defineOptions({
 const { filters, streams } = defineProps<{
     filters: { search: string | null; stream: string | null };
     streams: { value: string; label: string }[];
-    entries: {
-        data: AuditEntry[];
-        from: number | null;
-        to: number | null;
-        prev_page_url: string | null;
-        next_page_url: string | null;
-        per_page: number;
-    };
+    entries: Paginator<AuditEntry>;
 }>();
 
-const { search, sort, applySort, setFilter } = useListingFilters(
+const { search, sort, applySort, setFilter, goToPage } = useListingFilters(
     index().url,
     filters,
 );
@@ -73,11 +66,8 @@ const filterGroups = computed<FilterGroup[]>(() => [
 
             <template #footer>
                 <Pagination
-                    :from="entries.from"
-                    :to="entries.to"
-                    :prev-page-url="entries.prev_page_url"
-                    :next-page-url="entries.next_page_url"
-                    :per-page="entries.per_page"
+                    :paginator="entries"
+                    @update:page="goToPage"
                     @update:per-page="(size) => setFilter('per_page', size)"
                 />
             </template>

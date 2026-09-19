@@ -25,11 +25,16 @@ export type ListingFilters = {
  *
  * The visit replaces the history entry and preserves component state, so that
  * typing neither stacks up back-button steps nor loses focus between requests.
+ *
+ * A page holding more than one listing gives each a prefix. Its parameters are
+ * sent under that prefix, and the other listings' parameters already in the
+ * address are kept, so narrowing one list leaves the other where it was.
  */
 export function useListingFilters(
     url: string,
     initial: ListingFilters,
     only?: string[],
+    prefix = '',
 ) {
     const search = ref(initial.search ?? '');
 
@@ -51,13 +56,23 @@ export function useListingFilters(
     );
 
     function visit() {
+        const own = {
+            ...extra,
+            search: search.value || undefined,
+            sort: sort.value?.column,
+            direction: sort.value?.direction,
+        };
+
         router.get(
             url,
             {
-                ...extra,
-                search: search.value || undefined,
-                sort: sort.value?.column,
-                direction: sort.value?.direction,
+                ...otherListings(),
+                ...Object.fromEntries(
+                    Object.entries(own).map(([key, value]) => [
+                        `${prefix}${key}`,
+                        value,
+                    ]),
+                ),
             },
             {
                 preserveState: true,
@@ -70,6 +85,22 @@ export function useListingFilters(
                  */
                 ...(only ? { only } : {}),
             },
+        );
+    }
+
+    /**
+     * The parameters of the page's other listings, which a visit for this one
+     * must not drop. A page with a single listing has none.
+     */
+    function otherListings(): Record<string, string> {
+        if (prefix === '') {
+            return {};
+        }
+
+        return Object.fromEntries(
+            [...new URLSearchParams(window.location.search)].filter(
+                ([key]) => !key.startsWith(prefix),
+            ),
         );
     }
 
@@ -100,5 +131,13 @@ export function useListingFilters(
         visit();
     }
 
-    return { search, sort, applySort, setFilter, filters: extra };
+    /**
+     * Turn to a page of this listing. A page is a filter like any other, so it
+     * travels the same way: under this listing's prefix, keeping the rest.
+     */
+    function goToPage(page: number) {
+        setFilter('page', page);
+    }
+
+    return { search, sort, applySort, setFilter, goToPage, filters: extra };
 }

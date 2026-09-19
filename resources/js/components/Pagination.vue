@@ -1,8 +1,13 @@
 <script setup lang="ts">
-import { Link } from '@inertiajs/vue3';
-import { Rows3 } from '@lucide/vue';
-import { computed } from 'vue';
-import { Button } from '@/components/ui/button';
+import { ChevronLeft, ChevronRight, Rows3 } from '@lucide/vue';
+import {
+    Pagination as PaginationRoot,
+    PaginationContent,
+    PaginationEllipsis,
+    PaginationItem,
+    PaginationNext,
+    PaginationPrevious,
+} from '@/components/ui/pagination';
 import {
     Select,
     SelectContent,
@@ -10,59 +15,47 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
-
-export type PaginationLink = {
-    url: string | null;
-    label: string;
-    active: boolean;
-};
+import type { Paginator } from '@/types/administration';
 
 /**
- * Pages a listing, under either paginator.
+ * Pages a listing: what is shown and how many rows on the left, the pages
+ * themselves on the right.
  *
- * A length-aware paginator supplies "links" and "total"; the simple paginator
- * supplies neither, only the two neighbouring URLs. The audit trail uses the
- * simple one deliberately, to avoid counting a table that grows with every
- * sign-in, so this component has to read both shapes rather than assume the
- * one that happens to be commoner.
+ * Every listing here is counted, so every page is offered by number.
+ *
+ * Which page is asked for is the listing's own business, so both controls
+ * report upwards rather than visiting: useListingFilters names the parameter
+ * and keeps the other listings on the page where they were.
  */
-const { links, from, to, total, prevPageUrl, nextPageUrl, perPage } =
-    defineProps<{
-        links?: PaginationLink[];
-        from: number | null;
-        to: number | null;
-        total?: number;
-        prevPageUrl?: string | null;
-        nextPageUrl?: string | null;
-        /** Omit to hide the size selector, for a list that is never long. */
-        perPage?: number;
-    }>();
+const { sizes = true } = defineProps<{
+    paginator: Paginator<unknown>;
+    /** Offer the rows-per-page selector, for a list that can grow long. */
+    sizes?: boolean;
+}>();
 
-const emit = defineEmits<{ 'update:perPage': [number] }>();
+const emit = defineEmits<{
+    'update:page': [number];
+    'update:perPage': [number];
+}>();
 
 /** Matches InterfaceOptions::PAGE_SIZES, which validates the request. */
-const sizes = [15, 25, 50, 100];
-
-const hasNeighbours = computed(
-    () => Boolean(prevPageUrl) || Boolean(nextPageUrl),
-);
+const options = [15, 25, 50, 100];
 </script>
 
 <template>
-    <nav
-        v-if="(total ?? 0) > 0 || (from ?? 0) > 0"
-        class="flex flex-wrap items-center gap-4"
-        aria-label="Pagination"
+    <div
+        v-if="paginator.total > 0"
+        class="flex flex-wrap items-center justify-between gap-4"
     >
         <div class="text-muted-foreground flex items-center gap-3 text-sm">
             <span>
-                Showing {{ from ?? 0 }}–{{ to ?? 0 }}
-                <template v-if="total !== undefined">of {{ total }}</template>
+                Showing {{ paginator.from ?? 0 }}–{{ paginator.to ?? 0 }} of
+                {{ paginator.total }}
             </span>
 
             <Select
-                v-if="perPage !== undefined"
-                :model-value="String(perPage)"
+                v-if="sizes"
+                :model-value="String(paginator.per_page)"
                 @update:model-value="emit('update:perPage', Number($event))"
             >
                 <SelectTrigger
@@ -77,7 +70,7 @@ const hasNeighbours = computed(
 
                 <SelectContent>
                     <SelectItem
-                        v-for="size in sizes"
+                        v-for="size in options"
                         :key="size"
                         :value="String(size)"
                     >
@@ -87,47 +80,38 @@ const hasNeighbours = computed(
             </Select>
         </div>
 
-        <div v-if="hasNeighbours" class="flex flex-wrap items-center gap-1">
-            <Button
-                :variant="'ghost'"
-                size="sm"
-                :disabled="!prevPageUrl"
-                as-child
-            >
-                <Link v-if="prevPageUrl" :href="prevPageUrl">Previous</Link>
-                <span v-else>Previous</span>
-            </Button>
-
-            <Button
-                :variant="'ghost'"
-                size="sm"
-                :disabled="!nextPageUrl"
-                as-child
-            >
-                <Link v-if="nextPageUrl" :href="nextPageUrl">Next</Link>
-                <span v-else>Next</span>
-            </Button>
-        </div>
-
-        <div
-            v-else-if="(links?.length ?? 0) > 3"
-            class="flex flex-wrap items-center gap-1"
+        <PaginationRoot
+            v-if="paginator.last_page > 1"
+            v-slot="{ page: current }"
+            :page="paginator.current_page"
+            :total="paginator.total"
+            :items-per-page="paginator.per_page"
+            :sibling-count="1"
+            show-edges
+            class="mx-0 w-auto"
+            @update:page="(target: number) => emit('update:page', target)"
         >
-            <template v-for="link in links" :key="link.label">
-                <Button
-                    v-if="link.url"
-                    :variant="link.active ? 'secondary' : 'ghost'"
-                    size="sm"
-                    as-child
-                >
-                    <Link :href="link.url" v-html="link.label" />
-                </Button>
-                <span
-                    v-else
-                    class="text-muted-foreground px-2 text-sm"
-                    v-html="link.label"
-                />
-            </template>
-        </div>
-    </nav>
+            <PaginationContent v-slot="{ items }">
+                <PaginationPrevious size="icon" aria-label="Previous page">
+                    <ChevronLeft />
+                </PaginationPrevious>
+
+                <template v-for="(item, index) in items" :key="index">
+                    <PaginationItem
+                        v-if="item.type === 'page'"
+                        :value="item.value"
+                        :is-active="item.value === current"
+                    >
+                        {{ item.value }}
+                    </PaginationItem>
+
+                    <PaginationEllipsis v-else :index="index" />
+                </template>
+
+                <PaginationNext size="icon" aria-label="Next page">
+                    <ChevronRight />
+                </PaginationNext>
+            </PaginationContent>
+        </PaginationRoot>
+    </div>
 </template>

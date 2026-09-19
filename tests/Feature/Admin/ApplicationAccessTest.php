@@ -52,7 +52,7 @@ test('the candidate list excludes users who already have access', function () {
         ->get(route('applications.grants.index', $this->application));
 
     $response->assertInertia(fn ($page) => $page->where(
-        'candidates',
+        'candidates.data',
         fn ($candidates) => ! collect($candidates)->pluck('id')->contains($withAccess->id),
     ));
 });
@@ -62,10 +62,10 @@ test('the candidate list can be searched', function () {
     User::factory()->create(['name' => 'Bob Jones', 'email' => 'bob@example.com']);
 
     $response = $this->actingAs($this->admin)
-        ->get(route('applications.grants.index', [$this->application, 'search' => 'alice']));
+        ->get(route('applications.grants.index', [$this->application, 'candidates_search' => 'alice']));
 
     $response->assertInertia(fn ($page) => $page->where(
-        'candidates',
+        'candidates.data',
         fn ($candidates) => collect($candidates)->pluck('email')->all() === ['alice@example.com'],
     ));
 });
@@ -81,7 +81,7 @@ test('the users with access can be searched, ignoring letter case', function () 
     $this->application->grantAccessTo($bob);
 
     $this->actingAs($this->admin)
-        ->get(route('applications.grants.index', [$this->application, 'granted' => 'SMITH']))
+        ->get(route('applications.grants.index', [$this->application, 'grants_search' => 'SMITH']))
         ->assertInertia(fn ($page) => $page
             ->has('grants.data', 1)
             ->where('grants.data.0.user.email', 'alice@example.com'));

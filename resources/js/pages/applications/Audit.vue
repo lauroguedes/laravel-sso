@@ -11,6 +11,7 @@ import type {
     ApplicationHeader,
     ApplicationSection,
     AuditEntry,
+    Paginator,
 } from '@/types/administration';
 
 defineOptions({
@@ -24,17 +25,10 @@ const { application, filters } = defineProps<{
     sections: ApplicationSection[];
     canManageApplication: boolean;
     filters: { search: string | null };
-    entries: {
-        data: AuditEntry[];
-        from: number | null;
-        to: number | null;
-        prev_page_url: string | null;
-        next_page_url: string | null;
-        per_page: number;
-    };
+    entries: Paginator<AuditEntry>;
 }>();
 
-const { search, sort, applySort, setFilter } = useListingFilters(
+const { search, sort, applySort, setFilter, goToPage } = useListingFilters(
     audit(application.id).url,
     filters,
 );
@@ -64,11 +58,8 @@ const { search, sort, applySort, setFilter } = useListingFilters(
 
             <template #footer>
                 <Pagination
-                    :from="entries.from"
-                    :to="entries.to"
-                    :prev-page-url="entries.prev_page_url"
-                    :next-page-url="entries.next_page_url"
-                    :per-page="entries.per_page"
+                    :paginator="entries"
+                    @update:page="goToPage"
                     @update:per-page="(size) => setFilter('per_page', size)"
                 />
             </template>

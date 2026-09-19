@@ -1,14 +1,11 @@
 <script setup lang="ts">
 import { Head, router } from '@inertiajs/vue3';
-import { watchDebounced } from '@vueuse/core';
-import { ref } from 'vue';
 import { X } from '@lucide/vue';
 import ApplicationLayout from '@/layouts/applications/Layout.vue';
 import CandidatePicker from '@/components/applications/CandidatePicker.vue';
 import DangerousAction from '@/components/DangerousAction.vue';
 import DataTable from '@/components/DataTable.vue';
 import Pagination from '@/components/Pagination.vue';
-import type { PaginationLink } from '@/components/Pagination.vue';
 import SearchInput from '@/components/SearchInput.vue';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -27,6 +24,7 @@ import {
     SelectValue,
 } from '@/components/ui/select';
 import { useListingFilters } from '@/composables/useListingFilters';
+import type { ListingFilters } from '@/composables/useListingFilters';
 import { index } from '@/routes/applications';
 import {
     destroy as revokeGrant,
@@ -35,17 +33,18 @@ import {
     update as updateGrant,
 } from '@/routes/applications/grants';
 import type {
-    DataTableColumn,
     ApplicationGrantSummary,
     ApplicationHeader,
-    ApplicationSection,
     ApplicationRoleOption,
+    ApplicationSection,
+    DataTableColumn,
+    Paginator,
     UserCandidate,
 } from '@/types/administration';
 
 const grantColumns: DataTableColumn[] = [
     { id: 'user', header: 'User', alwaysVisible: true },
-    { id: 'role', header: 'Role' },
+    { id: 'role', header: 'Role', alwaysVisible: true },
     { id: 'actions', header: '', align: 'right', alwaysVisible: true },
 ];
 
@@ -55,44 +54,44 @@ defineOptions({
     },
 });
 
-const { application, filters, roles } = defineProps<{
+const { application, grantFilters, candidateFilters, roles } = defineProps<{
     application: ApplicationHeader;
     sections: ApplicationSection[];
     canManageApplication: boolean;
-    filters: { search: string | null; granted: string | null };
-    grants: {
-        data: ApplicationGrantSummary[];
-        links: PaginationLink[];
-        from: number | null;
-        to: number | null;
-        total: number;
-    };
-    candidates: UserCandidate[];
+    grants: Paginator<ApplicationGrantSummary>;
+    grantFilters: ListingFilters;
+    candidates: Paginator<UserCandidate>;
+    candidateFilters: ListingFilters;
     roles: ApplicationRoleOption[];
     canManage: boolean;
 }>();
 
-const { search, setFilter } = useListingFilters(
+/*
+ * Two listings, so each keeps its parameters under its own prefix and reloads
+ * only its own props: one narrows the people who already have access, the
+ * other the candidates to add.
+ */
+const {
+    search: grantSearch,
+    setFilter: filterGrants,
+    goToPage: goToGrantsPage,
+} = useListingFilters(
     grantsIndex(application.id).url,
-    filters,
-    /*
-     * Both lists, because this page has two search boxes: one narrows the
-     * candidates to add, the other the people who already have access. Asking
-     * for only the candidates left the grants table showing a result the URL
-     * said it had filtered.
-     */
-    ['candidates', 'grants', 'filters'],
+    grantFilters,
+    ['grants', 'grantFilters'],
+    'grants_',
 );
 
-/*
- * A second, separately debounced box: this one narrows the list of people who
- * already have access, while "search" above narrows the candidates to add.
- */
-const granted = ref(filters.granted ?? '');
-
-watchDebounced(granted, (value) => setFilter('granted', value || null), {
-    debounce: 300,
-});
+const {
+    search: candidateSearch,
+    setFilter: filterCandidates,
+    goToPage: goToCandidatesPage,
+} = useListingFilters(
+    grantsIndex(application.id).url,
+    candidateFilters,
+    ['candidates', 'candidateFilters'],
+    'candidates_',
+);
 
 /** Sentinel for "no role", since a select cannot carry a null value. */
 const NO_ROLE = 'none';
@@ -146,11 +145,15 @@ function revoke(grant: ApplicationGrantSummary) {
                     :columns="grantColumns"
                     :rows="grants.data"
                     :row-key="(grant) => grant.id"
-                    empty="Nobody has been granted access yet."
+                    :empty="
+                        grantFilters.search
+                            ? 'Nobody with access matches this search.'
+                            : 'Nobody has been granted access yet.'
+                    "
                 >
                     <template #toolbar>
                         <SearchInput
-                            v-model="granted"
+                            v-model="grantSearch"
                             placeholder="Search by name or email"
                             label="Search users with access"
                         />
@@ -226,10 +229,11 @@ function revoke(grant: ApplicationGrantSummary) {
 
                     <template #footer>
                         <Pagination
-                            :links="grants.links"
-                            :from="grants.from"
-                            :to="grants.to"
-                            :total="grants.total"
+                            :paginator="grants"
+                            @update:page="goToGrantsPage"
+                            @update:per-page="
+                                (size) => filterGrants('per_page', size)
+                            "
                         />
                     </template>
                 </DataTable>
@@ -238,7 +242,7 @@ function revoke(grant: ApplicationGrantSummary) {
 
         <CandidatePicker
             v-if="canManage"
-            v-model:search="search"
+            v-model:search="candidateSearch"
             title="Grant access"
             description="Search for a user who does not yet have access. Assign a role once they have been added."
             search-label="Search users to grant access"
@@ -246,6 +250,8 @@ function revoke(grant: ApplicationGrantSummary) {
             :candidates="candidates"
             empty="No users match this search, or everyone matching already has access."
             @select="grantAccess"
+            @update:page="goToCandidatesPage"
+            @update:per-page="(size) => filterCandidates('per_page', size)"
         />
     </ApplicationLayout>
 </template>

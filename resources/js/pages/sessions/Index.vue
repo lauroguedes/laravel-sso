@@ -1,8 +1,14 @@
 <script setup lang="ts">
 import { Head, router } from '@inertiajs/vue3';
 import { X } from '@lucide/vue';
+import { computed } from 'vue';
 import DangerousAction from '@/components/DangerousAction.vue';
+import DataTable from '@/components/DataTable.vue';
+import FilterMenu from '@/components/FilterMenu.vue';
+import type { FilterGroup } from '@/components/FilterMenu.vue';
 import Heading from '@/components/Heading.vue';
+import Pagination from '@/components/Pagination.vue';
+import SearchInput from '@/components/SearchInput.vue';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -13,15 +19,16 @@ import {
     CardHeader,
     CardTitle,
 } from '@/components/ui/card';
-import DataTable from '@/components/DataTable.vue';
+import { useListingFilters } from '@/composables/useListingFilters';
+import type { ListingFilters } from '@/composables/useListingFilters';
 import { formatDateTime, formatTimestamp } from '@/lib/datetime';
-import { index } from '@/routes/sessions';
-import { destroy as revokeSession } from '@/routes/sessions';
+import { destroy as revokeSession, index } from '@/routes/sessions';
 import { destroy as revokeToken } from '@/routes/tokens';
 import type {
-    DataTableColumn,
     BrowserSession,
+    DataTableColumn,
     IssuedToken,
+    Paginator,
 } from '@/types/administration';
 
 defineOptions({
@@ -30,25 +37,74 @@ defineOptions({
     },
 });
 
-defineProps<{
+const { sessionFilters, tokenFilters, tokenApplications } = defineProps<{
     tracksSessions: boolean;
-    browserSessions: BrowserSession[];
-    tokens: IssuedToken[];
+    browserSessions: Paginator<BrowserSession>;
+    sessionFilters: ListingFilters;
+    tokens: Paginator<IssuedToken>;
+    tokenFilters: ListingFilters;
+    tokenApplications: { value: string; label: string }[];
     canManage: boolean;
 }>();
 
+/*
+ * Two listings share this page, so each keeps its parameters under its own
+ * prefix and reloads only its own props.
+ */
+const {
+    search: sessionSearch,
+    sort: sessionSort,
+    applySort: sortSessions,
+    setFilter: filterSessions,
+    goToPage: goToSessionsPage,
+} = useListingFilters(
+    index().url,
+    sessionFilters,
+    ['browserSessions', 'sessionFilters'],
+    'sessions_',
+);
+
+const {
+    search: tokenSearch,
+    sort: tokenSort,
+    applySort: sortTokens,
+    setFilter: filterTokens,
+    goToPage: goToTokensPage,
+} = useListingFilters(
+    index().url,
+    tokenFilters,
+    ['tokens', 'tokenFilters', 'tokenApplications'],
+    'tokens_',
+);
+
+const sessionGroups: FilterGroup[] = [
+    {
+        key: 'active',
+        label: 'Last active',
+        options: [
+            { value: 'hour', label: 'Within the last hour' },
+            { value: 'day', label: 'Within the last day' },
+            { value: 'week', label: 'Within the last week' },
+        ],
+    },
+];
+
+const tokenGroups = computed<FilterGroup[]>(() => [
+    { key: 'application', label: 'Application', options: tokenApplications },
+]);
+
 function endSession(session: BrowserSession) {
-    router.delete(revokeSession(session.id).url);
+    router.delete(revokeSession(session.id).url, { preserveScroll: true });
 }
 
 function endToken(token: IssuedToken) {
-    router.delete(revokeToken(token.id).url);
+    router.delete(revokeToken(token.id).url, { preserveScroll: true });
 }
 
 const sessionColumns: DataTableColumn[] = [
     { id: 'user', header: 'User', alwaysVisible: true },
     { id: 'ip_address', header: 'Address' },
-    { id: 'last_activity', header: 'Last activity' },
+    { id: 'last_activity', header: 'Last activity', sortable: true },
     { id: 'actions', header: '', align: 'right', alwaysVisible: true },
 ];
 
@@ -56,7 +112,7 @@ const tokenColumns: DataTableColumn[] = [
     { id: 'user', header: 'User', alwaysVisible: true },
     { id: 'application', header: 'Application' },
     { id: 'scopes', header: 'Scopes' },
-    { id: 'expires_at', header: 'Expires' },
+    { id: 'expires_at', header: 'Expires', sortable: true },
     { id: 'actions', header: '', align: 'right', alwaysVisible: true },
 ];
 </script>
@@ -96,10 +152,32 @@ const tokenColumns: DataTableColumn[] = [
                     <DataTable
                         v-else
                         :columns="sessionColumns"
-                        :rows="browserSessions"
+                        :rows="browserSessions.data"
+                        :sort="sessionSort"
                         :row-key="(session) => session.id"
-                        empty="Nobody is signed in."
+                        :empty="
+                            sessionFilters.search || sessionFilters.active
+                                ? 'No sessions match these filters.'
+                                : 'Nobody is signed in.'
+                        "
+                        @update:sort="sortSessions"
                     >
+                        <template #toolbar>
+                            <SearchInput
+                                v-model="sessionSearch"
+                                placeholder="Search by name, email or address"
+                                label="Search browser sessions"
+                            />
+                        </template>
+
+                        <template #filters>
+                            <FilterMenu
+                                :groups="sessionGroups"
+                                :active="sessionFilters"
+                                @change="filterSessions"
+                            />
+                        </template>
+
                         <template #cell-user="{ row }">
                             <div class="flex items-center gap-2">
                                 <span class="font-medium">
@@ -150,6 +228,16 @@ const tokenColumns: DataTableColumn[] = [
                                 </Button>
                             </DangerousAction>
                         </template>
+
+                        <template #footer>
+                            <Pagination
+                                :paginator="browserSessions"
+                                @update:page="goToSessionsPage"
+                                @update:per-page="
+                                    (size) => filterSessions('per_page', size)
+                                "
+                            />
+                        </template>
                     </DataTable>
                 </CardContent>
             </Card>
@@ -166,10 +254,32 @@ const tokenColumns: DataTableColumn[] = [
                 <CardContent>
                     <DataTable
                         :columns="tokenColumns"
-                        :rows="tokens"
+                        :rows="tokens.data"
+                        :sort="tokenSort"
                         :row-key="(token) => token.id"
-                        empty="No application holds a token."
+                        :empty="
+                            tokenFilters.search || tokenFilters.application
+                                ? 'No tokens match these filters.'
+                                : 'No application holds a token.'
+                        "
+                        @update:sort="sortTokens"
                     >
+                        <template #toolbar>
+                            <SearchInput
+                                v-model="tokenSearch"
+                                placeholder="Search by user or application"
+                                label="Search issued tokens"
+                            />
+                        </template>
+
+                        <template #filters>
+                            <FilterMenu
+                                :groups="tokenGroups"
+                                :active="tokenFilters"
+                                @change="filterTokens"
+                            />
+                        </template>
+
                         <template #cell-user="{ row }">
                             <div class="font-medium">{{ row.user.name }}</div>
                             <div class="text-muted-foreground text-sm">
@@ -220,6 +330,16 @@ const tokenColumns: DataTableColumn[] = [
                                     <X class="size-4" />
                                 </Button>
                             </DangerousAction>
+                        </template>
+
+                        <template #footer>
+                            <Pagination
+                                :paginator="tokens"
+                                @update:page="goToTokensPage"
+                                @update:per-page="
+                                    (size) => filterTokens('per_page', size)
+                                "
+                            />
                         </template>
                     </DataTable>
                 </CardContent>

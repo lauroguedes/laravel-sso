@@ -141,6 +141,20 @@ export type AuditEntry = {
     created_at: string | null;
 };
 
+/**
+ * One page of a listing, as Laravel's length-aware paginator serializes it.
+ * Every listing here is counted, so every one can offer its pages by number.
+ */
+export type Paginator<TRow> = {
+    data: TRow[];
+    current_page: number;
+    last_page: number;
+    per_page: number;
+    from: number | null;
+    to: number | null;
+    total: number;
+};
+
 export type BrowserSession = {
     id: string;
     user: { id: number; name: string; email: string };

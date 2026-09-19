@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers;
 
+use App\Concerns\SortsListings;
 use App\Models\Application;
 use App\Models\User;
 use App\Services\SessionManager;
@@ -22,6 +23,8 @@ use Inertia\Response;
  */
 class SessionController extends Controller
 {
+    use SortsListings;
+
     public function __construct(private readonly SessionManager $sessions) {}
 
     /**
@@ -31,10 +34,42 @@ class SessionController extends Controller
     {
         $this->authorize('viewAny', User::class);
 
+        $sessions = $this->listing($request, 'sessions_');
+        $active = $sessions->string('active')->toString() ?: null;
+
+        $tokens = $this->listing($request, 'tokens_');
+        $application = $tokens->string('application')->toString() ?: null;
+
+        /*
+         * Each listing is a closure, so narrowing one does not run the other's
+         * queries: Inertia resolves only the props a partial reload asks for.
+         */
         return Inertia::render('sessions/Index', [
             'tracksSessions' => $this->sessions->tracksSessions(),
-            'browserSessions' => $this->sessions->browserSessions($request->session()->getId()),
-            'tokens' => $this->sessions->issuedTokens(),
+            'browserSessions' => fn () => $this->sessions->browserSessions(
+                $request->session()->getId(),
+                $sessions->string('search')->toString() ?: null,
+                $active,
+                $this->sortedDirection($sessions, ['last_activity']),
+                $this->perPage($sessions),
+                'sessions_page',
+            ),
+            'sessionFilters' => [
+                'active' => $active,
+                ...$this->listingFilters($sessions, ['last_activity']),
+            ],
+            'tokens' => fn () => $this->sessions->issuedTokens(
+                $tokens->string('search')->toString() ?: null,
+                $application,
+                $this->sortedDirection($tokens, ['expires_at']),
+                $this->perPage($tokens),
+                'tokens_page',
+            ),
+            'tokenFilters' => [
+                'application' => $application,
+                ...$this->listingFilters($tokens, ['expires_at']),
+            ],
+            'tokenApplications' => fn () => $this->sessions->applicationsHoldingTokens(),
             'canManage' => $request->user()->can('revokeSessions', User::class),
         ]);
     }

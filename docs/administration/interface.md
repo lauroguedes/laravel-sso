@@ -90,15 +90,18 @@ who only looks after the application sees three of them.
 
 ## Sessions
 
-Everything that currently keeps someone signed in, in two lists.
+Everything that currently keeps someone signed in, in two lists. Each has its
+own search, filter and pages, so narrowing one leaves the other where it was.
 
 **Browser sessions:** sessions on this server, with the address and last
-activity. Ending one signs that person out here. It does not touch tokens
-applications already hold.
+activity. Search by name, email or address, and narrow to sessions used within
+the last hour, day or week. Ending one signs that person out here. It does not
+touch tokens applications already hold.
 
 **Issued tokens:** every live access token, which application holds it, its
-scopes and when it expires. Revoking one also revokes the refresh token issued
-with it, so the application cannot renew it.
+scopes and when it expires. Search by user or application, and narrow to one
+application. Revoking one also revokes the refresh token issued with it, so the
+application cannot renew it.
 
 Both need `sso.users.manage`. With only `sso.users.view` the page is shown
 without the controls.

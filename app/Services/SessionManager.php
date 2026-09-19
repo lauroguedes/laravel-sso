@@ -8,9 +8,14 @@ use App\Events\SessionRevoked;
 use App\Models\Application;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Database\Query\Builder as QueryBuilder;
+use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use Laravel\Passport\Passport;
 use Laravel\Passport\Token;
+use stdClass;
 
 /**
  * Reads and revokes the two things that keep a user signed in.
@@ -20,29 +25,44 @@ use Laravel\Passport\Token;
  * lets an application act on their behalf afterwards. Ending one does not end
  * the other, so an administrator withdrawing access has to be able to see and
  * revoke both.
+ *
+ * @phpstan-type TokenRow array{id: string, user: array{id: int|null, name: string|null, email: string|null}, application: string|null, scopes: list<string>, expires_at: string|null}
  */
 class SessionManager
 {
     /**
-     * Browser sessions on this server.
+     * How recently a session was last used, for narrowing the listing, in seconds.
+     */
+    public const ACTIVITY_WINDOWS = ['hour' => 3_600, 'day' => 86_400, 'week' => 604_800];
+
+    /**
+     * Browser sessions on this server, a page at a time, most recently active first.
      *
      * Only available when sessions are stored in the database; a file or cache
      * driver keeps no record an administrator could inspect.
      *
-     * @return array<int, array{id: mixed, user: array{id: mixed, name: mixed, email: mixed}, ip_address: mixed, user_agent: mixed, last_activity: mixed, current: bool}>
+     * @param  'asc'|'desc'|null  $direction  By last activity, newest first when null.
+     * @return LengthAwarePaginator<int|string, array{id: mixed, user: array{id: mixed, name: mixed, email: mixed}, ip_address: mixed, user_agent: mixed, last_activity: mixed, current: bool}>
      */
-    public function browserSessions(?string $currentId = null): array
+    public function browserSessions(?string $currentId, ?string $search, ?string $active, ?string $direction, int $perPage, string $pageName): LengthAwarePaginator
     {
         if (! $this->tracksSessions()) {
-            return [];
+            return new LengthAwarePaginator([], 0, $perPage, 1, ['pageName' => $pageName]);
         }
 
-        $rows = DB::table('sessions')
+        $window = $active === null ? null : (self::ACTIVITY_WINDOWS[$active] ?? null);
+
+        return DB::table('sessions')
             ->leftJoin('users', 'users.id', '=', 'sessions.user_id')
             ->whereNotNull('sessions.user_id')
-            ->orderByDesc('sessions.last_activity')
-            ->limit(100)
-            ->get([
+            ->when($search, fn (QueryBuilder $query, string $term) => $query->where(fn (QueryBuilder $query) => $query
+                ->whereIn('sessions.user_id', User::query()->search($term)->select('id'))
+                ->orWhereLike('sessions.ip_address', "{$term}%")))
+            ->when($window, fn (QueryBuilder $query, int $seconds) => $query
+                ->where('sessions.last_activity', '>=', now()->subSeconds($seconds)->timestamp))
+            ->orderBy('sessions.last_activity', $direction ?? 'desc')
+            ->orderBy('sessions.id')
+            ->paginate($perPage, [
                 'sessions.id',
                 'sessions.ip_address',
                 'sessions.user_agent',
@@ -50,51 +70,82 @@ class SessionManager
                 'users.id as user_id',
                 'users.name as user_name',
                 'users.email as user_email',
+            ], $pageName)
+            ->withQueryString()
+            ->through(fn (stdClass $session): array => [
+                'id' => $session->id,
+                'user' => [
+                    'id' => $session->user_id,
+                    'name' => $session->user_name,
+                    'email' => $session->user_email,
+                ],
+                'ip_address' => $session->ip_address,
+                'user_agent' => $session->user_agent,
+                'last_activity' => $session->last_activity,
+                'current' => $session->id === $currentId,
             ]);
-
-        return $rows->map(fn (object $session): array => [
-            'id' => $session->id,
-            'user' => [
-                'id' => $session->user_id,
-                'name' => $session->user_name,
-                'email' => $session->user_email,
-            ],
-            'ip_address' => $session->ip_address,
-            'user_agent' => $session->user_agent,
-            'last_activity' => $session->last_activity,
-            'current' => $session->id === $currentId,
-        ])->all();
     }
 
     /**
-     * Access tokens applications currently hold on a user's behalf.
+     * Access tokens applications currently hold on a user's behalf, a page at a time.
      *
      * Users are loaded separately rather than eager loaded: Passport's
      * Token::user() derives the model from its own client's provider, which
      * is not available when Eloquent builds the relation, so eager loading it
-     * fails. Two queries, and no lookup per row.
+     * fails. Two queries per page, and no lookup per row.
      *
-     * @return array<int, array{id: string, user: array{id: int|null, name: string|null, email: string|null}, application: string|null, scopes: list<string>, expires_at: string|null}>
+     * Each row is a TokenRow. The page is returned as mixed, as
+     * AuditController::entries() returns its own: PHPStan will not match a
+     * paginator mapped through through() against any declared row type, even an
+     * identical one.
+     *
+     * @param  'asc'|'desc'|null  $direction  By expiry, or newest first when null.
      */
-    public function issuedTokens(): array
+    public function issuedTokens(?string $search, ?string $application, ?string $direction, int $perPage, string $pageName): mixed
     {
         $tokens = $this->liveTokens()
             ->with('client:id,name')
-            ->latest('created_at')
-            ->limit(100)
-            ->get();
+            ->when($search, fn (Builder $query, string $term) => $query->where(fn (Builder $query) => $query
+                ->whereIn('user_id', User::query()->search($term)->select('id'))
+                ->orWhereIn('client_id', Application::query()->search($term)->select('id'))))
+            /*
+             * A client id is a UUID column on PostgreSQL, where comparing it with
+             * anything else is an error rather than an empty result.
+             */
+            ->when($application !== null && Str::isUuid($application), fn (Builder $query) => $query->where('client_id', $application))
+            ->when(
+                $direction,
+                fn (Builder $query, string $direction) => $query->orderBy('expires_at', $direction),
+                fn (Builder $query) => $query->latest('created_at'),
+            )
+            ->orderBy('id')
+            ->paginate($perPage, ['*'], $pageName)
+            ->withQueryString();
 
         $users = User::query()
-            ->whereIn('id', $tokens->pluck('user_id')->filter()->unique())
+            ->whereIn('id', collect($tokens->items())->pluck('user_id')->filter()->unique())
             ->get(['id', 'name', 'email'])
             ->keyBy('id');
 
-        return $tokens->map(fn (Token $token): array => [
-            'id' => $token->id,
+        return $tokens->through(fn (Token $token): array => $this->summarizeToken($token, $users));
+    }
+
+    /**
+     * One row of the token listing.
+     *
+     * @param  Collection<int, User>  $users  The page's users, by id.
+     * @return TokenRow
+     */
+    private function summarizeToken(Token $token, Collection $users): array
+    {
+        $user = $users->get($token->user_id);
+
+        return [
+            'id' => (string) $token->id,
             'user' => [
-                'id' => $token->user_id,
-                'name' => $users[$token->user_id]->name ?? null,
-                'email' => $users[$token->user_id]->email ?? null,
+                'id' => $token->user_id === null ? null : (int) $token->user_id,
+                'name' => $user?->name,
+                'email' => $user?->email,
             ],
             'application' => $token->client?->name,
             /*
@@ -103,7 +154,25 @@ class SessionManager
              */
             'scopes' => array_values(array_map(strval(...), $token->scopes ?? [])),
             'expires_at' => $token->expires_at?->toIso8601String(),
-        ])->all();
+        ];
+    }
+
+    /**
+     * The applications holding at least one live token, to narrow the listing by.
+     *
+     * @return list<array{value: string, label: string}>
+     */
+    public function applicationsHoldingTokens(): array
+    {
+        return array_values(Application::query()
+            ->whereIn('id', $this->liveTokens()->distinct()->select('client_id'))
+            ->orderBy('name')
+            ->get(['id', 'name'])
+            ->map(fn (Application $application): array => [
+                'value' => (string) $application->id,
+                'label' => (string) $application->name,
+            ])
+            ->all());
     }
 
     /**
@@ -122,8 +191,8 @@ class SessionManager
     /**
      * How many browser sessions are open.
      *
-     * Counted in the database rather than by measuring the listing, which caps
-     * at 100 and would silently report that number for ever after.
+     * Counted in the database rather than read off the listing, which only
+     * ever holds one page.
      */
     public function browserSessionCount(): int
     {

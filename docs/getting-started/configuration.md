@@ -112,8 +112,8 @@ own origin, so the browser asks this server first. Only the origins listed here
 are answered, and only on the endpoints such an application calls: discovery,
 the key set, `/oauth/token`, `/oauth/userinfo` and `/oauth/revoke`.
 
-| Variable                   | Default |                                                                                    |
-| -------------------------- | ------- | ---------------------------------------------------------------------------------- |
+| Variable                   | Default |                                                                                  |
+| -------------------------- | ------- | -------------------------------------------------------------------------------- |
 | `SSO_CORS_ALLOWED_ORIGINS` | empty   | Comma-separated origins, such as `https://app.example.com,http://localhost:3000` |
 
 An origin is a scheme, host and port, with no path and no trailing slash. Left

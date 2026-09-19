@@ -9,7 +9,6 @@ import DataTable from '@/components/DataTable.vue';
 import StatusIndicator from '@/components/StatusIndicator.vue';
 import Heading from '@/components/Heading.vue';
 import Pagination from '@/components/Pagination.vue';
-import type { PaginationLink } from '@/components/Pagination.vue';
 import SearchInput from '@/components/SearchInput.vue';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -26,7 +25,11 @@ import { formatDateTime } from '@/lib/datetime';
 import { create, edit, index } from '@/routes/users';
 import { destroy as revokeSessions } from '@/routes/users/sessions';
 import { update as updateStatus } from '@/routes/users/status';
-import type { DataTableColumn, UserSummary } from '@/types/administration';
+import type {
+    DataTableColumn,
+    Paginator,
+    UserSummary,
+} from '@/types/administration';
 
 defineOptions({
     layout: {
@@ -35,14 +38,7 @@ defineOptions({
 });
 
 const { users, filters, availableRoles } = defineProps<{
-    users: {
-        data: UserSummary[];
-        links: PaginationLink[];
-        from: number | null;
-        to: number | null;
-        total: number;
-        per_page: number;
-    };
+    users: Paginator<UserSummary>;
     filters: ListingFilters;
     availableRoles: string[];
     canManage: boolean;
@@ -134,7 +130,7 @@ function confirm() {
     pending.value = null;
 }
 
-const { search, sort, applySort, setFilter } = useListingFilters(
+const { search, sort, applySort, setFilter, goToPage } = useListingFilters(
     index().url,
     filters,
 );
@@ -287,11 +283,8 @@ const { search, sort, applySort, setFilter } = useListingFilters(
 
             <template #footer>
                 <Pagination
-                    :links="users.links"
-                    :from="users.from"
-                    :to="users.to"
-                    :total="users.total"
-                    :per-page="users.per_page"
+                    :paginator="users"
+                    @update:page="goToPage"
                     @update:per-page="(size) => setFilter('per_page', size)"
                 />
             </template>
