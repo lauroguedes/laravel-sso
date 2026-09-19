@@ -114,7 +114,11 @@ test('tokens narrow to one application, from those holding tokens', function () 
         ->get(route('sessions.index', ['tokens_application' => $billing->id]))
         ->assertInertia(fn ($page) => $page
             ->has('tokens.data', 1)
-            ->where('tokens.data.0.id', 'billing-token')
+            /*
+             * By the application rather than the token id: Passport stores an
+             * id in a char column, which PostgreSQL pads out to its width.
+             */
+            ->where('tokens.data.0.application', 'Billing')
             ->where('tokenApplications', [
                 ['value' => $billing->id, 'label' => 'Billing'],
                 ['value' => $this->application->id, 'label' => 'Reporting'],
