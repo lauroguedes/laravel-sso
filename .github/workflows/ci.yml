@@ -141,7 +141,7 @@ jobs:
     # the fake() helper. The suite always has them, so this runs what a server
     # runs with production packages only.
     env:
-      SSO_DEMO_MODE: 'true'
+      DEMO_MODE: 'true'
 
     steps:
       - name: Checkout code
@@ -174,7 +174,8 @@ jobs:
           touch database/database.sqlite
           php artisan sso:install --no-interaction
           php artisan optimize
-          php artisan sso:demo-reset --force
+          php artisan demo:doctor
+          php artisan demo:reset --force
 
   deploy:
     name: deploy

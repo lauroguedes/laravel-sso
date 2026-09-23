@@ -76,22 +76,22 @@ function assertPageRefused(
 }
 
 /**
- * Load "config/sso.php" with SSO_DEMO_MODE set, and hand back what it returns.
+ * Load "config/sso.php" with DEMO_MODE set, and hand back what it returns.
  *
- * A demo decides two of its switches while that file is read, so setting the
- * key afterwards would prove nothing. The variable is cleared either way, so a
+ * A demo pins one of its switches while that file is read, so setting the key
+ * afterwards would prove nothing. The variable is cleared either way, so a
  * failure cannot change the next test's answers.
  *
  * @return array<string, mixed>
  */
 function ssoConfigWithDemoMode(bool $enabled): array
 {
-    Env::getRepository()->set('SSO_DEMO_MODE', $enabled ? 'true' : 'false');
+    Env::getRepository()->set('DEMO_MODE', $enabled ? 'true' : 'false');
 
     try {
         return require config_path('sso.php');
     } finally {
-        Env::getRepository()->clear('SSO_DEMO_MODE');
+        Env::getRepository()->clear('DEMO_MODE');
     }
 }
 

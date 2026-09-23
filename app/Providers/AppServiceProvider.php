@@ -2,7 +2,6 @@
 
 namespace App\Providers;
 
-use App\Services\DemoMode;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
@@ -25,13 +24,6 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         $this->configureDefaults();
-
-        /*
-         * What a demo forbids is DemoMode's to decide, not this provider's.
-         * Called from here only because a demo needs it applied before the
-         * first request, and this is the provider that boots first.
-         */
-        $this->app->make(DemoMode::class)->restrict();
     }
 
     /**

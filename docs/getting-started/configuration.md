@@ -165,15 +165,27 @@ enabling it is safe in that respect if you decide the trade is worth making.
 
 Not settings. A deployment declares itself a demo, or it does not.
 
-| Variable               | Default |                                              |
-| ---------------------- | ------- | -------------------------------------------- |
-| `SSO_DEMO_MODE`        | `false` | Allow `sso:demo-reset`, and schedule it      |
-| `SSO_DEMO_RESET_HOURS` | `6`     | Hours between scheduled resets, from 1 to 23 |
+Run by [lauroguedes/laravel-demo-mode][demo-mode], configured in
+`config/demo.php`, which documents every key inline.
 
-With `SSO_DEMO_MODE` on, no mail leaves the server, email verification is
-forced off and pinned, the documentation is readable without signing in, and
-every reset gives the administrator a new password that the sign-in page fills
-in. See [Deployment](/docs/getting-started/deployment#hosting-a-public-demo).
+| Variable                 | Default            |                                                    |
+| ------------------------ | ------------------ | -------------------------------------------------- |
+| `DEMO_MODE`              | `false`            | Allow `demo:reset`, and schedule it                |
+| `DEMO_RESET_SCHEDULE`    | `0 */6 * * *`      | A cron expression, or `hourly`/`daily`/`weekly`    |
+| `DEMO_RESET_STRATEGY`    | `migrate-fresh-seed` | How the data is rebuilt                          |
+| `DEMO_CREDENTIALS_STORE` | `file`             | Where the published password is kept               |
+| `DEMO_EMAIL`             | `admin@user.test`  | The published account                              |
+
+With `DEMO_MODE` on, no mail leaves the server, email verification is forced off
+and pinned, the administrator's record cannot be edited, the documentation is
+readable without signing in, and every reset gives the administrator a new
+password that the sign-in page fills in.
+
+`php artisan demo:doctor` audits all of it and exits non-zero on anything
+dangerous. See
+[Deployment](/docs/getting-started/deployment#hosting-a-public-demo).
+
+[demo-mode]: https://github.com/lauroguedes/laravel-demo-mode
 
 Everywhere else, `/docs` is for signed-in users.
 

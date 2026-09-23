@@ -33,10 +33,15 @@ $pinnable = [
 ];
 
 /*
- * Read here rather than through config('sso.demo.enabled'), because this file
- * is what defines that value and is not yet loaded while it runs.
+ * Whether this installation is a public demonstration, which
+ * lauroguedes/laravel-demo-mode owns.
+ *
+ * Read from the environment rather than through Demo::enabled(), because this
+ * file is read while the container is still being built — there is no facade to
+ * ask yet. It is the one place in this project that reads DEMO_MODE directly,
+ * and it does so for that reason alone; everywhere else asks the facade.
  */
-$demo = (bool) env('SSO_DEMO_MODE', false);
+$demo = (bool) env('DEMO_MODE', false);
 
 /*
  * What a public demonstration fixes, whatever the environment says.
@@ -128,27 +133,17 @@ return [
     | Demonstration Mode
     |--------------------------------------------------------------------------
     |
-    | A public demo is signed into by strangers, and everything they can reach
-    | they can also change. "sso:demo-reset" drops the database and rebuilds
-    | the sample data, and the scheduler runs it every "reset_hours" while
-    | this is on.
+    | Everything a public demo does differently lives in "config/demo.php" and
+    | is asked through the Demo facade: the rebuild, the published credentials,
+    | the restrictions, the write guards.
     |
-    | Off by default, and checked before anything is dropped: turning it on is
-    | the deliberate act of saying this installation holds nothing worth
-    | keeping.
-    |
-    | Turning it on also closes the two things a stranger could otherwise
-    | abuse. No mail leaves the server, and email verification is forced off
-    | and pinned, so nobody is stranded behind a message that will never
-    | arrive. Each reset gives the administrator a new password, published on
-    | the sign-in page by App\Services\DemoMode.
+    | What stays here is the one thing that package cannot know — that on this
+    | project a demo must also force email verification off and pin it there.
+    | A demo is administered by whoever walked in, no mail leaves the server, and
+    | leaving that switch editable would strand every visitor behind a message
+    | that will never arrive. See $forced at the top of this file.
     |
     */
-
-    'demo' => [
-        'enabled' => $demo,
-        'reset_hours' => (int) env('SSO_DEMO_RESET_HOURS', 6),
-    ],
 
     /*
     |--------------------------------------------------------------------------

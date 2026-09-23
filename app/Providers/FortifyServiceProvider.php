@@ -5,7 +5,6 @@ namespace App\Providers;
 use App\Actions\Fortify\CreateNewUser;
 use App\Actions\Fortify\ResetUserPassword;
 use App\Models\User;
-use App\Services\DemoMode;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Http\Request;
@@ -17,6 +16,7 @@ use Illuminate\Validation\Rules\Password;
 use Inertia\Inertia;
 use Laravel\Fortify\Features;
 use Laravel\Fortify\Fortify;
+use LauroGuedes\DemoMode\Facades\Demo;
 
 class FortifyServiceProvider extends ServiceProvider
 {
@@ -92,11 +92,17 @@ class FortifyServiceProvider extends ServiceProvider
             'registerUrl' => Features::enabled(Features::registration()) ? route('register') : null,
             'status' => $request->session()->get('status'),
             /*
-             * Null on every installation that is not a public demonstration.
-             * A demo has to let a stranger in, so it fills its own credentials
-             * into the form. See App\Services\DemoMode.
+             * ['enabled' => false] on every installation that is not a public
+             * demonstration. A demo has to let a stranger in, so it fills its
+             * own credentials into the form.
+             *
+             * Passed to this page only, rather than shared from
+             * HandleInertiaRequests: the payload carries the administrator's
+             * password, and an Inertia payload is in the page source of every
+             * response it decorates. The sign-in page is the one place that is
+             * the point.
              */
-            'demo' => app(DemoMode::class)->credentials(),
+            'demo' => Demo::toArray(),
         ]));
 
         Fortify::resetPasswordView(fn (Request $request) => Inertia::render('auth/ResetPassword', [

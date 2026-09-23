@@ -27,11 +27,16 @@ defineProps<{
     canResetPassword: boolean;
     registerUrl?: string | null;
     /**
-     * Filled in for the visitor on a public demonstration, and null
-     * everywhere else. A demo has to let a stranger in, and its password is
-     * rotated on every reset.
+     * The demo payload from lauroguedes/laravel-demo-mode. Every installation
+     * gets it; only a public demonstration has `enabled` true and credentials
+     * in it. A demo has to let a stranger in, and its password is rotated on
+     * every reset, so what is filled in below stops working at the next one.
      */
-    demo?: { email: string; password: string } | null;
+    demo?: {
+        enabled: boolean;
+        credentials?: { email: string; password: string; label: string | null } | null;
+        resets_in?: string | null;
+    } | null;
 }>();
 </script>
 
@@ -40,11 +45,12 @@ defineProps<{
 
     <StatusMessage :message="status" />
 
-    <Alert v-if="demo" variant="info">
+    <Alert v-if="demo?.enabled" variant="info">
         <Info />
         <AlertDescription>
             Demonstration server. The administrator is filled in below, and
-            everything resets on a schedule.
+            everything resets
+            {{ demo.resets_in ? `in ${demo.resets_in}` : 'on a schedule' }}.
         </AlertDescription>
     </Alert>
 
@@ -68,7 +74,7 @@ defineProps<{
                     :tabindex="1"
                     autocomplete="email"
                     placeholder="email@example.com"
-                    :default-value="demo?.email"
+                    :default-value="demo?.credentials?.email"
                 />
                 <InputError :message="errors.email" />
             </div>
@@ -92,7 +98,7 @@ defineProps<{
                     :tabindex="2"
                     autocomplete="current-password"
                     placeholder="Password"
-                    :default-value="demo?.password"
+                    :default-value="demo?.credentials?.password"
                 />
                 <InputError :message="errors.password" />
             </div>

@@ -7,7 +7,7 @@ use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 
 test('an ordinary installation sends a signed-out reader to sign in', function () {
-    config()->set('sso.demo.enabled', false);
+    config()->set('demo.enabled', false);
 
     $this->get(route('laradocs.index'))->assertRedirect(route('login'));
     $this->get(route('laradocs.llms'))->assertRedirect(route('login'));
@@ -16,7 +16,7 @@ test('an ordinary installation sends a signed-out reader to sign in', function (
 
 test('a public demonstration opens the documentation to everyone', function () {
     Http::fake();
-    config()->set('sso.demo.enabled', true);
+    config()->set('demo.enabled', true);
 
     $this->get(route('laradocs.index'))->assertOk();
 });
