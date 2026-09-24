@@ -358,7 +358,26 @@ return [
 
         'enabled' => true,
 
+        /*
+         | 'pill' is the package's own floating bar, rendered inside a shadow
+         | root. It is the only way this project gets a demo notice at all: the
+         | front end is Vue, so a Blade component with class names would have to
+         | be reimplemented there.
+         */
+        'style' => 'pill',
+
         'variant' => 'warning',
+
+        'label' => 'Demo',
+
+        'cta' => [
+            'label' => 'Deploy your own',
+            'url' => 'https://github.com/lauroguedes/laravel-sso',
+        ],
+
+        'reset_button' => true,
+
+        'asset_route' => '/demo-mode/bar.js',
 
         'dismissible' => true,
 
@@ -369,7 +388,7 @@ return [
          */
         'message' => null,
 
-        'position' => 'top',
+        'position' => 'bottom',
 
         /*
          | Class names by variant, so the common case is one line here rather
