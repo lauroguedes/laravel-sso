@@ -24,6 +24,12 @@
         <env name="BROADCAST_CONNECTION" value="null"/>
         <env name="CACHE_STORE" value="array"/>
         <env name="DB_CONNECTION" value="sqlite"/>
+        <!-- Pinned off so the suite does not inherit whatever the developer's
+             .env says. With it on, the protected-record guard is registered at
+             boot and refuses SsoDemoSeeder, which creates the published account
+             and then saves it again to verify the address. Tests that want a
+             demo turn it on themselves, after boot. -->
+        <env name="DEMO_MODE" value="false"/>
         <env name="DB_DATABASE" value=":memory:"/>
         <env name="DB_URL" value=""/>
         <env name="MAIL_MAILER" value="array"/>

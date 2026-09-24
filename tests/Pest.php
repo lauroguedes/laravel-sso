@@ -86,12 +86,25 @@ function assertPageRefused(
  */
 function ssoConfigWithDemoMode(bool $enabled): array
 {
-    Env::getRepository()->set('DEMO_MODE', $enabled ? 'true' : 'false');
+    /*
+     * Written straight into the superglobals rather than through
+     * Env::getRepository(): phpunit.xml pins DEMO_MODE off for the whole suite,
+     * and the repository is immutable, so set() silently does nothing once the
+     * name exists. Reads still go through the adapters, so this is visible to
+     * env() — and it is restored either way.
+     */
+    $previous = $_ENV['DEMO_MODE'] ?? null;
+
+    $_ENV['DEMO_MODE'] = $_SERVER['DEMO_MODE'] = $enabled ? 'true' : 'false';
 
     try {
         return require config_path('sso.php');
     } finally {
-        Env::getRepository()->clear('DEMO_MODE');
+        if ($previous === null) {
+            unset($_ENV['DEMO_MODE'], $_SERVER['DEMO_MODE']);
+        } else {
+            $_ENV['DEMO_MODE'] = $_SERVER['DEMO_MODE'] = $previous;
+        }
     }
 }
 
