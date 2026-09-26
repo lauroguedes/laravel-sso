@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "13d996d00b684d4e08b66ee8acd410b6",
+    "content-hash": "ff08bd70a98551d3b8534ad45611be45",
     "packages": [
         {
             "name": "bacon/bacon-qr-code",
@@ -2303,16 +2303,16 @@
         },
         {
             "name": "lauroguedes/laravel-demo-mode",
-            "version": "v1.3.1",
+            "version": "v1.5.1",
             "source": {
                 "type": "git",
                 "url": "https://github.com/lauroguedes/laravel-demo-mode.git",
-                "reference": "f293d491e1b2bf826fe4b155388961f134b175e0"
+                "reference": "b19c196a74145ee7baef6d771b1476ae0c57cbad"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/lauroguedes/laravel-demo-mode/zipball/f293d491e1b2bf826fe4b155388961f134b175e0",
-                "reference": "f293d491e1b2bf826fe4b155388961f134b175e0",
+                "url": "https://api.github.com/repos/lauroguedes/laravel-demo-mode/zipball/b19c196a74145ee7baef6d771b1476ae0c57cbad",
+                "reference": "b19c196a74145ee7baef6d771b1476ae0c57cbad",
                 "shasum": ""
             },
             "require": {
@@ -2342,12 +2342,12 @@
             "type": "library",
             "extra": {
                 "laravel": {
-                    "providers": [
-                        "LauroGuedes\\DemoMode\\DemoModeServiceProvider"
-                    ],
                     "aliases": {
                         "Demo": "LauroGuedes\\DemoMode\\Facades\\Demo"
-                    }
+                    },
+                    "providers": [
+                        "LauroGuedes\\DemoMode\\DemoModeServiceProvider"
+                    ]
                 }
             },
             "autoload": {
@@ -2355,47 +2355,7 @@
                     "LauroGuedes\\DemoMode\\": "src/"
                 }
             },
-            "autoload-dev": {
-                "psr-4": {
-                    "LauroGuedes\\DemoMode\\Tests\\": "tests/",
-                    "Workbench\\App\\": "workbench/app/",
-                    "Workbench\\Database\\Seeders\\": "workbench/database/seeders/"
-                }
-            },
-            "scripts": {
-                "post-autoload-dump": [
-                    "@prepare"
-                ],
-                "prepare": [
-                    "@php vendor/bin/testbench package:discover --ansi"
-                ],
-                "lint": [
-                    "@php vendor/bin/pint --parallel",
-                    "@php vendor/bin/rector"
-                ],
-                "test:lint": [
-                    "@php vendor/bin/pint --parallel --test",
-                    "@php vendor/bin/rector --dry-run"
-                ],
-                "test:types": [
-                    "@php vendor/bin/phpstan analyse --memory-limit=1G"
-                ],
-                "test:type-coverage": [
-                    "@php vendor/bin/pest --type-coverage --min=100"
-                ],
-                "test:unit": [
-                    "@php vendor/bin/pest"
-                ],
-                "test:coverage": [
-                    "@php vendor/bin/pest --coverage"
-                ],
-                "test": [
-                    "@test:lint",
-                    "@test:types",
-                    "@test:type-coverage",
-                    "@test:unit"
-                ]
-            },
+            "notification-url": "https://packagist.org/downloads/",
             "license": [
                 "MIT"
             ],
@@ -2417,10 +2377,12 @@
                 "starter-kit"
             ],
             "support": {
-                "source": "https://github.com/lauroguedes/laravel-demo-mode/tree/v1.3.1",
-                "issues": "https://github.com/lauroguedes/laravel-demo-mode/issues"
+                "docs": "https://github.com/lauroguedes/laravel-demo-mode/blob/main/docs/README.md",
+                "issues": "https://github.com/lauroguedes/laravel-demo-mode/issues",
+                "security": "https://github.com/lauroguedes/laravel-demo-mode/security/policy",
+                "source": "https://github.com/lauroguedes/laravel-demo-mode"
             },
-            "time": "2026-09-24T19:26:39+00:00"
+            "time": "2026-09-26T09:49:02+00:00"
         },
         {
             "name": "lcobucci/jwt",

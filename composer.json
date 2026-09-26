@@ -22,7 +22,7 @@
         "laravel/passport": "^13.0",
         "laravel/tinker": "^3.0",
         "laravel/wayfinder": "^0.1.14",
-        "lauroguedes/laravel-demo-mode": "^1.3",
+        "lauroguedes/laravel-demo-mode": "^1.5",
         "petebishwhip/laradocs": "^1.1",
         "spatie/laravel-activitylog": "^5.1",
         "spatie/laravel-permission": "^8.0"
@@ -131,10 +131,5 @@
         "issues": "https://github.com/lauroguedes/laravel-sso/issues",
         "source": "https://github.com/lauroguedes/laravel-sso",
         "docs": "https://laravel-sso.lauroguedes.dev/docs"
-    },
-    "repositories": [{
-        "name": "laravel-demo-mode",
-        "type": "vcs",
-        "url": "https://github.com/lauroguedes/laravel-demo-mode"
-    }]
+    }
 }
