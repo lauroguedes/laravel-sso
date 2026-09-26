@@ -11,12 +11,12 @@ use App\Models\ApplicationPermission;
 use App\Models\ApplicationRole;
 use App\Models\User;
 use App\Services\ApplicationManager;
-use App\Services\DemoMode;
 use App\Services\UserManager;
 use Illuminate\Console\Command;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
+use LauroGuedes\DemoMode\Facades\Demo;
 use RuntimeException;
 
 /**
@@ -34,8 +34,8 @@ class SsoDemoSeeder extends Seeder
     /**
      * The password shared by every demo account.
      *
-     * The administrator is the exception on a public demonstration, where it
-     * gets a fresh one on every reset. See DemoMode.
+     * The administrator is the exception on a public demonstration, where the
+     * reset stages a fresh password and publishes it on the sign-in page.
      */
     public const PASSWORD = 'secret';
 
@@ -70,8 +70,6 @@ class SsoDemoSeeder extends Seeder
         return parent::setCommand($command);
     }
 
-    public function __construct(private readonly DemoMode $demo) {}
-
     /**
      * Run the database seeds.
      */
@@ -96,8 +94,13 @@ class SsoDemoSeeder extends Seeder
          * last visitor wrote down stops working at the next reset. Everywhere
          * else the shared constant, because a local checkout is more useful
          * with credentials somebody can remember.
+         *
+         * The reset stages the password just before this runs and publishes it
+         * just after, so the hash written here and the one shown on the sign-in
+         * page are the same. The fallback is what lets "db:seed" work on its own,
+         * outside any reset — which is how this seeder is used most of the time.
          */
-        $administratorPassword = $this->demo->rotate(self::email('admin')) ?? self::PASSWORD;
+        $administratorPassword = Demo::passwordFor(self::email('admin')) ?? self::PASSWORD;
 
         DB::transaction(function () use ($administratorPassword): void {
             $applications = app(ApplicationManager::class);

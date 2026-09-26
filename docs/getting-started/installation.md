@@ -96,8 +96,10 @@ them. Every account uses the password `secret`, so the seeder refuses to run
 when the environment is production. It prints the accounts it created when it
 finishes.
 
-On a public demonstration the administrator gets a new password on every
-reset instead. See [Deployment](/docs/getting-started/deployment#hosting-a-public-demo).
+On a public demonstration the administrator gets a new password on every reset
+instead, published on the sign-in page — the seeder reads it from
+`Demo::passwordFor()` and falls back to `secret` when it is run on its own. See
+[Deployment](/docs/getting-started/deployment#hosting-a-public-demo).
 
 ## Upgrading
 

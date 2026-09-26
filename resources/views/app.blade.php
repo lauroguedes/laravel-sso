@@ -51,5 +51,10 @@
     </head>
     <body class="font-sans antialiased">
         <x-inertia::app />
+
+        {{-- Renders nothing when this is not a demo. Outside the Inertia root on
+             purpose: it has to survive a client-side visit, and no page
+             component needs to know it exists. --}}
+        <x-demo-banner />
     </body>
 </html>

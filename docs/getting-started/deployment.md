@@ -155,17 +155,38 @@ when the issuer is misconfigured.
 ## Hosting a public demo
 
 A demonstration server is signed into by strangers, and everything they can
-reach they can also change. `sso:demo-reset` drops the database and rebuilds
-the sample data, so what a visitor finds is the demo rather than whatever the
-last visitor left behind.
+reach they can also change. `demo:reset` drops the database and rebuilds the
+sample data, so what a visitor finds is the demo rather than whatever the last
+visitor left behind.
+
+This is [lauroguedes/laravel-demo-mode][demo-mode], which ships with this
+project. Its own documentation covers every setting; what follows is how this
+project uses it.
 
 ```env
-SSO_DEMO_MODE=true
-SSO_DEMO_RESET_HOURS=6
+DEMO_MODE=true
+DEMO_RESET_SCHEDULE="0 */6 * * *"
 ```
 
-With `SSO_DEMO_MODE` on, the scheduler runs the reset on that cycle. Run it by
-hand with `php artisan sso:demo-reset`.
+With `DEMO_MODE` on, the scheduler runs the reset on that cycle. Run it by hand
+with `php artisan demo:reset`, and see the plan without touching anything with
+`php artisan demo:reset --dry-run`.
+
+**Before the first scheduled reset, run `php artisan demo:doctor`.** It audits
+the whole configuration and exits non-zero on anything that would destroy data
+or publish a secret — a host that does not match, a credentials disk the web
+server would serve, a seeder that does not exist. It belongs in the deploy
+pipeline, ahead of the reset.
+
+```php
+// config/demo.php — the two settings nothing can infer for you
+'environments'  => ['demo'],
+'allowed_hosts' => ['demo.example.com'],
+```
+
+`allowed_hosts` is the only barrier that checks what the internet actually
+resolves rather than a convention, which makes it the one that survives an
+`.env` reaching a server it should not have. Set it on anything public.
 
 The same switch closes what a stranger could otherwise abuse:
 
@@ -173,20 +194,29 @@ The same switch closes what a stranger could otherwise abuse:
 | ---------------------------- | -------------------------------------------------------------------------------------------- |
 | Mail                         | Nothing is sent. The transport is replaced, so no message reaches an address a visitor typed |
 | Email verification           | Forced off and pinned, so nobody is stranded behind a message that will never arrive         |
+| The administrator's record   | Cannot be edited, so one visitor cannot lock out the next by changing the published address  |
 | The administrator's password | Regenerated on every reset, so what the last visitor wrote down stops working                |
 | The sign-in page             | Fills that administrator in, since a demo nobody can enter is not a demo                     |
 | The documentation            | Readable without signing in. Everywhere else, `/docs` asks the visitor to sign in first      |
 
 The published credentials live in `storage/app/private/demo-credentials.json`,
-written only while `SSO_DEMO_MODE` is on and read back only while it still is.
-The other demo accounts keep the seeder's shared password. `sso:demo-reset`
-prints the new administrator password when it finishes.
+written only while `DEMO_MODE` is on and read back only while it still is — so a
+leftover file on a server that stopped being a demo reads as nothing at all. The
+other demo accounts keep the seeder's shared password. `php artisan
+demo:credentials` prints the current one.
+
+Email verification is the one thing on that list this project decides for
+itself, in `config/sso.php`; everything else is `config/demo.php`.
 
 > [!WARNING]
 > This deletes every user, application and token. It refuses to run unless
-> `SSO_DEMO_MODE` is on, and refuses in production regardless, because the
-> seeder it runs creates accounts with a password anyone can look up. Never
-> turn it on for an installation holding anything you want to keep.
+> `DEMO_MODE` is on, unless `APP_ENV` is one of `demo.environments`, and unless
+> the request host is one of `demo.allowed_hosts` when that is set. It refuses in
+> production regardless, because the seeder it runs creates accounts with a
+> password anyone can look up. Never turn it on for an installation holding
+> anything you want to keep.
+
+[demo-mode]: https://github.com/lauroguedes/laravel-demo-mode
 
 ## Scaling
 

@@ -1,16 +1,24 @@
 <?php
 
-use App\Providers\AppServiceProvider;
-use App\Services\DemoMode;
 use Database\Seeders\SsoDemoSeeder;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Testing\AssertableInertia as Assert;
+use LauroGuedes\DemoMode\DemoModeServiceProvider;
+use LauroGuedes\DemoMode\Facades\Demo;
+
+/*
+ * What a public demonstration does is lauroguedes/laravel-demo-mode's job, and it
+ * has its own suite. What is left here is the seam: the two things this project
+ * decides for itself, and the three places it hands the package's answers to a
+ * visitor.
+ */
 
 test('a demo turns email verification off and fixes it there', function () {
     /*
      * Pinned as well as defaulted off: a demo is administered by whoever
      * walked in, and leaving the switch editable would let the first of them
-     * turn the mail back on.
+     * turn the mail back on. The package cannot know this — it is a setting
+     * that only exists in this project.
      */
     $demo = ssoConfigWithDemoMode(true);
 
@@ -26,64 +34,65 @@ test('an ordinary installation still requires a verified address', function () {
 });
 
 test('a demo sends no mail at all', function () {
-    config()->set('sso.demo.enabled', true);
+    /*
+     * The package's DisableMail restriction, asserted here rather than taken on
+     * trust: ".env.example" promises no mail leaves a demo, and that promise is
+     * now kept by a config entry that could be edited out without anything else
+     * in this project noticing.
+     */
+    config()->set('demo.enabled', true);
+    config()->set('mail.default', 'smtp');
 
-    (new AppServiceProvider($this->app))->boot();
+    app()->register(DemoModeServiceProvider::class, force: true);
 
     expect(config('mail.default'))->toBe('array');
 });
 
 test('an ordinary installation keeps its configured transport', function () {
-    config()->set('sso.demo.enabled', false);
+    config()->set('demo.enabled', false);
     config()->set('mail.default', 'smtp');
 
-    (new AppServiceProvider($this->app))->boot();
+    app()->register(DemoModeServiceProvider::class, force: true);
 
     expect(config('mail.default'))->toBe('smtp');
-});
-
-test('nothing is published while the flag is off', function () {
-    /*
-     * The file outlives the switch, so reading it is gated on the switch
-     * rather than on the file being gone. Turning the demo off is what an
-     * operator does when the installation stops being disposable.
-     */
-    Storage::fake('local');
-
-    config()->set('sso.demo.enabled', true);
-    app(DemoMode::class)->rotate('admin@'.SsoDemoSeeder::DOMAIN);
-
-    config()->set('sso.demo.enabled', false);
-
-    expect(app(DemoMode::class)->rotate('admin@'.SsoDemoSeeder::DOMAIN))->toBeNull()
-        ->and(app(DemoMode::class)->credentials())->toBeNull();
 });
 
 describe('on a public demonstration', function () {
     beforeEach(function () {
         Storage::fake('local');
-        config()->set('sso.demo.enabled', true);
+        config()->set('demo.enabled', true);
+
+        /*
+         * Rotate before seeding, the order a reset uses: the password is staged
+         * first so the seeder hashes the one the sign-in page will show. Seeding
+         * first would leave the page showing a password for the previous run.
+         */
+        Demo::rotate();
 
         $this->seed(SsoDemoSeeder::class);
     });
 
     test('the administrator gets a password that is not the shared one', function () {
-        $credentials = app(DemoMode::class)->credentials();
+        $credentials = Demo::credentials();
 
         expect($credentials['email'])->toBe('admin@'.SsoDemoSeeder::DOMAIN)
             ->and($credentials['password'])->not->toBe(SsoDemoSeeder::PASSWORD);
 
-        $this->post(route('login'), $credentials);
+        $this->post(route('login'), [
+            'email' => $credentials['email'],
+            'password' => $credentials['password'],
+        ]);
 
         $this->assertAuthenticated();
     });
 
     test('the sign-in page fills those credentials in', function () {
-        $credentials = app(DemoMode::class)->credentials();
+        $credentials = Demo::credentials();
 
         $this->get(route('login'))->assertInertia(fn (Assert $page) => $page
-            ->where('demo.email', $credentials['email'])
-            ->where('demo.password', $credentials['password'])
+            ->where('demo.enabled', true)
+            ->where('demo.credentials.email', $credentials['email'])
+            ->where('demo.credentials.password', $credentials['password'])
         );
     });
 });
@@ -95,5 +104,7 @@ test('an ordinary installation publishes nothing and fills nothing in', function
 
     Storage::disk('local')->assertDirectoryEmpty('/');
 
-    $this->get(route('login'))->assertInertia(fn (Assert $page) => $page->where('demo', null));
+    $this->get(route('login'))->assertInertia(fn (Assert $page) => $page
+        ->where('demo', ['enabled' => false])
+    );
 });

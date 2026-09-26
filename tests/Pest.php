@@ -76,22 +76,35 @@ function assertPageRefused(
 }
 
 /**
- * Load "config/sso.php" with SSO_DEMO_MODE set, and hand back what it returns.
+ * Load "config/sso.php" with DEMO_MODE set, and hand back what it returns.
  *
- * A demo decides two of its switches while that file is read, so setting the
- * key afterwards would prove nothing. The variable is cleared either way, so a
+ * A demo pins one of its switches while that file is read, so setting the key
+ * afterwards would prove nothing. The variable is cleared either way, so a
  * failure cannot change the next test's answers.
  *
  * @return array<string, mixed>
  */
 function ssoConfigWithDemoMode(bool $enabled): array
 {
-    Env::getRepository()->set('SSO_DEMO_MODE', $enabled ? 'true' : 'false');
+    /*
+     * Written straight into the superglobals rather than through
+     * Env::getRepository(): phpunit.xml pins DEMO_MODE off for the whole suite,
+     * and the repository is immutable, so set() silently does nothing once the
+     * name exists. Reads still go through the adapters, so this is visible to
+     * env() — and it is restored either way.
+     */
+    $previous = $_ENV['DEMO_MODE'] ?? null;
+
+    $_ENV['DEMO_MODE'] = $_SERVER['DEMO_MODE'] = $enabled ? 'true' : 'false';
 
     try {
         return require config_path('sso.php');
     } finally {
-        Env::getRepository()->clear('SSO_DEMO_MODE');
+        if ($previous === null) {
+            unset($_ENV['DEMO_MODE'], $_SERVER['DEMO_MODE']);
+        } else {
+            $_ENV['DEMO_MODE'] = $_SERVER['DEMO_MODE'] = $previous;
+        }
     }
 }
 

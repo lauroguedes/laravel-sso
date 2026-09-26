@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace App\Http\Middleware;
 
-use App\Services\DemoMode;
 use Closure;
 use Illuminate\Auth\Middleware\Authenticate;
 use Illuminate\Http\Request;
+use LauroGuedes\DemoMode\Facades\Demo;
 
 /**
  * Keeps the documentation for signed-in users, except on a public demo.
@@ -26,7 +26,7 @@ class EnsureDocumentationIsReadable extends Authenticate
      */
     public function handle($request, Closure $next, ...$guards)
     {
-        if (app(DemoMode::class)->enabled()) {
+        if (Demo::enabled()) {
             return $next($request);
         }
 
