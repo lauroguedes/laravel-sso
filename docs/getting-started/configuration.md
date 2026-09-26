@@ -168,13 +168,13 @@ Not settings. A deployment declares itself a demo, or it does not.
 Run by [lauroguedes/laravel-demo-mode][demo-mode], configured in
 `config/demo.php`, which documents every key inline.
 
-| Variable                 | Default            |                                                    |
-| ------------------------ | ------------------ | -------------------------------------------------- |
-| `DEMO_MODE`              | `false`            | Allow `demo:reset`, and schedule it                |
-| `DEMO_RESET_SCHEDULE`    | `0 */6 * * *`      | A cron expression, or `hourly`/`daily`/`weekly`    |
-| `DEMO_RESET_STRATEGY`    | `migrate-fresh-seed` | How the data is rebuilt                          |
-| `DEMO_CREDENTIALS_STORE` | `file`             | Where the published password is kept               |
-| `DEMO_EMAIL`             | `admin@user.test`  | The published account                              |
+| Variable                 | Default              |                                                 |
+| ------------------------ | -------------------- | ----------------------------------------------- |
+| `DEMO_MODE`              | `false`              | Allow `demo:reset`, and schedule it             |
+| `DEMO_RESET_SCHEDULE`    | `0 */6 * * *`        | A cron expression, or `hourly`/`daily`/`weekly` |
+| `DEMO_RESET_STRATEGY`    | `migrate-fresh-seed` | How the data is rebuilt                         |
+| `DEMO_CREDENTIALS_STORE` | `file`               | Where the published password is kept            |
+| `DEMO_EMAIL`             | `admin@user.test`    | The published account                           |
 
 With `DEMO_MODE` on, no mail leaves the server, email verification is forced off
 and pinned, the administrator's record cannot be edited, the documentation is

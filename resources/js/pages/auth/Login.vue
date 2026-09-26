@@ -34,7 +34,11 @@ defineProps<{
      */
     demo?: {
         enabled: boolean;
-        credentials?: { email: string; password: string; label: string | null } | null;
+        credentials?: {
+            email: string;
+            password: string;
+            label: string | null;
+        } | null;
         resets_in?: string | null;
     } | null;
 }>();
