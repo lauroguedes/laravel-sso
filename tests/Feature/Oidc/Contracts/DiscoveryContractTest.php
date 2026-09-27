@@ -34,3 +34,12 @@ test('the active key is published, and its private half signs what its public ha
     expect(array_column($keys->keySet()['keys'], 'kid'))->toContain($keys->keyId())
         ->and(openssl_verify('payload', $signature, $keys->publicKey(), OPENSSL_ALGO_SHA256))->toBe(1);
 });
+
+test('every key that verifies is the one published, the active key first', function () {
+    $keys = app(ProvidesSigningKeys::class);
+    $published = $keys->keySet()['keys'];
+
+    expect($keys->verificationKeys()[0])->toBe($keys->publicKey())
+        ->and($published)->toHaveCount(count($keys->verificationKeys()))
+        ->and($published[0]['kid'])->toBe($keys->keyId());
+});

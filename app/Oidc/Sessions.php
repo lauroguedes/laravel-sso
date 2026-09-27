@@ -66,14 +66,29 @@ class Sessions implements EndsSessions
 
         try {
             $token = (new Parser(new JoseEncoder))->parse($hint);
-            $signedWith = new SignedWith(new Sha256, InMemory::plainText($this->keys->publicKey()));
+            $keys = $this->keys->verificationKeys();
         } catch (JwtException|SigningKeyUnavailable) {
             return null;
         }
 
-        return $token instanceof UnencryptedToken && (new Validator)->validate($token, $signedWith, new IssuedBy($issuer))
-            ? $token
-            : null;
+        if (! $token instanceof UnencryptedToken) {
+            return null;
+        }
+
+        /*
+         * Any published key will do. The hint's expiry is ignored, so a hint
+         * signed before the last rotation is as likely as any other.
+         */
+        $validator = new Validator;
+        $issuedBy = new IssuedBy($issuer);
+
+        foreach ($keys as $key) {
+            if ($validator->validate($token, new SignedWith(new Sha256, InMemory::plainText($key)), $issuedBy)) {
+                return $token;
+            }
+        }
+
+        return null;
     }
 
     /**

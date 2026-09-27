@@ -27,7 +27,10 @@ interface ProvidesSigningKeys
     public function privateKey(): string;
 
     /**
-     * The PEM encoded public key that verifies them.
+     * The PEM encoded public half of the active key.
+     *
+     * Verify with verificationKeys() instead. This key alone would reject every
+     * token signed before the last rotation.
      *
      * @return non-empty-string
      *
@@ -41,6 +44,17 @@ interface ProvidesSigningKeys
      * @throws SigningKeyUnavailable
      */
     public function keyId(): string;
+
+    /**
+     * Every PEM encoded public key a token this provider signed may still be
+     * verified with: the active key first, then the one retired by the last
+     * rotation, for as long as it is configured.
+     *
+     * @return non-empty-list<non-empty-string>
+     *
+     * @throws SigningKeyUnavailable
+     */
+    public function verificationKeys(): array;
 
     /**
      * The JSON Web Key Set served at /.well-known/jwks.json.

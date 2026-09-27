@@ -4,6 +4,8 @@ use App\Http\Middleware\EnsureEmailIsVerifiedWhenRequired;
 use App\Http\Middleware\EnsureUserIsEnabled;
 use App\Http\Middleware\HandleAppearance;
 use App\Http\Middleware\HandleInertiaRequests;
+use App\Oidc\Exceptions\SigningKeyUnavailable;
+use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -43,6 +45,15 @@ return Application::configure(basePath: dirname(__DIR__))
         $exceptions->shouldRenderJsonWhen(
             fn (Request $request) => $request->is('api/*') || $request->expectsJson(),
         );
+
+        /*
+         * A missing or malformed signing key is a fault in the server's setup,
+         * so it is reported, but it recurs on every request that reads the key
+         * until someone fixes it. Once an hour per fault is enough to be seen.
+         */
+        $exceptions->throttle(fn (Throwable $e) => $e instanceof SigningKeyUnavailable
+            ? Limit::perHour(1)->by($e->getMessage())
+            : null);
 
         /*
          * A page the reader may not open, or that does not exist, sends them

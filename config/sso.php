@@ -91,6 +91,22 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Retired Signing Key
+    |--------------------------------------------------------------------------
+    |
+    | The public half of the key this server signed with before its last
+    | rotation. It stays in the published key set, after the active key, so
+    | tokens issued before the rotation still verify. Remove it once they have
+    | all expired. A literal "\n" stands for each line break, as in
+    | PASSPORT_PUBLIC_KEY. When unset, storage/oauth-previous-public.key is used
+    | if it exists.
+    |
+    */
+
+    'previous_public_key' => env('SSO_PREVIOUS_PUBLIC_KEY'),
+
+    /*
+    |--------------------------------------------------------------------------
     | OAuth2 Defaults
     |--------------------------------------------------------------------------
     |
