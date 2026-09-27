@@ -21,14 +21,17 @@ php artisan migrate --force
 php artisan sso:install --skip-migrations
 php artisan storage:link
 
-php artisan config:cache
-php artisan route:cache
-php artisan event:cache
+php artisan optimize
 ```
 
 `storage:link` is what makes an uploaded logo or sign-in background reachable.
 Without it they resolve to nothing. `sso:install` deliberately does not do it
 for you, since it writes outside the application's own directories.
+
+`optimize` caches the configuration, routes, events and views, and rebuilds the
+cached documentation. Run it on every deployment, not only the first. The
+documentation keeps its list of pages for a day, so a page added by a release
+is missing from `/docs` until it runs.
 
 Check the installer's output. It ends with warnings for the mistakes that are
 easy to make and expensive to discover later.

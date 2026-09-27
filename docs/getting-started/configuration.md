@@ -267,11 +267,11 @@ Also in `config/oidc.php`, and hardened on purpose:
 In production:
 
 ```bash
-php artisan config:cache
-php artisan route:cache
-php artisan event:cache
+php artisan optimize
 ```
 
-Run these again after every deployment and every change to `.env`. A cached
-configuration ignores the environment file entirely, which is the usual
-explanation for a setting that appears not to take effect.
+Run it again after every deployment and every change to `.env`. It caches the
+configuration, routes, events and views, and rebuilds the cached documentation,
+so a page added by a release is served at once. A cached configuration ignores
+the environment file entirely, which is the usual explanation for a setting
+that appears not to take effect.
