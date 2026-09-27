@@ -85,17 +85,40 @@ verify.
 
 ### Rotating
 
-Every ID Token carries a `kid` header naming the key that signed it, so clients
-that cache the key set can follow a rotation. But this server publishes one key
-at a time, so a rotation is a hard cutover:
+Every ID Token carries a `kid` header naming the key that signed it, and the key
+set can publish the key you retire next to the active one, as OpenID Connect
+Core 1.0 [section 10.1.1](https://openid.net/specs/openid-connect-core-1_0.html#RotateSigKeys)
+recommends. A client that meets a `kid` it does not recognise is expected to
+fetch the key set again, where it finds both keys and goes on verifying tokens
+signed before the rotation.
 
-1. Announce a window.
-2. Replace the pair (`php artisan passport:keys --force`).
+1. Keep the current public key. Copy `storage/oauth-public.key` to
+   `storage/oauth-previous-public.key`, or set
+   [`SSO_PREVIOUS_PUBLIC_KEY`](configuration.md#sso-previous-public-key-default-unset)
+   to it.
+2. Replace the pair, with `php artisan passport:keys --force` or new
+   `PASSPORT_PRIVATE_KEY` and `PASSPORT_PUBLIC_KEY` values.
 3. Restart, and clear caches.
+4. Once the longest ID Token lifetime has passed (15 minutes by default),
+   delete the previous key and restart again. Waiting a day costs nothing.
 
-Tokens signed by the old key are rejected from that moment. Rotate when you
-have reason to, such as a suspected leak or a departing administrator with
-server access, not on a routine schedule.
+What the retained key covers, and what it does not:
+
+- **ID Tokens** signed before the rotation keep verifying at every client, and
+  an `id_token_hint` signed by the retired key still signs a user out straight
+  away. Once the key is removed, such a hint asks the user first.
+- **Access tokens** signed before the rotation are refused by this server's own
+  UserInfo and introspection endpoints, which verify with the active key alone.
+  Their refresh tokens are encrypted with `APP_KEY` rather than signed, so a
+  client that refreshes gets a new access token without the user signing in
+  again.
+- **Nobody is signed out** of this server. The browser session does not depend
+  on the signing key.
+
+Each of these is pinned by `tests/Feature/Oidc/KeyRotationTest.php`.
+
+Rotate when you have reason to, such as a suspected leak or a departing
+administrator with server access, not on a routine schedule.
 
 ## Mail
 

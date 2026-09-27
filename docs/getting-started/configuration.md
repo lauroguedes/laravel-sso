@@ -42,6 +42,18 @@ Changing it after applications are integrated invalidates their expectations:
 clients that cached the discovery document will reject tokens whose `iss` no
 longer matches. Treat it as fixed once you are live.
 
+### `SSO_PREVIOUS_PUBLIC_KEY` (default unset)
+
+The public key this server signed with before its last rotation. While it is
+set, `/.well-known/jwks.json` publishes it after the active key, so ID Tokens
+signed before the rotation still verify. Written like `PASSPORT_PUBLIC_KEY`,
+with a literal `\n` for each line break. When it is unset, the file
+`storage/oauth-previous-public.key` is used if it exists.
+
+Only the public half is needed, since this server never signs with a retired
+key. Remove it once every token it signed has expired. The procedure is under
+[Rotating](deployment.md#rotating) in the deployment guide.
+
 ## Accounts
 
 Both are settings, on the **Access** tab.

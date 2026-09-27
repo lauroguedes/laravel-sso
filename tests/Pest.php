@@ -2,6 +2,8 @@
 
 use App\Models\Application;
 use App\Models\User;
+use App\Oidc\Contracts\IdTokenRequest;
+use App\Oidc\Contracts\IssuesIdTokens;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Env;
 use Illuminate\Support\Facades\File;
@@ -255,4 +257,42 @@ function withoutKeyFiles(Closure $callback): mixed
         Passport::$keyPath = $original;
         File::deleteDirectory($directory);
     }
+}
+
+/**
+ * Sign with a new key pair from now on, supplied the way an environment would,
+ * and return its public half.
+ *
+ * An environment variable holds a key on one line, with a literal "\n" for
+ * each line break.
+ */
+function signWithFreshPair(): string
+{
+    $pair = openssl_pkey_new(['private_key_bits' => 2048, 'private_key_type' => OPENSSL_KEYTYPE_RSA]);
+    openssl_pkey_export($pair, $privateKey);
+    $publicKey = openssl_pkey_get_details($pair)['key'];
+
+    config([
+        'passport.private_key' => str_replace("\n", '\n', $privateKey),
+        'passport.public_key' => str_replace("\n", '\n', $publicKey),
+    ]);
+
+    return $publicKey;
+}
+
+/**
+ * The key id published for a public key: unchanged since version 1, so key
+ * sets that relying parties have already cached stay valid.
+ */
+function keyIdOf(string $publicKey): string
+{
+    return substr(hash('sha256', $publicKey), 0, 16);
+}
+
+/**
+ * An ID Token this server issued, sent back as a client would.
+ */
+function idTokenHint(User $user, Application $application): string
+{
+    return app(IssuesIdTokens::class)->issue(new IdTokenRequest($user, $application->id, ['openid']));
 }

@@ -19,18 +19,7 @@ use Lcobucci\JWT\Token\Parser;
  */
 test('keys supplied only through the environment sign every token and name the published key', function () {
     withoutKeyFiles(function () {
-        $pair = openssl_pkey_new(['private_key_bits' => 2048, 'private_key_type' => OPENSSL_KEYTYPE_RSA]);
-        openssl_pkey_export($pair, $privateKey);
-        $publicKey = openssl_pkey_get_details($pair)['key'];
-
-        /*
-         * An environment variable holds a key on one line, with a literal "\n"
-         * for each line break.
-         */
-        config([
-            'passport.private_key' => str_replace("\n", '\n', $privateKey),
-            'passport.public_key' => str_replace("\n", '\n', $publicKey),
-        ]);
+        $publicKey = signWithFreshPair();
 
         $tokens = issueTokens(User::factory()->create(), Application::factory()->trusted()->withSecret('env-secret')->create());
         $idToken = (new Parser(new JoseEncoder))->parse($tokens['id_token']);
@@ -42,7 +31,7 @@ test('keys supplied only through the environment sign every token and name the p
         expect((new Sha256)->verify($idToken->signature()->hash(), $idToken->payload(), InMemory::plainText($publicKey)))->toBeTrue()
             ->and($idToken->headers()->get('kid'))
             ->toBe($this->getJson('/.well-known/jwks.json')->json('keys.0.kid'))
-            ->toBe(substr(hash('sha256', $publicKey), 0, 16));
+            ->toBe(keyIdOf($publicKey));
 
         $this->getJson('/oauth/userinfo', ['Authorization' => 'Bearer '.$tokens['access_token']])->assertOk();
     });

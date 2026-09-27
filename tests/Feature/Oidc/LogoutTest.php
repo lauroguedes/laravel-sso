@@ -2,8 +2,6 @@
 
 use App\Models\Application;
 use App\Models\User;
-use App\Oidc\Contracts\IdTokenRequest;
-use App\Oidc\Contracts\IssuesIdTokens;
 use Inertia\Testing\AssertableInertia as Assert;
 use Lcobucci\JWT\Encoding\ChainedFormatter;
 use Lcobucci\JWT\Encoding\JoseEncoder;
@@ -21,14 +19,6 @@ beforeEach(function () {
         ->withPostLogoutRedirect('https://app.example.test/signed-out')
         ->create(['redirect_uris' => ['https://app.example.test/auth/callback']]);
 });
-
-/**
- * An ID Token this server issued, sent back as a client would.
- */
-function idTokenHint(User $user, Application $application): string
-{
-    return app(IssuesIdTokens::class)->issue(new IdTokenRequest($user, $application->id, ['openid']));
-}
 
 describe('with an id_token_hint for the signed-in user', function () {
     test('it signs out and returns to the registered destination, echoing state', function () {

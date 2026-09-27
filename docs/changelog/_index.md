@@ -10,6 +10,7 @@ GitHub, where the full notes and the list of commits live.
 
 | Release                          | In short                                                                                          |
 | -------------------------------- | ------------------------------------------------------------------------------------------------- |
+| [v2.1.1](/docs/changelog/v2-1-1) | The key set keeps the signing key you retire, so a rotation no longer strands tokens              |
 | [v2.0.0](/docs/changelog/v2-0-0) | The OpenID Connect layer becomes part of the application, and the consent screen is yours to word |
 
 Earlier releases have their notes on GitHub:
